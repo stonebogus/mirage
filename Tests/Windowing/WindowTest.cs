@@ -151,6 +151,11 @@ public class WindowTest
 
         protected override void OnOpen() => OpenCalls++;
 
+        protected override void OnProcess()
+        {
+            ThrowIfDestroyed();
+        }
+
         protected override void OnResizableChanged(bool resizable) => LastResizable = resizable;
 
         protected override void OnResize(Vector2D size) => LastSize = size;
@@ -162,11 +167,6 @@ public class WindowTest
         public void CloseForTest() => Close();
 
         public void OpenForTest() => Open();
-
-        public override void Process()
-        {
-            ThrowIfDestroyed();
-        }
 
         public void ProcessForTest() => Process();
     }

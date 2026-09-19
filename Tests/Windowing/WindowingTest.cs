@@ -92,6 +92,8 @@ public class WindowingTest
         var second = new TestWindow("second");
         var windowing = new WindowingModule([first, second]);
 
+        first.Open();
+        second.Open();
         windowing.Update(0.016);
 
         Assert.Equal(1, first.ProcessCalls);
@@ -120,7 +122,7 @@ public class WindowingTest
                 throw new InvalidOperationException("Open failed.");
         }
 
-        public override void Process() => ProcessCalls++;
+        protected override void OnProcess() => ProcessCalls++;
     }
 
     private sealed class TrackingWindowing(Window composed, IEnumerable<Window>? windows = null)
