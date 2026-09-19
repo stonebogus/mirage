@@ -7,7 +7,7 @@ namespace Mirage.Graph;
 /// <summary>
 /// Provides optional values used to initialize a <see cref="Node"/>.
 /// </summary>
-public sealed class NodeOptions
+public class NodeOptions
 {
     /// <summary>
     /// Gets the initial parent of the node.
