@@ -83,9 +83,18 @@ public readonly struct Vector2D(double x = 0, double y = 0) : IVector<Vector2D>
             System.Math.Clamp(value.Y, minimum.Y, maximum.Y)
         );
 
-    /// <inheritdoc />
-    public static Vector2D Cross(Vector2D left, Vector2D right) =>
-        new(left.Y - right.Y, right.X - left.X);
+    /// <summary>
+    /// Calculates the scalar cross product of two two-dimensional vectors.
+    /// </summary>
+    /// <remarks>
+    /// The result is the Z component of the three-dimensional cross product
+    /// obtained by treating both vectors as lying in the XY plane.
+    /// </remarks>
+    /// <param name="left">The first vector.</param>
+    /// <param name="right">The second vector.</param>
+    /// <returns>The signed scalar cross product of <paramref name="left"/> and <paramref name="right"/>.</returns>
+    public static double Cross(Vector2D left, Vector2D right) =>
+        left.X * right.Y - left.Y * right.X;
 
     /// <inheritdoc />
     public bool Equals(Vector2D other) => X == other.X && Y == other.Y;

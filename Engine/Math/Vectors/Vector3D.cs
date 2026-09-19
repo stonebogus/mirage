@@ -98,7 +98,12 @@ public readonly struct Vector3D(double x = 0, double y = 0, double z = 0) : IVec
             System.Math.Clamp(value.Z, minimum.Z, maximum.Z)
         );
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Calculates the vector cross product of two three-dimensional vectors.
+    /// </summary>
+    /// <param name="left">The first vector.</param>
+    /// <param name="right">The second vector.</param>
+    /// <returns>A vector perpendicular to <paramref name="left"/> and <paramref name="right"/>.</returns>
     public static Vector3D Cross(Vector3D left, Vector3D right) =>
         new(
             left.Y * right.Z - left.Z * right.Y,

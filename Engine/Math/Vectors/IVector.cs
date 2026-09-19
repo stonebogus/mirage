@@ -36,11 +36,6 @@ public interface IVector<TVector>
     static abstract TVector Clamp(TVector value, TVector minimum, TVector maximum);
 
     /// <summary>
-    /// Calculates the cross product of two vectors.
-    /// </summary>
-    static abstract TVector Cross(TVector left, TVector right);
-
-    /// <summary>
     /// Calculates the distance between two vectors.
     /// </summary>
     static abstract double Distance(TVector left, TVector right);

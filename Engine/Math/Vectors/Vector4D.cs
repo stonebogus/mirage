@@ -109,14 +109,6 @@ public readonly struct Vector4D(double x = 0, double y = 0, double z = 0, double
         );
 
     /// <inheritdoc />
-    public static Vector4D Cross(Vector4D left, Vector4D right) =>
-        new(
-            left.Y * right.Z - left.Z * right.Y,
-            left.Z * right.X - left.X * right.Z,
-            left.X * right.Y - left.Y * right.X
-        );
-
-    /// <inheritdoc />
     public bool Equals(Vector4D other) =>
         X == other.X && Y == other.Y && Z == other.Z && W == other.W;
 
