@@ -77,6 +77,19 @@ public class NodeTest
     }
 
     [Fact]
+    public void LoadAndUnload_UseParentBeforeChildrenAndChildrenBeforeParent()
+    {
+        var lifecycle = new List<string>();
+        var child = new TrackingNode("Child", [], lifecycle);
+        var parent = new TrackingNode("Parent", [child], lifecycle);
+
+        parent.Load();
+        parent.Unload();
+
+        Assert.Equal(["Parent.Load", "Child.Load", "Child.Unload", "Parent.Unload"], lifecycle);
+    }
+
+    [Fact]
     public void Subnodes_GetByPath_ResolvesCurrentParentAndDescendants()
     {
         var root = new Node("Root");
@@ -106,9 +119,14 @@ public class NodeTest
         Assert.Equal([direct, nested], parent.Subnodes.GetByTag("target", true).ToArray());
     }
 
-    private sealed class TrackingNode(string name, IEnumerable<Node> composed) : Node(name)
+    private sealed class TrackingNode(
+        string name,
+        IEnumerable<Node> composed,
+        List<string>? lifecycle = null
+    ) : Node(name)
     {
         private readonly IEnumerable<Node> _composed = composed;
+        private readonly List<string>? _lifecycle = lifecycle;
 
         public int ComposeCalls { get; private set; }
 
@@ -126,6 +144,12 @@ public class NodeTest
         {
             LoadCalls++;
             SawComposedNodeDuringLoad = Subnodes.Count == _composed.Count();
+            _lifecycle?.Add($"{Name.Get()}.Load");
+        }
+
+        protected override void OnUnload()
+        {
+            _lifecycle?.Add($"{Name.Get()}.Unload");
         }
     }
 }
