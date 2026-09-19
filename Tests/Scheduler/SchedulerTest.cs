@@ -211,10 +211,8 @@ public class SchedulerTest
         }
     }
 
-    private sealed class TrackingScheduler(
-        Channel composed,
-        IEnumerable<Channel>? channels = null
-    ) : Mirage.Scheduler.Scheduler(channels: channels)
+    private sealed class TrackingScheduler(Channel composed, IEnumerable<Channel>? channels = null)
+        : Mirage.Scheduler.Scheduler(channels: channels)
     {
         public int ComposeCalls { get; private set; }
 
