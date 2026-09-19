@@ -1,8 +1,7 @@
 using Mirage.Common;
-using Mirage.Common.Lifecycle;
 using Mirage.Graph;
 
-namespace Tests.GraphTests;
+namespace Tests.Graph;
 
 public class GraphTest
 {
