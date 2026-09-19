@@ -2,6 +2,7 @@
   <Project Path="Tests/Tests.csproj" />
   <Project Path="Sandbox/Sandbox.csproj" />
   <Folder Name="/Engine/">
+    <Project Path="Engine/Spatial/Mirage.Spatial.csproj" />
     <Project Path="Engine/Scheduler/Mirage.Scheduler.csproj" />
     <Project Path="Engine/Windowing/Mirage.Windowing.csproj" />
     <Project Path="Engine/Math/Mirage.Math.csproj" />
