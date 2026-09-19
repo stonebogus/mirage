@@ -253,38 +253,12 @@ public abstract class Window : Destroyable
     protected virtual void OnVisibilityChanged(bool visible) { }
 
     /// <summary>
-    /// Processes pending platform events and synchronizes native window state.
-    /// </summary>
-    /// <exception cref="DestroyedObjectException">
-    /// Thrown when the window has already been destroyed.
-    /// </exception>
-    internal abstract void Process();
-
-    /// <summary>
-    /// Opens the window if it is not already open.
-    /// </summary>
-    /// <exception cref="DestroyedObjectException">
-    /// Thrown when the window has already been destroyed.
-    /// </exception>
-    internal void Open()
-    {
-        ThrowIfDestroyed();
-
-        if (_opened.Get())
-            return;
-
-        OnOpen();
-
-        _opened.Set(true);
-    }
-
-    /// <summary>
     /// Closes the window if it is open.
     /// </summary>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the window has already been destroyed.
     /// </exception>
-    internal void Close()
+    public void Close()
     {
         ThrowIfDestroyed();
 
@@ -297,4 +271,30 @@ public abstract class Window : Destroyable
         _opened.Set(false);
         Visible.Set(false);
     }
+
+    /// <summary>
+    /// Opens the window if it is not already open.
+    /// </summary>
+    /// <exception cref="DestroyedObjectException">
+    /// Thrown when the window has already been destroyed.
+    /// </exception>
+    public void Open()
+    {
+        ThrowIfDestroyed();
+
+        if (_opened.Get())
+            return;
+
+        OnOpen();
+
+        _opened.Set(true);
+    }
+
+    /// <summary>
+    /// Processes pending platform events and synchronizes native window state.
+    /// </summary>
+    /// <exception cref="DestroyedObjectException">
+    /// Thrown when the window has already been destroyed.
+    /// </exception>
+    public abstract void Process();
 }

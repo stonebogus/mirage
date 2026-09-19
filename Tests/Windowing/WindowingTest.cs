@@ -8,6 +8,15 @@ namespace Tests.Windowing;
 public class WindowingTest
 {
     [Fact]
+    public void Constructor_WithDuplicateWindowIdentifier_Throws()
+    {
+        var first = new TestWindow("test");
+        var second = new TestWindow("test");
+
+        Assert.Throws<InvalidOperationException>(() => new WindowingModule([first, second]));
+    }
+
+    [Fact]
     public void Start_ComposesWindowsBeforeOpening_AndOnlyOnce()
     {
         var composed = new TestWindow("composed");
@@ -23,28 +32,6 @@ public class WindowingTest
         Assert.Equal(2, composed.OpenCalls);
 
         game.Stop();
-    }
-
-    [Fact]
-    public void Start_WhenComposedWindowDuplicatesRegisteredWindow_Throws()
-    {
-        var registered = new TestWindow("test");
-        var composed = new TestWindow("test");
-        var windowing = new TrackingWindowing(composed, [registered]);
-        var game = new TestGame(windowing);
-
-        Assert.Throws<InvalidOperationException>(game.Start);
-        Assert.Equal(ModuleState.Idle, windowing.State.Get());
-        Assert.Same(registered, windowing.Windows["test"]);
-    }
-
-    [Fact]
-    public void Constructor_WithDuplicateWindowIdentifier_Throws()
-    {
-        var first = new TestWindow("test");
-        var second = new TestWindow("test");
-
-        Assert.Throws<InvalidOperationException>(() => new WindowingModule([first, second]));
     }
 
     [Fact]
@@ -66,6 +53,19 @@ public class WindowingTest
         Assert.Equal(["second", "first"], closeOrder);
         Assert.False(first.Opened.Get());
         Assert.False(second.Opened.Get());
+    }
+
+    [Fact]
+    public void Start_WhenComposedWindowDuplicatesRegisteredWindow_Throws()
+    {
+        var registered = new TestWindow("test");
+        var composed = new TestWindow("test");
+        var windowing = new TrackingWindowing(composed, [registered]);
+        var game = new TestGame(windowing);
+
+        Assert.Throws<InvalidOperationException>(game.Start);
+        Assert.Equal(ModuleState.Idle, windowing.State.Get());
+        Assert.Same(registered, windowing.Windows["test"]);
     }
 
     [Fact]
@@ -98,20 +98,6 @@ public class WindowingTest
         Assert.Equal(1, second.ProcessCalls);
     }
 
-    private sealed class TrackingWindowing(
-        Window composed,
-        IEnumerable<Window>? windows = null
-    ) : WindowingModule(windows)
-    {
-        public int ComposeCalls { get; private set; }
-
-        protected override IEnumerable<Window> Compose()
-        {
-            ComposeCalls++;
-            return [composed];
-        }
-    }
-
     private sealed class TestGame(WindowingModule windowing)
         : Game([new SchedulerModule(), windowing]);
 
@@ -119,12 +105,12 @@ public class WindowingTest
         string identifier,
         List<string>? closeOrder = null,
         bool failOnOpen = false
-    ) : Window(
-        new WindowOptions { Identifier = identifier }
-    )
+    ) : Window(new WindowOptions { Identifier = identifier })
     {
         public int OpenCalls { get; private set; }
         public int ProcessCalls { get; private set; }
+
+        protected override void OnClose() => closeOrder?.Add(Identifier);
 
         protected override void OnOpen()
         {
@@ -134,8 +120,18 @@ public class WindowingTest
                 throw new InvalidOperationException("Open failed.");
         }
 
-        protected override void OnClose() => closeOrder?.Add(Identifier);
+        public override void Process() => ProcessCalls++;
+    }
 
-        internal override void Process() => ProcessCalls++;
+    private sealed class TrackingWindowing(Window composed, IEnumerable<Window>? windows = null)
+        : WindowingModule(windows)
+    {
+        public int ComposeCalls { get; private set; }
+
+        protected override IEnumerable<Window> Compose()
+        {
+            ComposeCalls++;
+            return [composed];
+        }
     }
 }
