@@ -10,6 +10,7 @@ namespace Mirage.Scheduler;
 public class Scheduler : Module
 {
     private readonly Dictionary<string, Channel> _channels = [];
+    private bool _composed;
 
     /// <summary>
     /// Gets the channels managed by the scheduler.
@@ -49,6 +50,49 @@ public class Scheduler : Module
     /// Gets the current measured framerate of the game.
     /// </summary>
     public double Framerate { get; private set; }
+
+    private void EnsureComposed()
+    {
+        if (_composed)
+            return;
+
+        var composedChannels = Compose().ToArray();
+
+        foreach (var channel in composedChannels)
+        {
+            ArgumentNullException.ThrowIfNull(channel);
+
+            if (!_channels.TryAdd(channel.Identifier, channel))
+                throw new InvalidOperationException(
+                    $"Duplicate channel identifier found: '{channel.Identifier}'"
+                );
+        }
+
+        _composed = true;
+    }
+
+    /// <summary>
+    /// Composes the channels managed by this scheduler.
+    /// </summary>
+    /// <returns>
+    /// An enumerable sequence containing the channels to register.
+    /// </returns>
+    /// <remarks>
+    /// The default implementation does not compose any channels. Composition
+    /// occurs once when the scheduler starts, before the update loop can run.
+    /// Channels supplied to the constructor are registered before composed
+    /// channels.
+    /// </remarks>
+    protected virtual IEnumerable<Channel> Compose()
+    {
+        yield break;
+    }
+
+    /// <inheritdoc />
+    protected override void OnStart()
+    {
+        EnsureComposed();
+    }
 
     /// <summary>
     /// Runs the update loop.

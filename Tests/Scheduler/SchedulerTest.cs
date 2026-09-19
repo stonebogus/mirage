@@ -50,6 +50,36 @@ public class SchedulerTest
     }
 
     [Fact]
+    public void Start_ComposesChannelsBeforeRunning_AndOnlyOnce()
+    {
+        var composed = new Channel("composed");
+        var scheduler = new TrackingScheduler(composed);
+        var game = new TestGame(scheduler);
+
+        game.Start();
+        game.Stop();
+        game.Start();
+
+        Assert.Equal(1, scheduler.ComposeCalls);
+        Assert.Same(composed, scheduler.Channels["composed"]);
+
+        game.Stop();
+    }
+
+    [Fact]
+    public void Start_WhenComposedChannelDuplicatesRegisteredChannel_Throws()
+    {
+        var registered = new Channel("test");
+        var composed = new Channel("test");
+        var scheduler = new TrackingScheduler(composed, [registered]);
+        var game = new TestGame(scheduler);
+
+        Assert.Throws<InvalidOperationException>(game.Start);
+        Assert.Equal(ModuleState.Idle, scheduler.State.Get());
+        Assert.Same(registered, scheduler.Channels["test"]);
+    }
+
+    [Fact]
     public async Task Run_StopsWhenSchedulerStops()
     {
         var scheduler = new Mirage.Scheduler.Scheduler(0);
@@ -178,6 +208,20 @@ public class SchedulerTest
         {
             lock (updateOrder)
                 updateOrder.Add(Identifier);
+        }
+    }
+
+    private sealed class TrackingScheduler(
+        Channel composed,
+        IEnumerable<Channel>? channels = null
+    ) : Mirage.Scheduler.Scheduler(channels: channels)
+    {
+        public int ComposeCalls { get; private set; }
+
+        protected override IEnumerable<Channel> Compose()
+        {
+            ComposeCalls++;
+            return [composed];
         }
     }
 

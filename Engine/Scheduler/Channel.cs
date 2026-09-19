@@ -34,6 +34,8 @@ public enum ChannelPriority
 /// </summary>
 public class Channel : Destroyable
 {
+    private bool _composed;
+
     /// <summary>
     /// Gets the updatable entries contained in this channel.
     /// </summary>
@@ -80,6 +82,37 @@ public class Channel : Destroyable
     /// <param name="deltaTime">The elapsed time since the previous update.</param>
     protected virtual void OnUpdate(double deltaTime) { }
 
+    private void EnsureComposed()
+    {
+        if (_composed)
+            return;
+
+        var composedEntries = Compose().ToArray();
+
+        foreach (var entry in composedEntries)
+        {
+            ArgumentNullException.ThrowIfNull(entry);
+            Entries.Add(entry);
+        }
+
+        _composed = true;
+    }
+
+    /// <summary>
+    /// Composes the updatable entries contained in this channel.
+    /// </summary>
+    /// <returns>
+    /// An enumerable sequence containing the entries to add to the channel.
+    /// </returns>
+    /// <remarks>
+    /// The default implementation does not compose any entries. Composition
+    /// occurs once before the first update.
+    /// </remarks>
+    protected virtual IEnumerable<IUpdatable> Compose()
+    {
+        yield break;
+    }
+
     /// <summary>
     /// Updates all entries in the channel.
     /// </summary>
@@ -90,6 +123,7 @@ public class Channel : Destroyable
     public void Update(double deltaTime)
     {
         ThrowIfDestroyed();
+        EnsureComposed();
 
         foreach (var entry in Entries)
             entry.Update(deltaTime);

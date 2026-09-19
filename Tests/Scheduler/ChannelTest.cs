@@ -48,6 +48,20 @@ public class ChannelTest
     }
 
     [Fact]
+    public void Update_ComposesEntriesBeforeUpdating_AndOnlyOnce()
+    {
+        var entry = new TestUpdatable();
+        var channel = new TrackingChannel([entry]);
+
+        channel.Update(0.25);
+        channel.Update(0.5);
+
+        Assert.Equal(1, channel.ComposeCalls);
+        Assert.True(channel.SawComposedEntryDuringUpdate);
+        Assert.Equal(2, entry.UpdateCount);
+    }
+
+    [Fact]
     public void Destroy_ClearsEntries()
     {
         var channel = new Channel("test", entries: [new TestUpdatable(), new TestUpdatable()]);
@@ -102,6 +116,26 @@ public class ChannelTest
         protected override void OnUpdate(double deltaTime)
         {
             updateOrder.Add("channel");
+        }
+    }
+
+    private sealed class TrackingChannel(IEnumerable<IUpdatable> composed) : Channel("tracking")
+    {
+        private readonly IEnumerable<IUpdatable> _composed = composed;
+
+        public int ComposeCalls { get; private set; }
+
+        public bool SawComposedEntryDuringUpdate { get; private set; }
+
+        protected override IEnumerable<IUpdatable> Compose()
+        {
+            ComposeCalls++;
+            return _composed;
+        }
+
+        protected override void OnUpdate(double deltaTime)
+        {
+            SawComposedEntryDuringUpdate = Entries.Count == _composed.Count();
         }
     }
 
