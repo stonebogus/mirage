@@ -105,4 +105,16 @@ public class Store<TValue>(TValue value, Func<TValue, TValue, bool>? equals = nu
 
         Dispatch(_value);
     }
+
+    /// <summary>
+    /// Returns the string representation of the current value.
+    /// </summary>
+    /// <returns>
+    /// The string representation of the current value, or <c>null</c> if the
+    /// current value is <see langword="null"/>.
+    /// </returns>
+    public override string ToString()
+    {
+        return _value?.ToString() ?? "null";
+    }
 }
