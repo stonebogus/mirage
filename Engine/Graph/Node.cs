@@ -5,6 +5,36 @@ using Mirage.Common.Lifecycle;
 namespace Mirage.Graph;
 
 /// <summary>
+/// Provides optional values used to initialize a <see cref="Node"/>.
+/// </summary>
+public sealed class NodeOptions
+{
+    /// <summary>
+    /// Gets the initial parent of the node.
+    /// </summary>
+    /// <remarks>
+    /// A value of <see langword="null"/> creates a root node.
+    /// </remarks>
+    public Node? Parent { get; init; }
+
+    /// <summary>
+    /// Gets whether the node persists independently of recursive parent
+    /// lifecycle operations.
+    /// </summary>
+    public bool Persistent { get; init; }
+
+    /// <summary>
+    /// Gets the initial subnodes to add to the node.
+    /// </summary>
+    public IEnumerable<Node>? Subnodes { get; init; }
+
+    /// <summary>
+    /// Gets the initial tags to assign to the node.
+    /// </summary>
+    public IEnumerable<string>? Tags { get; init; }
+}
+
+/// <summary>
 /// Represents a collection of <see cref="Node"/> instances belonging to a parent node.
 /// </summary>
 /// <param name="owner">The node that owns this collection.</param>
@@ -335,29 +365,12 @@ public class Node : Destroyable
     /// <param name="name">
     /// The initial name of the node.
     /// </param>
-    /// <param name="persistent">
-    /// Whether the node should persist independently of recursive parent
-    /// lifecycle operations.
+    /// <param name="options">
+    /// The optional values used to initialize the node.
     /// </param>
-    /// <param name="parent">
-    /// The initial parent of the node, or <see langword="null"/> to create a
-    /// root node.
-    /// </param>
-    /// <param name="subnodes">
-    /// The initial subnodes to add to the node.
-    /// </param>
-    /// <param name="tags">
-    /// The initial tags to assign to the node.
-    /// </param>
-    public Node(
-        string name,
-        Node? parent = null,
-        bool persistent = false,
-        IEnumerable<Node>? subnodes = null,
-        IEnumerable<string>? tags = null
-    )
+    public Node(string name, NodeOptions? options = null)
     {
-        Persistent = persistent;
+        Persistent = options?.Persistent ?? false;
 
         Name = new Store<string>(name);
         Parent = new Store<Node?>(null);
@@ -367,13 +380,16 @@ public class Node : Destroyable
         Subnodes.OnAdd.Connect(OnSubnodeAdded, true);
         Subnodes.OnRemove.Connect(OnSubnodeRemoved, true);
 
-        foreach (var node in subnodes ?? [])
+        if (options is null)
+            return;
+
+        foreach (var node in options.Subnodes ?? [])
             Subnodes.Add(node);
 
-        if (parent is not null)
-            Parent.Set(parent);
+        if (options.Parent is not null)
+            Parent.Set(options.Parent);
 
-        foreach (var tag in tags ?? [])
+        foreach (var tag in options.Tags ?? [])
             Tags.Add(tag);
     }
 

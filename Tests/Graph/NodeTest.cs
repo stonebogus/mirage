@@ -8,7 +8,7 @@ public class NodeTest
     public void Constructor_WithParent_SynchronizesParentAndSubnodes()
     {
         var parent = new Node("Parent");
-        var child = new Node("Child", parent: parent);
+        var child = new Node("Child", new NodeOptions { Parent = parent });
 
         Assert.Same(parent, child.Parent.Get());
         Assert.Contains(child, parent.Subnodes);
@@ -20,7 +20,7 @@ public class NodeTest
     {
         var firstParent = new Node("First");
         var secondParent = new Node("Second");
-        var child = new Node("Child", parent: firstParent);
+        var child = new Node("Child", new NodeOptions { Parent = firstParent });
 
         child.Parent.Set(secondParent);
 
@@ -49,8 +49,8 @@ public class NodeTest
     public void Load_LoadsNonPersistentSubnodesButNotPersistentSubnodes()
     {
         var regular = new Node("Regular");
-        var persistent = new Node("Persistent", persistent: true);
-        var parent = new Node("Parent", subnodes: [regular, persistent]);
+        var persistent = new Node("Persistent", new NodeOptions { Persistent = true });
+        var parent = new Node("Parent", new NodeOptions { Subnodes = [regular, persistent] });
 
         parent.Load();
 
@@ -63,7 +63,10 @@ public class NodeTest
     public void Unload_LeavesPersistentSubnodesLoaded()
     {
         var parent = new Node("Parent");
-        var persistent = new Node("Persistent", persistent: true, parent: parent);
+        var persistent = new Node(
+            "Persistent",
+            new NodeOptions { Persistent = true, Parent = parent }
+        );
 
         parent.Load();
         persistent.Load();
@@ -77,8 +80,8 @@ public class NodeTest
     public void Subnodes_GetByPath_ResolvesCurrentParentAndDescendants()
     {
         var root = new Node("Root");
-        var child = new Node("Child", parent: root);
-        var grandchild = new Node("Grandchild", parent: child);
+        var child = new Node("Child", new NodeOptions { Parent = root });
+        var grandchild = new Node("Grandchild", new NodeOptions { Parent = child });
 
         Assert.Same(root, root.Subnodes.GetByPath("."));
         Assert.Same(child, root.Subnodes.GetByPath("Child"));
@@ -89,9 +92,19 @@ public class NodeTest
     [Fact]
     public void Subnodes_GetByTagRecursive_FindsDescendants()
     {
-        var direct = new Node("Direct", tags: ["target"]);
-        var nested = new Node("Nested", tags: ["target"]);
-        var parent = new Node("Parent", subnodes: [direct, new Node("Branch", subnodes: [nested])]);
+        var direct = new Node("Direct", new NodeOptions { Tags = ["target"] });
+        var nested = new Node("Nested", new NodeOptions { Tags = ["target"] });
+        var parent = new Node(
+            "Parent",
+            new NodeOptions
+            {
+                Subnodes =
+                [
+                    direct,
+                    new Node("Branch", new NodeOptions { Subnodes = [nested] })
+                ]
+            }
+        );
 
         Assert.Equal([direct], parent.Subnodes.GetByTag("target").ToArray());
         Assert.Equal([direct, nested], parent.Subnodes.GetByTag("target", true).ToArray());

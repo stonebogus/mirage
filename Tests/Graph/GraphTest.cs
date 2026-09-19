@@ -91,7 +91,7 @@ public class GraphTest
     public void Roots_WhenRegisteringChild_Throws()
     {
         var root = new Node("Root");
-        var child = new Node("Child", parent: root);
+        var child = new Node("Child", new NodeOptions { Parent = root });
         var graph = new Mirage.Graph.Graph(root);
 
         Assert.Throws<InvalidOperationException>(() => graph.Roots.Add("Child", child));
