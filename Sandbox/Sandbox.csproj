@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Engine\Graph\Mirage.Graph.csproj" />
     <ProjectReference Include="..\Engine\Math\Mirage.Math.csproj" />
     <ProjectReference Include="..\Engine\Scheduler\Mirage.Scheduler.csproj" />
+    <ProjectReference Include="..\Engine\Spatial\Mirage.Spatial.csproj" />
     <ProjectReference Include="..\Engine\Windowing\Mirage.Windowing.csproj" />
   </ItemGroup>
 
