@@ -161,6 +161,10 @@ public sealed class Graph : Module
         {
             next.Load();
             _activeRoot.Set(next);
+            Telemetry.Send(
+                $"Graph switched active root from '{current.Name.Get()}' to '{next.Name.Get()}'.",
+                Identifier
+            );
         }
         catch
         {
@@ -247,6 +251,8 @@ public sealed class Graph : Module
 
         ValidateLoadableRoot(active);
         active.Load();
+
+        Telemetry.Send($"Graph loaded active root '{active.Name.Get()}'.", Identifier);
     }
 
     /// <inheritdoc/>
@@ -256,6 +262,8 @@ public sealed class Graph : Module
 
         if (active.Loaded)
             active.Unload();
+
+        Telemetry.Send($"Graph unloaded active root '{active.Name.Get()}'.", Identifier);
     }
 
     /// <summary>
