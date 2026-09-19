@@ -284,6 +284,28 @@ public sealed class OpenTkWindow(WindowOptions? options = null) : Window(options
     }
 
     /// <inheritdoc />
+    protected override void OnProcess()
+    {
+        if (_nativeWindow is not { } window)
+            return;
+
+        window.NewInputFrame();
+
+        NativeWindow.ProcessWindowEvents(waitForEvents: false);
+
+        if (!ReferenceEquals(_nativeWindow, window) || Destroyed)
+            return;
+
+        if (window.IsExiting)
+        {
+            Close();
+            return;
+        }
+
+        SynchronizeState(window);
+    }
+
+    /// <inheritdoc />
     protected override void OnResizableChanged(bool resizable)
     {
         if (!ShouldApply(Resizable, resizable) || _nativeWindow is not { } window)
@@ -337,29 +359,5 @@ public sealed class OpenTkWindow(WindowOptions? options = null) : Window(options
 
         if (window.IsVisible != visible)
             window.IsVisible = visible;
-    }
-
-    /// <inheritdoc />
-    internal override void Process()
-    {
-        ThrowIfDestroyed();
-
-        if (_nativeWindow is not { } window)
-            return;
-
-        window.NewInputFrame();
-
-        NativeWindow.ProcessWindowEvents(waitForEvents: false);
-
-        if (!ReferenceEquals(_nativeWindow, window) || Destroyed)
-            return;
-
-        if (window.IsExiting)
-        {
-            Close();
-            return;
-        }
-
-        SynchronizeState(window);
     }
 }
