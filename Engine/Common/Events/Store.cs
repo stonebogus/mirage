@@ -66,9 +66,6 @@ public class Store<TValue>(TValue value, Func<TValue, TValue, bool>? equals = nu
     /// <summary>
     /// Gets the current value of the store.
     /// </summary>
-    /// <exception cref="DestroyedObjectException">
-    /// Thrown when the store has already been destroyed.
-    /// </exception>
     public TValue Get()
     {
         return _value;
