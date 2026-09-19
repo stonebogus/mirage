@@ -225,6 +225,11 @@ public abstract class Window : Destroyable
     protected virtual void OnOpen() { }
 
     /// <summary>
+    /// Processes pending platform events and synchronizes native window state.
+    /// </summary>
+    protected virtual void OnProcess() { }
+
+    /// <summary>
     /// Applies a resizability change to the platform-specific window.
     /// </summary>
     /// <param name="resizable">
@@ -296,5 +301,10 @@ public abstract class Window : Destroyable
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the window has already been destroyed.
     /// </exception>
-    public abstract void Process();
+    public void Process()
+    {
+        ThrowIfDestroyed();
+        if (_opened.Get())
+            OnProcess();
+    }
 }
