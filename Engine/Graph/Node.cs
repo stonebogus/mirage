@@ -630,10 +630,6 @@ public class Node : Destroyable
 
         EnsureComposed();
 
-        OnLoad();
-
-        Loaded = true;
-
         foreach (var node in Subnodes)
         {
             if (node.Persistent)
@@ -641,6 +637,9 @@ public class Node : Destroyable
 
             node.Load();
         }
+
+        Loaded = true;
+        OnLoad();
     }
 
     /// <summary>
@@ -677,6 +676,8 @@ public class Node : Destroyable
         if (!Loaded)
             throw new InvalidOperationException($"{this} is not loaded");
 
+        OnUnload();
+
         foreach (var node in Subnodes)
         {
             if (node.Persistent)
@@ -684,8 +685,6 @@ public class Node : Destroyable
 
             node.Unload();
         }
-
-        OnUnload();
 
         Loaded = false;
     }
