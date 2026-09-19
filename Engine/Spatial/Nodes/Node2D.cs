@@ -36,7 +36,7 @@ public sealed class Node2DOptions : NodeOptions
 /// Position, rotation, and scale are relative to the node's spatial parent.
 /// Rotation is expressed in radians.
 /// </remarks>
-public class Node2D(string name, Node2DOptions? options = null) : Node(name, options)
+public class Node2D(string name = "Node2D", Node2DOptions? options = null) : Node(name, options)
 {
     /// <summary>
     /// Gets the local position of the node.

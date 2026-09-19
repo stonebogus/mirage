@@ -37,7 +37,7 @@ public sealed class Node3DOptions : NodeOptions
 /// Position, rotation, and scale are relative to the node's spatial parent.
 /// Rotation is represented by a quaternion.
 /// </remarks>
-public class Node3D(string name, Node3DOptions? options = null) : Node(name, options)
+public class Node3D(string name = "Node3D", Node3DOptions? options = null) : Node(name, options)
 {
     /// <summary>
     /// Gets the local position of the node.
