@@ -98,11 +98,7 @@ public class NodeTest
             "Parent",
             new NodeOptions
             {
-                Subnodes =
-                [
-                    direct,
-                    new Node("Branch", new NodeOptions { Subnodes = [nested] })
-                ]
+                Subnodes = [direct, new Node("Branch", new NodeOptions { Subnodes = [nested] })],
             }
         );
 
