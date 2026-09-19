@@ -351,8 +351,8 @@ public class Node : Destroyable
     /// </param>
     public Node(
         string name,
-        bool persistent = false,
         Node? parent = null,
+        bool persistent = false,
         IEnumerable<Node>? subnodes = null,
         IEnumerable<string>? tags = null
     )
