@@ -28,7 +28,7 @@ public class Scheduler : Module
     /// <param name="targetFramerate">The target number of frames per second.</param>
     /// <param name="channels">The channels managed by the scheduler.</param>
     public Scheduler(int targetFramerate = 60, IEnumerable<Channel>? channels = null)
-        : base("scheduler")
+        : base("Scheduler")
     {
         TargetFramerate = targetFramerate;
 
