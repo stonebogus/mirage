@@ -24,7 +24,7 @@ public class Windowing : Module, IUpdatable
     /// Thrown when multiple windows have the same identifier.
     /// </exception>
     public Windowing(IEnumerable<Window>? windows = null)
-        : base("windowing", dependencies: ["scheduler"])
+        : base("Windowing", dependencies: ["Scheduler"])
     {
         foreach (var window in windows ?? [])
         {
