@@ -1,6 +1,6 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Mirage.Common;
+using Mirage.Common.Collections;
 
 namespace Mirage.Scheduler;
 
@@ -9,13 +9,12 @@ namespace Mirage.Scheduler;
 /// </summary>
 public class Scheduler : Module
 {
-    private readonly Dictionary<string, Channel> _channels = [];
     private bool _composed;
 
     /// <summary>
     /// Gets the channels managed by the scheduler.
     /// </summary>
-    public readonly ReadOnlyDictionary<string, Channel> Channels;
+    public readonly ReactiveDictionary<string, Channel> Channels = [];
 
     /// <summary>
     /// Gets the target number of frames per second.
@@ -33,12 +32,13 @@ public class Scheduler : Module
         TargetFramerate = targetFramerate;
 
         foreach (var channel in channels ?? [])
-            if (!_channels.TryAdd(channel.Identifier, channel))
+        {
+            if (Channels.ContainsKey(channel.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate channel identifier found: '{channel.Identifier}'"
                 );
-
-        Channels = _channels.AsReadOnly();
+            Channels.Add(channel.Identifier, channel);
+        }
     }
 
     /// <summary>
@@ -62,10 +62,11 @@ public class Scheduler : Module
         {
             ArgumentNullException.ThrowIfNull(channel);
 
-            if (!_channels.TryAdd(channel.Identifier, channel))
+            if (Channels.ContainsKey(channel.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate channel identifier found: '{channel.Identifier}'"
                 );
+            Channels.Add(channel.Identifier, channel);
         }
 
         _composed = true;
@@ -121,9 +122,9 @@ public class Scheduler : Module
 
             Framerate = DeltaTime > 0 ? 1.0 / DeltaTime : TargetFramerate;
 
-            foreach (var channel in _channels.Values.OrderByDescending(channel => channel.Priority))
+            foreach (var channel in Channels.OrderByDescending(entry => entry.Value.Priority))
             {
-                channel.Update((float)DeltaTime);
+                channel.Value.Update((float)DeltaTime);
             }
 
             var elapsedFrameTime = stopwatch.Elapsed.TotalSeconds - frameStartTime;
