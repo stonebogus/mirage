@@ -31,8 +31,6 @@ public class Signal<TPayload> : Event<TPayload>
     /// </exception>
     public void Fire(TPayload payload)
     {
-        ThrowIfDestroyed();
-
         Dispatch(payload);
     }
 }
