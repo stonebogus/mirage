@@ -6,26 +6,73 @@ namespace Mirage.Common.Events;
 /// Represents an active connection between an event and a callback.
 /// </summary>
 /// <typeparam name="TPayload">The type of the value passed to the callback.</typeparam>
-public class EventConnection<TPayload>(
-    Action<TPayload> callback,
-    bool persistent,
-    Action disconnect
-)
+public sealed class EventConnection<TPayload>
 {
+    private Action<EventConnection<TPayload>>? _disconnect;
+
+    /// <summary>
+    /// Initializes a new connection between an event and a callback.
+    /// </summary>
+    /// <param name="callback">The callback associated with the connection.</param>
+    /// <param name="persistent">
+    /// Whether the connection survives standard clearing operations.
+    /// </param>
+    /// <param name="disconnect">
+    /// The operation used to remove the connection from its event.
+    /// </param>
+    internal EventConnection(
+        Action<TPayload> callback,
+        bool persistent,
+        Action<EventConnection<TPayload>> disconnect
+    )
+    {
+        ArgumentNullException.ThrowIfNull(callback);
+        ArgumentNullException.ThrowIfNull(disconnect);
+
+        Callback = callback;
+        Persistent = persistent;
+        _disconnect = disconnect;
+    }
+
     /// <summary>
     /// Gets the callback function executed when the event is dispatched.
     /// </summary>
-    public Action<TPayload> Callback { get; } = callback;
+    public Action<TPayload> Callback { get; }
 
     /// <summary>
-    /// Disconnects the callback from the event.
+    /// Gets a value indicating whether the connection is currently active.
     /// </summary>
-    public Action Disconnect { get; } = disconnect;
+    public bool Connected => _disconnect is not null;
 
     /// <summary>
     /// Gets a value indicating whether the connection persists after being cleared.
     /// </summary>
-    public bool Persistent { get; } = persistent;
+    public bool Persistent { get; }
+
+    /// <summary>
+    /// Disconnects the callback from its event.
+    /// </summary>
+    /// <remarks>
+    /// Calling this method more than once has no effect.
+    /// </remarks>
+    public void Disconnect()
+    {
+        var disconnect = _disconnect;
+
+        if (disconnect is null)
+            return;
+
+        _disconnect = null;
+        disconnect(this);
+    }
+
+    /// <summary>
+    /// Marks the connection as disconnected without notifying its event.
+    /// </summary>
+    internal void Detach()
+    {
+        _disconnect = null;
+    }
 }
 
 /// <summary>
@@ -41,7 +88,9 @@ public interface IReadOnlyEvent<TPayload> : IReadOnlyDestroyable
     /// <param name="persistent">
     /// Whether the connection should survive standard clearing operations.
     /// </param>
-    /// <returns>An <see cref="EventConnection{TPayload}"/> representing the subscription.</returns>
+    /// <returns>
+    /// An <see cref="EventConnection{TPayload}"/> representing the subscription.
+    /// </returns>
     EventConnection<TPayload> Connect(Action<TPayload> callback, bool persistent = false);
 }
 
@@ -52,15 +101,10 @@ public interface IReadOnlyEvent<TPayload> : IReadOnlyDestroyable
 public interface IEvent<TPayload> : IReadOnlyEvent<TPayload>, IDestroyable
 {
     /// <summary>
-    /// Gets a value indicating whether the event has been destroyed.
-    /// </summary>
-    new bool Destroyed { get; }
-
-    /// <summary>
     /// Clears event connections. By default, removes only non-persistent connections.
     /// </summary>
     /// <param name="force">
-    /// If <see langword="true"/>, clears all connections including persistent ones.
+    /// If <see langword="true"/>, clears all connections, including persistent ones.
     /// </param>
     void Clear(bool force = false);
 }
@@ -80,7 +124,7 @@ public abstract class Event<TPayload> : Destroyable, IEvent<TPayload>
     /// Clears event connections. By default, removes only non-persistent connections.
     /// </summary>
     /// <param name="force">
-    /// If <see langword="true"/>, clears all connections including persistent ones.
+    /// If <see langword="true"/>, clears all connections, including persistent ones.
     /// </param>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the event has already been destroyed.
@@ -89,13 +133,11 @@ public abstract class Event<TPayload> : Destroyable, IEvent<TPayload>
     {
         ThrowIfDestroyed();
 
-        if (force)
+        foreach (var connection in Connections.ToArray())
         {
-            Connections.Clear();
-            return;
+            if (force || !connection.Persistent)
+                connection.Disconnect();
         }
-
-        Connections.RemoveWhere(connection => !connection.Persistent);
     }
 
     /// <summary>
@@ -105,23 +147,25 @@ public abstract class Event<TPayload> : Destroyable, IEvent<TPayload>
     /// <param name="persistent">
     /// Whether the connection should survive standard clearing operations.
     /// </param>
-    /// <returns>An <see cref="EventConnection{TPayload}"/> representing the subscription.</returns>
+    /// <returns>
+    /// An <see cref="EventConnection{TPayload}"/> representing the subscription.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="callback"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the event has already been destroyed.
     /// </exception>
     public EventConnection<TPayload> Connect(Action<TPayload> callback, bool persistent = false)
     {
         ThrowIfDestroyed();
+        ArgumentNullException.ThrowIfNull(callback);
 
-        var connectionHolder = new EventConnection<TPayload>?[1];
-
-        EventConnection<TPayload> connection = new(
+        var connection = new EventConnection<TPayload>(
             callback,
             persistent,
-            () => Connections.Remove(connectionHolder[0]!)
+            connection => Connections.Remove(connection)
         );
-
-        connectionHolder[0] = connection;
 
         Connections.Add(connection);
 
@@ -135,6 +179,7 @@ public abstract class Event<TPayload> : Destroyable, IEvent<TPayload>
     /// <remarks>
     /// A snapshot of the current connections is used so listeners can safely
     /// connect, disconnect, or clear connections while the event is being dispatched.
+    /// Connections removed during dispatch are not invoked afterward.
     /// </remarks>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the event has already been destroyed.
@@ -144,12 +189,18 @@ public abstract class Event<TPayload> : Destroyable, IEvent<TPayload>
         ThrowIfDestroyed();
 
         foreach (var connection in Connections.ToArray())
-            connection.Callback(payload);
+        {
+            if (connection.Connected)
+                connection.Callback(payload);
+        }
     }
 
     /// <inheritdoc />
     protected override void OnDestroy()
     {
+        foreach (var connection in Connections)
+            connection.Detach();
+
         Connections.Clear();
     }
 }
