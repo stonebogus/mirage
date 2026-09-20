@@ -8,5 +8,6 @@
     <Project Path="Engine/Math/Mirage.Math.csproj" />
     <Project Path="Engine/Common/Mirage.Common.csproj" />
     <Project Path="Engine/Graph/Mirage.Graph.csproj" />
+    <Project Path="Engine/Graphics/Mirage.Graphics.csproj" />
   </Folder>
 </Solution>
