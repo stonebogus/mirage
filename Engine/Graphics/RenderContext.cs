@@ -1,6 +1,3 @@
 namespace Mirage.Graphics;
 
-public class RenderContext
-{
-    
-}
+public class RenderContext { }
