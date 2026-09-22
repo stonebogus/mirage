@@ -13,5 +13,5 @@ public interface IRenderable
     /// A rendering context containing the graphical data required to render
     /// this object.
     /// </returns>
-    RenderContext Render();
+    RenderContext Render(RenderContext context);
 }

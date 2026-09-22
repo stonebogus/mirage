@@ -1,6 +1,3 @@
 namespace Mirage.Graphics;
 
-public class RenderData
-{
-    
-}
+public class RenderData { }
