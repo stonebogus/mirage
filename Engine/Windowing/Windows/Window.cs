@@ -274,7 +274,6 @@ public abstract class Window : Destroyable
 
         _focused.Set(false);
         _opened.Set(false);
-        Visible.Set(false);
     }
 
     /// <summary>
