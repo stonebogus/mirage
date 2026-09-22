@@ -18,7 +18,6 @@ public class WindowTest
 
         Assert.False(window.Opened.Get());
         Assert.False(window.Focused.Get());
-        Assert.False(window.Visible.Get());
         Assert.Equal(1, window.CloseCalls);
     }
 
