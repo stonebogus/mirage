@@ -93,8 +93,7 @@ public readonly struct Vector2D(float x = 0, float y = 0) : IVector<Vector2D>
     /// <param name="left">The first vector.</param>
     /// <param name="right">The second vector.</param>
     /// <returns>The signed scalar cross product of <paramref name="left"/> and <paramref name="right"/>.</returns>
-    public static float Cross(Vector2D left, Vector2D right) =>
-        left.X * right.Y - left.Y * right.X;
+    public static float Cross(Vector2D left, Vector2D right) => left.X * right.Y - left.Y * right.X;
 
     /// <inheritdoc />
     public bool Equals(Vector2D other) => X == other.X && Y == other.Y;
