@@ -10,20 +10,20 @@ public interface IVector<TVector>
         IAdditionOperators<TVector, TVector, TVector>,
         ISubtractionOperators<TVector, TVector, TVector>,
         IUnaryNegationOperators<TVector, TVector>,
-        IMultiplyOperators<TVector, double, TVector>,
-        IDivisionOperators<TVector, double, TVector>,
+        IMultiplyOperators<TVector, float, TVector>,
+        IDivisionOperators<TVector, float, TVector>,
         IEqualityOperators<TVector, TVector, bool>
     where TVector : IVector<TVector>
 {
     /// <summary>
     /// Gets the length of the vector.
     /// </summary>
-    double Length { get; }
+    float Length { get; }
 
     /// <summary>
     /// Gets the squared length of the vector.
     /// </summary>
-    double LengthSquared { get; }
+    float LengthSquared { get; }
 
     /// <summary>
     /// Gets a normalized copy of the vector.
@@ -38,22 +38,22 @@ public interface IVector<TVector>
     /// <summary>
     /// Calculates the distance between two vectors.
     /// </summary>
-    static abstract double Distance(TVector left, TVector right);
+    static abstract float Distance(TVector left, TVector right);
 
     /// <summary>
     /// Calculates the squared distance between two vectors.
     /// </summary>
-    static abstract double DistanceSquared(TVector left, TVector right);
+    static abstract float DistanceSquared(TVector left, TVector right);
 
     /// <summary>
     /// Calculates the dot product of two vectors.
     /// </summary>
-    static abstract double Dot(TVector left, TVector right);
+    static abstract float Dot(TVector left, TVector right);
 
     /// <summary>
     /// Linearly interpolates between two vectors.
     /// </summary>
-    static abstract TVector Lerp(TVector start, TVector end, double amount);
+    static abstract TVector Lerp(TVector start, TVector end, float amount);
 
     /// <summary>
     /// Returns a vector containing the largest components of the two vectors.

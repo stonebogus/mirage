@@ -10,47 +10,47 @@ public readonly struct Matrix3 : IEquatable<Matrix3>
     /// <summary>
     /// Gets the value in the first row and first column.
     /// </summary>
-    public readonly double M11;
+    public readonly float M11;
 
     /// <summary>
     /// Gets the value in the first row and second column.
     /// </summary>
-    public readonly double M12;
+    public readonly float M12;
 
     /// <summary>
     /// Gets the value in the first row and third column.
     /// </summary>
-    public readonly double M13;
+    public readonly float M13;
 
     /// <summary>
     /// Gets the value in the second row and first column.
     /// </summary>
-    public readonly double M21;
+    public readonly float M21;
 
     /// <summary>
     /// Gets the value in the second row and second column.
     /// </summary>
-    public readonly double M22;
+    public readonly float M22;
 
     /// <summary>
     /// Gets the value in the second row and third column.
     /// </summary>
-    public readonly double M23;
+    public readonly float M23;
 
     /// <summary>
     /// Gets the value in the third row and first column.
     /// </summary>
-    public readonly double M31;
+    public readonly float M31;
 
     /// <summary>
     /// Gets the value in the third row and second column.
     /// </summary>
-    public readonly double M32;
+    public readonly float M32;
 
     /// <summary>
     /// Gets the value in the third row and third column.
     /// </summary>
-    public readonly double M33;
+    public readonly float M33;
 
     /// <summary>
     /// Represents the identity matrix.
@@ -61,15 +61,15 @@ public readonly struct Matrix3 : IEquatable<Matrix3>
     /// Initializes a new instance of the <see cref="Matrix3"/> struct.
     /// </summary>
     public Matrix3(
-        double m11,
-        double m12,
-        double m13,
-        double m21,
-        double m22,
-        double m23,
-        double m31,
-        double m32,
-        double m33
+        float m11,
+        float m12,
+        float m13,
+        float m21,
+        float m22,
+        float m23,
+        float m31,
+        float m32,
+        float m33
     )
     {
         M11 = m11;
@@ -150,7 +150,7 @@ public readonly struct Matrix3 : IEquatable<Matrix3>
     /// <summary>
     /// Multiplies a matrix by a scalar.
     /// </summary>
-    public static Matrix3 operator *(Matrix3 value, double scalar) =>
+    public static Matrix3 operator *(Matrix3 value, float scalar) =>
         new(
             value.M11 * scalar,
             value.M12 * scalar,
@@ -166,12 +166,12 @@ public readonly struct Matrix3 : IEquatable<Matrix3>
     /// <summary>
     /// Multiplies a scalar by a matrix.
     /// </summary>
-    public static Matrix3 operator *(double scalar, Matrix3 value) => value * scalar;
+    public static Matrix3 operator *(float scalar, Matrix3 value) => value * scalar;
 
     /// <summary>
     /// Divides a matrix by a scalar.
     /// </summary>
-    public static Matrix3 operator /(Matrix3 value, double scalar) => value * (1 / scalar);
+    public static Matrix3 operator /(Matrix3 value, float scalar) => value * (1 / scalar);
 
     /// <summary>
     /// Transforms a vector by a matrix.
@@ -197,10 +197,10 @@ public readonly struct Matrix3 : IEquatable<Matrix3>
     /// <summary>
     /// Creates a rotation matrix around the Z axis.
     /// </summary>
-    public static Matrix3 CreateRotation(double angle)
+    public static Matrix3 CreateRotation(float angle)
     {
-        double cosine = System.Math.Cos(angle);
-        double sine = System.Math.Sin(angle);
+        float cosine = System.MathF.Cos(angle);
+        float sine = System.MathF.Sin(angle);
 
         return new Matrix3(cosine, -sine, 0, sine, cosine, 0, 0, 0, 1);
     }
@@ -213,7 +213,7 @@ public readonly struct Matrix3 : IEquatable<Matrix3>
     /// <summary>
     /// Gets the determinant of the matrix.
     /// </summary>
-    public double Determinant =>
+    public float Determinant =>
         M11 * (M22 * M33 - M23 * M32)
         - M12 * (M21 * M33 - M23 * M31)
         + M13 * (M21 * M32 - M22 * M31);
@@ -225,7 +225,7 @@ public readonly struct Matrix3 : IEquatable<Matrix3>
     {
         get
         {
-            double determinant = Determinant;
+            float determinant = Determinant;
 
             return new Matrix3(
                 (M22 * M33 - M23 * M32) / determinant,

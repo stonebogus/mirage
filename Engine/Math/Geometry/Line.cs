@@ -29,7 +29,7 @@ public readonly struct Line : IEquatable<Line>
     /// <summary>
     /// Gets a point on the line at the specified parameter.
     /// </summary>
-    public Vector3D GetPoint(double distance) => Origin + Direction * distance;
+    public Vector3D GetPoint(float distance) => Origin + Direction * distance;
 
     /// <inheritdoc />
     public bool Equals(Line other) => Origin == other.Origin && Direction == other.Direction;

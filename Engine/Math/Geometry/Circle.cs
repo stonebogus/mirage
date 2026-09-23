@@ -15,12 +15,12 @@ public readonly struct Circle : IEquatable<Circle>
     /// <summary>
     /// Gets the radius of the circle.
     /// </summary>
-    public readonly double Radius;
+    public readonly float Radius;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Circle"/> struct.
     /// </summary>
-    public Circle(Vector2D center, double radius)
+    public Circle(Vector2D center, float radius)
     {
         Center = center;
         Radius = radius;
@@ -29,17 +29,17 @@ public readonly struct Circle : IEquatable<Circle>
     /// <summary>
     /// Gets the diameter of the circle.
     /// </summary>
-    public double Diameter => Radius * 2;
+    public float Diameter => Radius * 2;
 
     /// <summary>
     /// Gets the circumference of the circle.
     /// </summary>
-    public double Circumference => 2 * System.Math.PI * Radius;
+    public float Circumference => 2 * System.MathF.PI * Radius;
 
     /// <summary>
     /// Gets the area of the circle.
     /// </summary>
-    public double Area => System.Math.PI * Radius * Radius;
+    public float Area => System.MathF.PI * Radius * Radius;
 
     /// <summary>
     /// Determines whether a point is inside or on the circle.

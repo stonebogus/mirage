@@ -15,103 +15,103 @@ public readonly struct Matrix4 : IEquatable<Matrix4>
     /// <summary>
     /// Gets the M11 component of the matrix.
     /// </summary>
-    public readonly double M11;
+    public readonly float M11;
 
     /// <summary>
     /// Gets the M12 component of the matrix.
     /// </summary>
-    public readonly double M12;
+    public readonly float M12;
 
     /// <summary>
     /// Gets the M13 component of the matrix.
     /// </summary>
-    public readonly double M13;
+    public readonly float M13;
 
     /// <summary>
     /// Gets the M14 component of the matrix.
     /// </summary>
-    public readonly double M14;
+    public readonly float M14;
 
     /// <summary>
     /// Gets the M21 component of the matrix.
     /// </summary>
-    public readonly double M21;
+    public readonly float M21;
 
     /// <summary>
     /// Gets the M22 component of the matrix.
     /// </summary>
-    public readonly double M22;
+    public readonly float M22;
 
     /// <summary>
     /// Gets the M23 component of the matrix.
     /// </summary>
-    public readonly double M23;
+    public readonly float M23;
 
     /// <summary>
     /// Gets the M24 component of the matrix.
     /// </summary>
-    public readonly double M24;
+    public readonly float M24;
 
     /// <summary>
     /// Gets the M31 component of the matrix.
     /// </summary>
-    public readonly double M31;
+    public readonly float M31;
 
     /// <summary>
     /// Gets the M32 component of the matrix.
     /// </summary>
-    public readonly double M32;
+    public readonly float M32;
 
     /// <summary>
     /// Gets the M33 component of the matrix.
     /// </summary>
-    public readonly double M33;
+    public readonly float M33;
 
     /// <summary>
     /// Gets the M34 component of the matrix.
     /// </summary>
-    public readonly double M34;
+    public readonly float M34;
 
     /// <summary>
     /// Gets the M41 component of the matrix.
     /// </summary>
-    public readonly double M41;
+    public readonly float M41;
 
     /// <summary>
     /// Gets the M42 component of the matrix.
     /// </summary>
-    public readonly double M42;
+    public readonly float M42;
 
     /// <summary>
     /// Gets the M43 component of the matrix.
     /// </summary>
-    public readonly double M43;
+    public readonly float M43;
 
     /// <summary>
     /// Gets the M44 component of the matrix.
     /// </summary>
-    public readonly double M44;
+    public readonly float M44;
 
     /// <summary>
     /// Initializes a new matrix from its individual components.
     /// </summary>
     public Matrix4(
-        double m11,
-        double m12,
-        double m13,
-        double m14,
-        double m21,
-        double m22,
-        double m23,
-        double m24,
-        double m31,
-        double m32,
-        double m33,
-        double m34,
-        double m41,
-        double m42,
-        double m43,
-        double m44
+        float m11,
+        float m12,
+        float m13,
+        float m14,
+        float m21,
+        float m22,
+        float m23,
+        float m24,
+        float m31,
+        float m32,
+        float m33,
+        float m34,
+        float m41,
+        float m42,
+        float m43,
+        float m44
     )
     {
         M11 = m11;
@@ -275,7 +275,7 @@ public readonly struct Matrix4 : IEquatable<Matrix4>
     /// <summary>
     /// Multiplies a matrix by a scalar.
     /// </summary>
-    public static Matrix4 operator *(Matrix4 value, double scalar) =>
+    public static Matrix4 operator *(Matrix4 value, float scalar) =>
         new(
             value.M11 * scalar,
             value.M12 * scalar,
@@ -298,12 +298,12 @@ public readonly struct Matrix4 : IEquatable<Matrix4>
     /// <summary>
     /// Multiplies a scalar by a matrix.
     /// </summary>
-    public static Matrix4 operator *(double scalar, Matrix4 value) => value * scalar;
+    public static Matrix4 operator *(float scalar, Matrix4 value) => value * scalar;
 
     /// <summary>
     /// Divides a matrix by a scalar.
     /// </summary>
-    public static Matrix4 operator /(Matrix4 value, double scalar) => value * (1 / scalar);
+    public static Matrix4 operator /(Matrix4 value, float scalar) => value * (1 / scalar);
 
     /// <summary>
     /// Multiplies a matrix by a vector.
@@ -396,7 +396,7 @@ public readonly struct Matrix4 : IEquatable<Matrix4>
     /// <summary>
     /// Gets the determinant of the matrix.
     /// </summary>
-    public double Determinant
+    public float Determinant
     {
         get
         {

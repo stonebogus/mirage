@@ -29,12 +29,12 @@ public readonly struct Rect : IEquatable<Rect>
     /// <summary>
     /// Gets the width of the rectangle.
     /// </summary>
-    public double Width => Maximum.X - Minimum.X;
+    public float Width => Maximum.X - Minimum.X;
 
     /// <summary>
     /// Gets the height of the rectangle.
     /// </summary>
-    public double Height => Maximum.Y - Minimum.Y;
+    public float Height => Maximum.Y - Minimum.Y;
 
     /// <summary>
     /// Gets the center of the rectangle.
@@ -44,7 +44,7 @@ public readonly struct Rect : IEquatable<Rect>
     /// <summary>
     /// Gets the area of the rectangle.
     /// </summary>
-    public double Area => Width * Height;
+    public float Area => Width * Height;
 
     /// <summary>
     /// Determines whether a point is inside or on the rectangle.

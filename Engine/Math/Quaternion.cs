@@ -5,28 +5,28 @@ namespace Mirage.Math;
 /// <summary>
 /// Represents a quaternion used to represent rotations in three-dimensional space.
 /// </summary>
-public readonly struct Quaternion(double x = 0, double y = 0, double z = 0, double w = 1)
+public readonly struct Quaternion(float x = 0, float y = 0, float z = 0, float w = 1)
     : IEquatable<Quaternion>
 {
     /// <summary>
     /// Gets the X component of the quaternion.
     /// </summary>
-    public readonly double X = x;
+    public readonly float X = x;
 
     /// <summary>
     /// Gets the Y component of the quaternion.
     /// </summary>
-    public readonly double Y = y;
+    public readonly float Y = y;
 
     /// <summary>
     /// Gets the Z component of the quaternion.
     /// </summary>
-    public readonly double Z = z;
+    public readonly float Z = z;
 
     /// <summary>
     /// Gets the W component of the quaternion.
     /// </summary>
-    public readonly double W = w;
+    public readonly float W = w;
 
     /// <summary>
     /// Gets the identity quaternion.
@@ -36,12 +36,12 @@ public readonly struct Quaternion(double x = 0, double y = 0, double z = 0, doub
     /// <summary>
     /// Gets the length of the quaternion.
     /// </summary>
-    public double Length => System.Math.Sqrt(LengthSquared);
+    public float Length => System.MathF.Sqrt(LengthSquared);
 
     /// <summary>
     /// Gets the squared length of the quaternion.
     /// </summary>
-    public double LengthSquared => X * X + Y * Y + Z * Z + W * W;
+    public float LengthSquared => X * X + Y * Y + Z * Z + W * W;
 
     /// <summary>
     /// Gets a normalized copy of the quaternion.
@@ -90,18 +90,18 @@ public readonly struct Quaternion(double x = 0, double y = 0, double z = 0, doub
     /// <summary>
     /// Multiplies a quaternion by a scalar.
     /// </summary>
-    public static Quaternion operator *(Quaternion value, double scalar) =>
+    public static Quaternion operator *(Quaternion value, float scalar) =>
         new(value.X * scalar, value.Y * scalar, value.Z * scalar, value.W * scalar);
 
     /// <summary>
     /// Multiplies a scalar by a quaternion.
     /// </summary>
-    public static Quaternion operator *(double scalar, Quaternion value) => value * scalar;
+    public static Quaternion operator *(float scalar, Quaternion value) => value * scalar;
 
     /// <summary>
     /// Divides a quaternion by a scalar.
     /// </summary>
-    public static Quaternion operator /(Quaternion value, double scalar) =>
+    public static Quaternion operator /(Quaternion value, float scalar) =>
         new(value.X / scalar, value.Y / scalar, value.Z / scalar, value.W / scalar);
 
     /// <summary>
@@ -117,34 +117,34 @@ public readonly struct Quaternion(double x = 0, double y = 0, double z = 0, doub
     /// <summary>
     /// Creates a quaternion from an axis and an angle in radians.
     /// </summary>
-    public static Quaternion FromAxisAngle(Vector3D axis, double angle)
+    public static Quaternion FromAxisAngle(Vector3D axis, float angle)
     {
         var halfAngle = angle / 2;
-        var sine = System.Math.Sin(halfAngle);
+        var sine = System.MathF.Sin(halfAngle);
 
         return new Quaternion(
             axis.X * sine,
             axis.Y * sine,
             axis.Z * sine,
-            System.Math.Cos(halfAngle)
+            System.MathF.Cos(halfAngle)
         );
     }
 
     /// <summary>
     /// Creates a quaternion from Euler angles in radians.
     /// </summary>
-    public static Quaternion FromEulerAngles(double x, double y, double z)
+    public static Quaternion FromEulerAngles(float x, float y, float z)
     {
         var halfX = x / 2;
         var halfY = y / 2;
         var halfZ = z / 2;
 
-        var sinX = System.Math.Sin(halfX);
-        var cosX = System.Math.Cos(halfX);
-        var sinY = System.Math.Sin(halfY);
-        var cosY = System.Math.Cos(halfY);
-        var sinZ = System.Math.Sin(halfZ);
-        var cosZ = System.Math.Cos(halfZ);
+        var sinX = System.MathF.Sin(halfX);
+        var cosX = System.MathF.Cos(halfX);
+        var sinY = System.MathF.Sin(halfY);
+        var cosY = System.MathF.Cos(halfY);
+        var sinZ = System.MathF.Sin(halfZ);
+        var cosZ = System.MathF.Cos(halfZ);
 
         return new Quaternion(
             sinX * cosY * cosZ - cosX * sinY * sinZ,
@@ -168,7 +168,7 @@ public readonly struct Quaternion(double x = 0, double y = 0, double z = 0, doub
     /// <summary>
     /// Spherically interpolates between two quaternions.
     /// </summary>
-    public static Quaternion Slerp(Quaternion start, Quaternion end, double amount)
+    public static Quaternion Slerp(Quaternion start, Quaternion end, float amount)
     {
         var dot = start.X * end.X + start.Y * end.Y + start.Z * end.Z + start.W * end.W;
 
@@ -183,11 +183,11 @@ public readonly struct Quaternion(double x = 0, double y = 0, double z = 0, doub
             return (start + (end - start) * amount).Normalized;
         }
 
-        var angle = System.Math.Acos(dot);
-        var sine = System.Math.Sin(angle);
+        var angle = System.MathF.Acos(dot);
+        var sine = System.MathF.Sin(angle);
 
-        var startWeight = System.Math.Sin((1 - amount) * angle) / sine;
-        var endWeight = System.Math.Sin(amount * angle) / sine;
+        var startWeight = System.MathF.Sin((1 - amount) * angle) / sine;
+        var endWeight = System.MathF.Sin(amount * angle) / sine;
 
         return start * startWeight + end * endWeight;
     }
