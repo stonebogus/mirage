@@ -93,9 +93,9 @@ public readonly struct Vector3D(float x = 0, float y = 0, float z = 0) : IVector
     /// <inheritdoc />
     public static Vector3D Clamp(Vector3D value, Vector3D minimum, Vector3D maximum) =>
         new(
-            System.MathF.Clamp(value.X, minimum.X, maximum.X),
-            System.MathF.Clamp(value.Y, minimum.Y, maximum.Y),
-            System.MathF.Clamp(value.Z, minimum.Z, maximum.Z)
+            System.Math.Clamp(value.X, minimum.X, maximum.X),
+            System.Math.Clamp(value.Y, minimum.Y, maximum.Y),
+            System.Math.Clamp(value.Z, minimum.Z, maximum.Z)
         );
 
     /// <summary>

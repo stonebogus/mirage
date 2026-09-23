@@ -79,8 +79,8 @@ public readonly struct Vector2D(float x = 0, float y = 0) : IVector<Vector2D>
     /// <inheritdoc />
     public static Vector2D Clamp(Vector2D value, Vector2D minimum, Vector2D maximum) =>
         new(
-            System.MathF.Clamp(value.X, minimum.X, maximum.X),
-            System.MathF.Clamp(value.Y, minimum.Y, maximum.Y)
+            System.Math.Clamp(value.X, minimum.X, maximum.X),
+            System.Math.Clamp(value.Y, minimum.Y, maximum.Y)
         );
 
     /// <summary>

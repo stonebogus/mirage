@@ -102,10 +102,10 @@ public readonly struct Vector4D(float x = 0, float y = 0, float z = 0, float w =
     /// <inheritdoc />
     public static Vector4D Clamp(Vector4D value, Vector4D minimum, Vector4D maximum) =>
         new(
-            System.MathF.Clamp(value.X, minimum.X, maximum.X),
-            System.MathF.Clamp(value.Y, minimum.Y, maximum.Y),
-            System.MathF.Clamp(value.Z, minimum.Z, maximum.Z),
-            System.MathF.Clamp(value.W, minimum.W, maximum.W)
+            System.Math.Clamp(value.X, minimum.X, maximum.X),
+            System.Math.Clamp(value.Y, minimum.Y, maximum.Y),
+            System.Math.Clamp(value.Z, minimum.Z, maximum.Z),
+            System.Math.Clamp(value.W, minimum.W, maximum.W)
         );
 
     /// <inheritdoc />
