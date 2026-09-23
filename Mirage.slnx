@@ -10,5 +10,6 @@
     <Project Path="Engine/Graph/Mirage.Graph.csproj" />
     <Project Path="Engine/Graphics/Mirage.Graphics.csproj" />
     <Project Path="Engine/Renderer/Mirage.Renderer.csproj" />
+    <Project Path="Engine/Loader/Mirage.Loader.csproj" />
   </Folder>
 </Solution>
