@@ -17,6 +17,7 @@ namespace Mirage.Windowing.Windows;
 public sealed class SDL3Window(WindowOptions? options = null) : Window(options)
 {
     private IntPtr _nativeWindow;
+    private IntPtr _gpuDevice;
 
     private object? _publishingStore;
     private object? _publishingValue;
@@ -156,6 +157,55 @@ public sealed class SDL3Window(WindowOptions? options = null) : Window(options)
         Publish(window, _focused, () => flags.HasFlag(SDL.WindowFlags.InputFocus));
 
         Publish(window, Title, () => SDL.GetWindowTitle(window));
+
+    }
+
+    /// <summary>
+    /// Associates an SDL GPU device with this window so its VSync store can
+    /// control the GPU swapchain present mode.
+    /// </summary>
+    /// <param name="device">The claimed SDL GPU device.</param>
+    public void AttachGPUDevice(IntPtr device)
+    {
+        _gpuDevice = device;
+        ApplyVSync();
+    }
+
+    /// <summary>
+    /// Removes the SDL GPU device associated with this window.
+    /// </summary>
+    /// <param name="device">The previously associated SDL GPU device.</param>
+    public void DetachGPUDevice(IntPtr device)
+    {
+        if (_gpuDevice == device)
+            _gpuDevice = IntPtr.Zero;
+    }
+
+    private void ApplyVSync()
+    {
+        if (_gpuDevice == IntPtr.Zero || _nativeWindow == IntPtr.Zero)
+            return;
+
+        var presentMode = VSync.Get()
+            ? SDL.GPUPresentMode.VSync
+            : SDL.GPUPresentMode.Immediate;
+
+        if (!SDL.WindowSupportsGPUPresentMode(_gpuDevice, _nativeWindow, presentMode))
+        {
+            throw new InvalidOperationException(
+                $"SDL GPU present mode '{presentMode}' is unsupported: {SDL.GetError()}"
+            );
+        }
+
+        Ensure(
+            SDL.SetGPUSwapchainParameters(
+                _gpuDevice,
+                _nativeWindow,
+                SDL.GPUSwapchainComposition.SDR,
+                presentMode
+            ),
+            "Changing GPU swapchain VSync"
+        );
     }
 
     private static (int X, int Y) ToNativePosition(Vector2D position)
@@ -466,6 +516,15 @@ public sealed class SDL3Window(WindowOptions? options = null) : Window(options)
             return;
 
         Ensure(SDL.SetWindowTitle(window, title), "Changing window title");
+    }
+
+    /// <inheritdoc />
+    protected override void OnVSyncChanged(bool vsync)
+    {
+        if (!ShouldApply(VSync, vsync))
+            return;
+
+        ApplyVSync();
     }
 
     /// <inheritdoc />

@@ -32,6 +32,7 @@ public class WindowTest
         Assert.True(window.Resizable.Get());
         Assert.Equal(new Vector2D(800, 600), window.Size.Get());
         Assert.Equal("Mirage", window.Title.Get());
+        Assert.False(window.VSync.Get());
         Assert.True(window.Visible.Get());
         Assert.False(window.Focused.Get());
         Assert.False(window.Opened.Get());
@@ -59,6 +60,7 @@ public class WindowTest
                 Resizable = false,
                 Size = new Vector2D(1280, 720),
                 Title = "Main",
+                VSync = true,
                 Visible = false,
             }
         );
@@ -69,6 +71,7 @@ public class WindowTest
         Assert.False(window.Resizable.Get());
         Assert.Equal(new Vector2D(1280, 720), window.Size.Get());
         Assert.Equal("Main", window.Title.Get());
+        Assert.True(window.VSync.Get());
         Assert.False(window.Visible.Get());
     }
 
@@ -115,6 +118,7 @@ public class WindowTest
         window.Resizable.Set(false);
         window.Size.Set(new Vector2D(1024, 768));
         window.Title.Set("Updated");
+        window.VSync.Set(true);
         window.Visible.Set(false);
 
         Assert.Equal(WindowMode.Fullscreen, window.LastMode);
@@ -122,6 +126,7 @@ public class WindowTest
         Assert.False(window.LastResizable);
         Assert.Equal(new Vector2D(1024, 768), window.LastSize);
         Assert.Equal("Updated", window.LastTitle);
+        Assert.True(window.LastVSync);
         Assert.False(window.LastVisible);
     }
 
@@ -139,6 +144,7 @@ public class WindowTest
         public bool LastResizable { get; private set; }
         public Vector2D LastSize { get; private set; }
         public string LastTitle { get; private set; } = string.Empty;
+        public bool LastVSync { get; private set; }
         public bool LastVisible { get; private set; }
         public int OpenCalls { get; private set; }
 
@@ -160,6 +166,8 @@ public class WindowTest
         protected override void OnResize(Vector2D size) => LastSize = size;
 
         protected override void OnTitleChanged(string title) => LastTitle = title;
+
+        protected override void OnVSyncChanged(bool vsync) => LastVSync = vsync;
 
         protected override void OnVisibilityChanged(bool visible) => LastVisible = visible;
 

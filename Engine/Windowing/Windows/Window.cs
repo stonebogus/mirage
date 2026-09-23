@@ -44,6 +44,11 @@ public sealed class WindowOptions
     public string Title { get; init; } = "Mirage";
 
     /// <summary>
+    /// Gets a value indicating whether vertical synchronization is initially enabled.
+    /// </summary>
+    public bool VSync { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the window is initially visible.
     /// </summary>
     public bool Visible { get; init; } = true;
@@ -122,6 +127,7 @@ public abstract class Window : Destroyable
         Resizable = new Store<bool>(options.Resizable);
         Size = new Store<Vector2D>(options.Size);
         Title = new Store<string>(options.Title);
+        VSync = new Store<bool>(options.VSync);
         Visible = new Store<bool>(options.Visible);
 
         Mode.Connect(OnModeChanged, true);
@@ -129,6 +135,7 @@ public abstract class Window : Destroyable
         Resizable.Connect(OnResizableChanged, true);
         Size.Connect(OnResize, true);
         Title.Connect(OnTitleChanged, true);
+        VSync.Connect(OnVSyncChanged, true);
         Visible.Connect(OnVisibilityChanged, true);
     }
 
@@ -178,6 +185,11 @@ public abstract class Window : Destroyable
     public Store<string> Title { get; }
 
     /// <summary>
+    /// Gets the store that controls and reports whether vertical synchronization is enabled.
+    /// </summary>
+    public Store<bool> VSync { get; }
+
+    /// <summary>
     /// Gets the store that controls and reports whether the window is visible.
     /// </summary>
     public Store<bool> Visible { get; }
@@ -204,6 +216,7 @@ public abstract class Window : Destroyable
         Resizable.Destroy();
         Size.Destroy();
         Title.Destroy();
+        VSync.Destroy();
         Visible.Destroy();
     }
 
@@ -248,6 +261,15 @@ public abstract class Window : Destroyable
     /// </summary>
     /// <param name="title">The requested window title.</param>
     protected virtual void OnTitleChanged(string title) { }
+
+    /// <summary>
+    /// Applies a vertical synchronization change to the platform-specific window.
+    /// </summary>
+    /// <param name="vsync">
+    /// <see langword="true"/> to enable vertical synchronization; otherwise,
+    /// <see langword="false"/>.
+    /// </param>
+    protected virtual void OnVSyncChanged(bool vsync) { }
 
     /// <summary>
     /// Applies a visibility change to the platform-specific window.
