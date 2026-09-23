@@ -157,7 +157,6 @@ public sealed class SDL3Window(WindowOptions? options = null) : Window(options)
         Publish(window, _focused, () => flags.HasFlag(SDL.WindowFlags.InputFocus));
 
         Publish(window, Title, () => SDL.GetWindowTitle(window));
-
     }
 
     /// <summary>
@@ -186,9 +185,7 @@ public sealed class SDL3Window(WindowOptions? options = null) : Window(options)
         if (_gpuDevice == IntPtr.Zero || _nativeWindow == IntPtr.Zero)
             return;
 
-        var presentMode = VSync.Get()
-            ? SDL.GPUPresentMode.VSync
-            : SDL.GPUPresentMode.Immediate;
+        var presentMode = VSync.Get() ? SDL.GPUPresentMode.VSync : SDL.GPUPresentMode.Immediate;
 
         if (!SDL.WindowSupportsGPUPresentMode(_gpuDevice, _nativeWindow, presentMode))
         {
