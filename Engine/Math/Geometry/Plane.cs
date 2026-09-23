@@ -15,12 +15,12 @@ public readonly struct Plane : IEquatable<Plane>
     /// <summary>
     /// Gets the distance of the plane from the origin.
     /// </summary>
-    public readonly double Distance;
+    public readonly float Distance;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Plane"/> struct.
     /// </summary>
-    public Plane(Vector3D normal, double distance)
+    public Plane(Vector3D normal, float distance)
     {
         Normal = normal;
         Distance = distance;
@@ -29,7 +29,7 @@ public readonly struct Plane : IEquatable<Plane>
     /// <summary>
     /// Gets the signed distance from a point to the plane.
     /// </summary>
-    public double DistanceTo(Vector3D point) => Vector3D.Dot(Normal, point) + Distance;
+    public float DistanceTo(Vector3D point) => Vector3D.Dot(Normal, point) + Distance;
 
     /// <summary>
     /// Determines whether a point lies on the plane.
