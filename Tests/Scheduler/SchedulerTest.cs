@@ -1,5 +1,5 @@
 using Mirage.Common;
-using Mirage.Scheduler;
+using Mirage.Scheduler.Channels;
 using Mirage.Scheduler.Interfaces;
 
 namespace Tests.Scheduler;
@@ -20,8 +20,8 @@ public class SchedulerTest
     [Fact]
     public void Constructor_WithChannels_RegistersChannels()
     {
-        var first = new Channel("first");
-        var second = new Channel("second");
+        var first = new UpdateChannel("first");
+        var second = new UpdateChannel("second");
 
         var scheduler = new Mirage.Scheduler.Scheduler(channels: [first, second]);
 
@@ -33,8 +33,8 @@ public class SchedulerTest
     [Fact]
     public void Constructor_WithDuplicateChannelIdentifier_Throws()
     {
-        var first = new Channel("test");
-        var second = new Channel("test");
+        var first = new UpdateChannel("test");
+        var second = new UpdateChannel("test");
 
         Assert.Throws<InvalidOperationException>(() =>
             new Mirage.Scheduler.Scheduler(channels: [first, second])
@@ -47,36 +47,6 @@ public class SchedulerTest
         var scheduler = new Mirage.Scheduler.Scheduler(144);
 
         Assert.Equal(144, scheduler.TargetFramerate);
-    }
-
-    [Fact]
-    public void Start_ComposesChannelsBeforeRunning_AndOnlyOnce()
-    {
-        var composed = new Channel("composed");
-        var scheduler = new TrackingScheduler(composed);
-        var game = new TestGame(scheduler);
-
-        game.Start();
-        game.Stop();
-        game.Start();
-
-        Assert.Equal(1, scheduler.ComposeCalls);
-        Assert.Same(composed, scheduler.Channels["composed"]);
-
-        game.Stop();
-    }
-
-    [Fact]
-    public void Start_WhenComposedChannelDuplicatesRegisteredChannel_Throws()
-    {
-        var registered = new Channel("test");
-        var composed = new Channel("test");
-        var scheduler = new TrackingScheduler(composed, [registered]);
-        var game = new TestGame(scheduler);
-
-        Assert.Throws<InvalidOperationException>(game.Start);
-        Assert.Equal(ModuleState.Idle, scheduler.State.Get());
-        Assert.Same(registered, scheduler.Channels["test"]);
     }
 
     [Fact]
@@ -100,7 +70,7 @@ public class SchedulerTest
     public async Task Run_UpdatesChannels()
     {
         var entry = new TestUpdatable();
-        var channel = new Channel("test", entries: [entry]);
+        var channel = new UpdateChannel("test", entries: [entry]);
         var scheduler = new Mirage.Scheduler.Scheduler(0, [channel]);
         var game = new TestGame(scheduler);
 
@@ -127,13 +97,13 @@ public class SchedulerTest
     {
         var updateOrder = new List<string>();
 
-        var low = new TestChannel("low", ChannelPriority.Low, updateOrder);
+        var low = new TestChannel("low", UpdateChannelPriority.Low, updateOrder);
 
-        var normal = new TestChannel("normal", ChannelPriority.Normal, updateOrder);
+        var normal = new TestChannel("normal", UpdateChannelPriority.Normal, updateOrder);
 
-        var high = new TestChannel("high", ChannelPriority.High, updateOrder);
+        var high = new TestChannel("high", UpdateChannelPriority.High, updateOrder);
 
-        var critical = new TestChannel("critical", ChannelPriority.Critical, updateOrder);
+        var critical = new TestChannel("critical", UpdateChannelPriority.Critical, updateOrder);
 
         var scheduler = new Mirage.Scheduler.Scheduler(0, [low, normal, high, critical]);
 
@@ -190,7 +160,7 @@ public class SchedulerTest
     public void Run_WhenSchedulerIsIdle_DoesNotUpdateChannels()
     {
         var entry = new TestUpdatable();
-        var channel = new Channel("test", entries: [entry]);
+        var channel = new UpdateChannel("test", entries: [entry]);
         var scheduler = new Mirage.Scheduler.Scheduler(channels: [channel]);
 
         scheduler.Run();
@@ -198,28 +168,46 @@ public class SchedulerTest
         Assert.Equal(0, entry.UpdateCount);
     }
 
+    [Fact]
+    public void Start_ComposesChannelsBeforeRunning_AndOnlyOnce()
+    {
+        var composed = new UpdateChannel("composed");
+        var scheduler = new TrackingScheduler(composed);
+        var game = new TestGame(scheduler);
+
+        game.Start();
+        game.Stop();
+        game.Start();
+
+        Assert.Equal(1, scheduler.ComposeCalls);
+        Assert.Same(composed, scheduler.Channels["composed"]);
+
+        game.Stop();
+    }
+
+    [Fact]
+    public void Start_WhenComposedChannelDuplicatesRegisteredChannel_Throws()
+    {
+        var registered = new UpdateChannel("test");
+        var composed = new UpdateChannel("test");
+        var scheduler = new TrackingScheduler(composed, [registered]);
+        var game = new TestGame(scheduler);
+
+        Assert.Throws<InvalidOperationException>(game.Start);
+        Assert.Equal(ModuleState.Idle, scheduler.State.Get());
+        Assert.Same(registered, scheduler.Channels["test"]);
+    }
+
     private sealed class TestChannel(
         string identifier,
-        ChannelPriority priority,
+        UpdateChannelPriority priority,
         List<string> updateOrder
-    ) : Channel(identifier, priority)
+    ) : UpdateChannel(identifier, priority)
     {
         protected override void OnUpdate(double deltaTime)
         {
             lock (updateOrder)
                 updateOrder.Add(Identifier);
-        }
-    }
-
-    private sealed class TrackingScheduler(Channel composed, IEnumerable<Channel>? channels = null)
-        : Mirage.Scheduler.Scheduler(channels: channels)
-    {
-        public int ComposeCalls { get; private set; }
-
-        protected override IEnumerable<Channel> Compose()
-        {
-            ComposeCalls++;
-            return [composed];
         }
     }
 
@@ -232,6 +220,20 @@ public class SchedulerTest
         public void Update(double deltaTime)
         {
             Interlocked.Increment(ref UpdateCount);
+        }
+    }
+
+    private sealed class TrackingScheduler(
+        UpdateChannel composed,
+        IEnumerable<UpdateChannel>? channels = null
+    ) : Mirage.Scheduler.Scheduler(channels: channels)
+    {
+        public int ComposeCalls { get; private set; }
+
+        protected override IEnumerable<UpdateChannel> Compose()
+        {
+            ComposeCalls++;
+            return [composed];
         }
     }
 }
