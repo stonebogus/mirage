@@ -1,18 +1,19 @@
 using Mirage.Common.Lifecycle;
 using Mirage.Scheduler;
+using Mirage.Scheduler.Channels;
 using Mirage.Scheduler.Interfaces;
 
-namespace Tests.Scheduler;
+namespace Tests.Scheduler.Channels;
 
 public class ChannelTest
 {
     [Fact]
     public void Constructor_CreatesChannelWithDefaultValues()
     {
-        var channel = new Channel("test");
+        var channel = new UpdateChannel("test");
 
         Assert.Equal("test", channel.Identifier);
-        Assert.Equal(ChannelPriority.Normal, channel.Priority);
+        Assert.Equal(UpdateChannelPriority.Normal, channel.Priority);
         Assert.Empty(channel.Entries);
     }
 
@@ -21,7 +22,7 @@ public class ChannelTest
     {
         var entry = new TestUpdatable();
 
-        var channel = new Channel("test", entries: [entry, entry]);
+        var channel = new UpdateChannel("test", entries: [entry, entry]);
 
         Assert.Single(channel.Entries);
     }
@@ -32,7 +33,7 @@ public class ChannelTest
         var first = new TestUpdatable();
         var second = new TestUpdatable();
 
-        var channel = new Channel("test", entries: [first, second]);
+        var channel = new UpdateChannel("test", entries: [first, second]);
 
         Assert.Equal(2, channel.Entries.Count);
         Assert.Contains(first, channel.Entries);
@@ -42,29 +43,18 @@ public class ChannelTest
     [Fact]
     public void Constructor_WithPriority_SetsPriority()
     {
-        var channel = new Channel("test", ChannelPriority.High);
+        var channel = new UpdateChannel("test", UpdateChannelPriority.High);
 
-        Assert.Equal(ChannelPriority.High, channel.Priority);
-    }
-
-    [Fact]
-    public void Update_ComposesEntriesBeforeUpdating_AndOnlyOnce()
-    {
-        var entry = new TestUpdatable();
-        var channel = new TrackingChannel([entry]);
-
-        channel.Update(0.25);
-        channel.Update(0.5);
-
-        Assert.Equal(1, channel.ComposeCalls);
-        Assert.True(channel.SawComposedEntryDuringUpdate);
-        Assert.Equal(2, entry.UpdateCount);
+        Assert.Equal(UpdateChannelPriority.High, channel.Priority);
     }
 
     [Fact]
     public void Destroy_ClearsEntries()
     {
-        var channel = new Channel("test", entries: [new TestUpdatable(), new TestUpdatable()]);
+        var channel = new UpdateChannel(
+            "test",
+            entries: [new TestUpdatable(), new TestUpdatable()]
+        );
 
         channel.Destroy();
 
@@ -84,11 +74,25 @@ public class ChannelTest
     }
 
     [Fact]
+    public void Update_ComposesEntriesBeforeUpdating_AndOnlyOnce()
+    {
+        var entry = new TestUpdatable();
+        var channel = new TrackingChannel([entry]);
+
+        channel.Update(0.25);
+        channel.Update(0.5);
+
+        Assert.Equal(1, channel.ComposeCalls);
+        Assert.True(channel.SawComposedEntryDuringUpdate);
+        Assert.Equal(2, entry.UpdateCount);
+    }
+
+    [Fact]
     public void Update_UpdatesAllEntries()
     {
         var first = new TestUpdatable();
         var second = new TestUpdatable();
-        var channel = new Channel("test", entries: [first, second]);
+        var channel = new UpdateChannel("test", entries: [first, second]);
 
         channel.Update(0.25);
 
@@ -101,7 +105,7 @@ public class ChannelTest
     [Fact]
     public void Update_WhenDestroyed_Throws()
     {
-        var channel = new Channel("test");
+        var channel = new UpdateChannel("test");
 
         channel.Destroy();
 
@@ -111,7 +115,7 @@ public class ChannelTest
     private sealed class TestChannel(
         List<string> updateOrder,
         IEnumerable<IUpdatable>? entries = null
-    ) : Channel("test", entries: entries)
+    ) : UpdateChannel("test", entries: entries)
     {
         protected override void OnUpdate(double deltaTime)
         {
@@ -119,7 +123,21 @@ public class ChannelTest
         }
     }
 
-    private sealed class TrackingChannel(IEnumerable<IUpdatable> composed) : Channel("tracking")
+    private sealed class TestUpdatable(List<string>? updateOrder = null) : IUpdatable
+    {
+        public double LastDeltaTime { get; private set; }
+        public int UpdateCount { get; private set; }
+
+        public void Update(double deltaTime)
+        {
+            UpdateCount++;
+            LastDeltaTime = deltaTime;
+            updateOrder?.Add("entry");
+        }
+    }
+
+    private sealed class TrackingChannel(IEnumerable<IUpdatable> composed)
+        : UpdateChannel("tracking")
     {
         private readonly IEnumerable<IUpdatable> _composed = composed;
 
@@ -136,19 +154,6 @@ public class ChannelTest
         protected override void OnUpdate(double deltaTime)
         {
             SawComposedEntryDuringUpdate = Entries.Count == _composed.Count();
-        }
-    }
-
-    private sealed class TestUpdatable(List<string>? updateOrder = null) : IUpdatable
-    {
-        public double LastDeltaTime { get; private set; }
-        public int UpdateCount { get; private set; }
-
-        public void Update(double deltaTime)
-        {
-            UpdateCount++;
-            LastDeltaTime = deltaTime;
-            updateOrder?.Add("entry");
         }
     }
 }
