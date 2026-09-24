@@ -6,7 +6,7 @@ namespace Mirage.Renderer;
 /// <summary>
 /// Represents the rendering priority of a layer.
 /// </summary>
-public enum LayerPriority
+public enum RenderLayerPriority
 {
     /// <summary>
     /// Low rendering priority.
@@ -32,7 +32,7 @@ public enum LayerPriority
 /// <summary>
 /// Represents a prioritized collection of renderable entries.
 /// </summary>
-public class Layer : Destroyable
+public class RenderLayer : Destroyable
 {
     private bool _composed;
 
@@ -49,7 +49,7 @@ public class Layer : Destroyable
     /// <summary>
     /// Gets the rendering priority of this layer.
     /// </summary>
-    public readonly LayerPriority Priority;
+    public readonly RenderLayerPriority Priority;
 
     /// <summary>
     /// Initializes a new rendering layer.
@@ -63,9 +63,9 @@ public class Layer : Destroyable
     /// <param name="entries">
     /// The initial renderable entries contained in the layer.
     /// </param>
-    public Layer(
+    public RenderLayer(
         string identifier,
-        LayerPriority priority = LayerPriority.Normal,
+        RenderLayerPriority priority = RenderLayerPriority.Normal,
         IEnumerable<IRenderable>? entries = null
     )
     {
