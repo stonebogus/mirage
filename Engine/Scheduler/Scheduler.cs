@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Mirage.Common;
 using Mirage.Common.Collections;
+using Mirage.Scheduler.Channels;
 
 namespace Mirage.Scheduler;
 
@@ -14,7 +15,7 @@ public class Scheduler : Module
     /// <summary>
     /// Gets the channels managed by the scheduler.
     /// </summary>
-    public readonly ReactiveDictionary<string, Channel> Channels = [];
+    public readonly ReactiveDictionary<string, UpdateChannel> Channels = [];
 
     /// <summary>
     /// Gets the target number of frames per second.
@@ -26,7 +27,7 @@ public class Scheduler : Module
     /// </summary>
     /// <param name="targetFramerate">The target number of frames per second.</param>
     /// <param name="channels">The channels managed by the scheduler.</param>
-    public Scheduler(int targetFramerate = 60, IEnumerable<Channel>? channels = null)
+    public Scheduler(int targetFramerate = 60, IEnumerable<UpdateChannel>? channels = null)
         : base("Scheduler")
     {
         TargetFramerate = targetFramerate;
@@ -84,7 +85,7 @@ public class Scheduler : Module
     /// Channels supplied to the constructor are registered before composed
     /// channels.
     /// </remarks>
-    protected virtual IEnumerable<Channel> Compose()
+    protected virtual IEnumerable<UpdateChannel> Compose()
     {
         yield break;
     }
