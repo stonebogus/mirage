@@ -1,7 +1,8 @@
-using Mirage.Loader.Resources;
+using Mirage.Graphics.Resources;
+using Mirage.Loading;
 using StbImageSharp;
 
-namespace Mirage.Loader.Decoders;
+namespace Mirage.Graphics.Decoders;
 
 public sealed class RasterImageDecoder : Decoder<RasterImage>
 {

@@ -6,9 +6,5 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Mirage.Common.csproj" />
-    <ProjectReference Include="..\Loading\Mirage.Loading.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="StbImageSharp" Version="2.30.16" />
   </ItemGroup>
 </Project>

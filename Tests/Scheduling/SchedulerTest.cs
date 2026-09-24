@@ -1,0 +1,239 @@
+using Mirage.Common;
+using Mirage.Scheduling.Channels;
+using Mirage.Scheduling.Interfaces;
+
+namespace Tests.Scheduling;
+
+public class SchedulerTest
+{
+    [Fact]
+    public void Constructor_CreatesSchedulerWithDefaultValues()
+    {
+        var scheduler = new Mirage.Scheduling.Scheduler();
+
+        Assert.Equal(60, scheduler.TargetFramerate);
+        Assert.Empty(scheduler.Channels);
+        Assert.Equal(0, scheduler.DeltaTime);
+        Assert.Equal(0, scheduler.Framerate);
+    }
+
+    [Fact]
+    public void Constructor_WithChannels_RegistersChannels()
+    {
+        var first = new UpdateChannel("first");
+        var second = new UpdateChannel("second");
+
+        var scheduler = new Mirage.Scheduling.Scheduler(channels: [first, second]);
+
+        Assert.Equal(2, scheduler.Channels.Count);
+        Assert.Same(first, scheduler.Channels["first"]);
+        Assert.Same(second, scheduler.Channels["second"]);
+    }
+
+    [Fact]
+    public void Constructor_WithDuplicateChannelIdentifier_Throws()
+    {
+        var first = new UpdateChannel("test");
+        var second = new UpdateChannel("test");
+
+        Assert.Throws<InvalidOperationException>(() =>
+            new Mirage.Scheduling.Scheduler(channels: [first, second])
+        );
+    }
+
+    [Fact]
+    public void Constructor_WithTargetFramerate_SetsTargetFramerate()
+    {
+        var scheduler = new Mirage.Scheduling.Scheduler(144);
+
+        Assert.Equal(144, scheduler.TargetFramerate);
+    }
+
+    [Fact]
+    public async Task Run_StopsWhenSchedulerStops()
+    {
+        var scheduler = new Mirage.Scheduling.Scheduler(0);
+        var game = new TestGame(scheduler);
+
+        game.Start();
+
+        var runTask = Task.Run(scheduler.Run);
+
+        Assert.True(SpinWait.SpinUntil(() => scheduler.DeltaTime > 0, TimeSpan.FromSeconds(1)));
+
+        game.Stop();
+
+        await runTask.WaitAsync(TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task Run_UpdatesChannels()
+    {
+        var entry = new TestUpdatable();
+        var channel = new UpdateChannel("test", entries: [entry]);
+        var scheduler = new Mirage.Scheduling.Scheduler(0, [channel]);
+        var game = new TestGame(scheduler);
+
+        game.Start();
+
+        var runTask = Task.Run(scheduler.Run);
+
+        Assert.True(
+            SpinWait.SpinUntil(
+                () => Volatile.Read(ref entry.UpdateCount) > 0,
+                TimeSpan.FromSeconds(1)
+            )
+        );
+
+        game.Stop();
+
+        await runTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.True(Volatile.Read(ref entry.UpdateCount) > 0);
+    }
+
+    [Fact]
+    public async Task Run_UpdatesChannelsInPriorityOrder()
+    {
+        var updateOrder = new List<string>();
+
+        var low = new TestChannel("low", UpdateChannelPriority.Low, updateOrder);
+
+        var normal = new TestChannel("normal", UpdateChannelPriority.Normal, updateOrder);
+
+        var high = new TestChannel("high", UpdateChannelPriority.High, updateOrder);
+
+        var critical = new TestChannel("critical", UpdateChannelPriority.Critical, updateOrder);
+
+        var scheduler = new Mirage.Scheduling.Scheduler(0, [low, normal, high, critical]);
+
+        var game = new TestGame(scheduler);
+
+        game.Start();
+
+        var runTask = Task.Run(scheduler.Run);
+
+        Assert.True(
+            SpinWait.SpinUntil(
+                () =>
+                {
+                    lock (updateOrder)
+                        return updateOrder.Count >= 4;
+                },
+                TimeSpan.FromSeconds(1)
+            )
+        );
+
+        game.Stop();
+
+        await runTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+        string[] firstFrame;
+
+        lock (updateOrder)
+            firstFrame = [.. updateOrder.Take(4)];
+
+        Assert.Equal(["critical", "high", "normal", "low"], firstFrame);
+    }
+
+    [Fact]
+    public async Task Run_UpdatesDeltaTimeAndFramerate()
+    {
+        var scheduler = new Mirage.Scheduling.Scheduler(0);
+        var game = new TestGame(scheduler);
+
+        game.Start();
+
+        var runTask = Task.Run(scheduler.Run);
+
+        Assert.True(SpinWait.SpinUntil(() => scheduler.DeltaTime > 0, TimeSpan.FromSeconds(1)));
+
+        game.Stop();
+
+        await runTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.True(scheduler.DeltaTime > 0);
+        Assert.True(scheduler.Framerate > 0);
+    }
+
+    [Fact]
+    public void Run_WhenSchedulerIsIdle_DoesNotUpdateChannels()
+    {
+        var entry = new TestUpdatable();
+        var channel = new UpdateChannel("test", entries: [entry]);
+        var scheduler = new Mirage.Scheduling.Scheduler(channels: [channel]);
+
+        scheduler.Run();
+
+        Assert.Equal(0, entry.UpdateCount);
+    }
+
+    [Fact]
+    public void Start_ComposesChannelsBeforeRunning_AndOnlyOnce()
+    {
+        var composed = new UpdateChannel("composed");
+        var scheduler = new TrackingScheduler(composed);
+        var game = new TestGame(scheduler);
+
+        game.Start();
+        game.Stop();
+        game.Start();
+
+        Assert.Equal(1, scheduler.ComposeCalls);
+        Assert.Same(composed, scheduler.Channels["composed"]);
+
+        game.Stop();
+    }
+
+    [Fact]
+    public void Start_WhenComposedChannelDuplicatesRegisteredChannel_Throws()
+    {
+        var registered = new UpdateChannel("test");
+        var composed = new UpdateChannel("test");
+        var scheduler = new TrackingScheduler(composed, [registered]);
+        var game = new TestGame(scheduler);
+
+        Assert.Throws<InvalidOperationException>(game.Start);
+        Assert.Equal(ModuleState.Idle, scheduler.State.Get());
+        Assert.Same(registered, scheduler.Channels["test"]);
+    }
+
+    private sealed class TestChannel(
+        string identifier,
+        UpdateChannelPriority priority,
+        List<string> updateOrder
+    ) : UpdateChannel(identifier, priority)
+    {
+        protected override void OnUpdate(double deltaTime)
+        {
+            lock (updateOrder)
+                updateOrder.Add(Identifier);
+        }
+    }
+
+    private sealed class TestGame(params Module[] modules) : Game(modules);
+
+    private sealed class TestUpdatable : IUpdatable
+    {
+        public int UpdateCount;
+
+        public void Update(double deltaTime)
+        {
+            Interlocked.Increment(ref UpdateCount);
+        }
+    }
+
+    private sealed class TrackingScheduler(
+        UpdateChannel composed,
+        IEnumerable<UpdateChannel>? channels = null
+    ) : Mirage.Scheduling.Scheduler(channels: channels)
+    {
+        public int ComposeCalls { get; private set; }
+
+        protected override IEnumerable<UpdateChannel> Compose()
+        {
+            ComposeCalls++;
+            return [composed];
+        }
+    }
+}

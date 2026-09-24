@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Mirage.Common.csproj" />
-    <ProjectReference Include="..\Graph\Mirage.Graph.csproj" />
+    <ProjectReference Include="..\Noding\Mirage.Noding.csproj" />
     <ProjectReference Include="..\Math\Mirage.Math.csproj" />
   </ItemGroup>
 </Project>

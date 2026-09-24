@@ -1,13 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\Engine\Common\Mirage.Common.csproj" />
-    <ProjectReference Include="..\Engine\Graph\Mirage.Graph.csproj" />
+    <ProjectReference Include="..\Engine\Graphics\Mirage.Graphics.csproj" />
+    <ProjectReference Include="..\Engine\Noding\Mirage.Noding.csproj" />
     <ProjectReference Include="..\Engine\Math\Mirage.Math.csproj" />
-    <ProjectReference Include="..\Engine\Scheduler\Mirage.Scheduler.csproj" />
+    <ProjectReference Include="..\Engine\Rendering\Mirage.Rendering.csproj" />
+    <ProjectReference Include="..\Engine\Scheduling\Mirage.Scheduling.csproj" />
     <ProjectReference Include="..\Engine\Spatial\Mirage.Spatial.csproj" />
     <ProjectReference Include="..\Engine\Windowing\Mirage.Windowing.csproj" />
   </ItemGroup>
-
+  <ItemGroup>
+    <Content Include="Shaders/**/*.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>Shaders/%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </Content>
+  </ItemGroup>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>

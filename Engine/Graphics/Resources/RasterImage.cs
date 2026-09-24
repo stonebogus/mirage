@@ -1,6 +1,6 @@
 using Mirage.Common;
 
-namespace Mirage.Loader.Resources;
+namespace Mirage.Graphics.Resources;
 
 /// <summary>
 /// Specifies the in-memory layout of image pixels.

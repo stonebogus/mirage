@@ -1,7 +1,7 @@
 using Mirage.Common.Events;
-using Mirage.Graph;
 using Mirage.Math;
 using Mirage.Math.Vectors;
+using Mirage.Noding;
 
 namespace Mirage.Spatial.Nodes;
 
