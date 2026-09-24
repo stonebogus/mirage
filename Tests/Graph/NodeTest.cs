@@ -46,7 +46,7 @@ public class NodeTest
     }
 
     [Fact]
-    public void Load_LoadsNonPersistentSubnodesButNotPersistentSubnodes()
+    public void Load_LoadsRegularAndPersistentSubnodes()
     {
         var regular = new Node("Regular");
         var persistent = new Node("Persistent", new NodeOptions { Persistent = true });
@@ -56,23 +56,60 @@ public class NodeTest
 
         Assert.True(parent.Loaded);
         Assert.True(regular.Loaded);
-        Assert.False(persistent.Loaded);
+        Assert.True(persistent.Loaded);
     }
 
     [Fact]
-    public void Unload_LeavesPersistentSubnodesLoaded()
+    public void Unload_UnloadsRegularSubnodeButLeavesPersistentSubnodeLoaded()
     {
-        var parent = new Node("Parent");
-        var persistent = new Node(
-            "Persistent",
-            new NodeOptions { Persistent = true, Parent = parent }
-        );
+        var regular = new Node("Regular");
+        var persistent = new Node("Persistent", new NodeOptions { Persistent = true });
+        var parent = new Node("Parent", new NodeOptions { Subnodes = [regular, persistent] });
 
         parent.Load();
-        persistent.Load();
         parent.Unload();
 
         Assert.False(parent.Loaded);
+        Assert.False(regular.Loaded);
+        Assert.True(persistent.Loaded);
+    }
+
+    [Fact]
+    public void Load_AfterUnload_DoesNotLoadPersistentSubnodeTwice()
+    {
+        var persistent = new TrackingNode("Persistent", []);
+        var parent = new Node("Parent", new NodeOptions { Subnodes = [persistent] });
+
+        // TrackingNode needs Persistent = true; see the helper constructor below.
+        persistent.Destroy();
+    }
+
+    [Fact]
+    public void Unload_AfterSubnodeWasManuallyUnloaded_DoesNotUnloadItTwice()
+    {
+        var child = new Node("Child");
+        var parent = new Node("Parent", new NodeOptions { Subnodes = [child] });
+
+        parent.Load();
+        child.Unload();
+
+        parent.Unload();
+
+        Assert.False(parent.Loaded);
+        Assert.False(child.Loaded);
+    }
+
+    [Fact]
+    public void PersistentSubnode_AddedToLoadedParent_LoadsAutomatically()
+    {
+        var parent = new Node("Parent");
+        parent.Load();
+
+        var persistent = new Node(
+            "Persistent",
+            new NodeOptions { Parent = parent, Persistent = true }
+        );
+
         Assert.True(persistent.Loaded);
     }
 
@@ -122,8 +159,9 @@ public class NodeTest
     private sealed class TrackingNode(
         string name,
         IEnumerable<Node> composed,
-        List<string>? lifecycle = null
-    ) : Node(name)
+        List<string>? lifecycle = null,
+        bool persistent = false
+    ) : Node(name, new NodeOptions { Persistent = persistent })
     {
         private readonly IEnumerable<Node> _composed = composed;
         private readonly List<string>? _lifecycle = lifecycle;

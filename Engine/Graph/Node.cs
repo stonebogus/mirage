@@ -18,8 +18,7 @@ public class NodeOptions
     public Node? Parent { get; init; }
 
     /// <summary>
-    /// Gets whether the node persists independently of recursive parent
-    /// lifecycle operations.
+    /// Gets whether the node remains loaded when its parent is unloaded.
     /// </summary>
     public bool Persistent { get; init; }
 
@@ -340,12 +339,11 @@ public class Node : Destroyable
     public readonly Store<Node?> Parent;
 
     /// <summary>
-    /// Gets a value indicating whether the node persists independently of
-    /// recursive parent lifecycle operations.
+    /// Gets whether the node remains loaded when its parent is unloaded.
     /// </summary>
     /// <remarks>
-    /// Persistent nodes are not automatically loaded or unloaded as part of
-    /// their parent's recursive lifecycle operations.
+    /// Persistent nodes are loaded with their parent, but are not automatically
+    /// unloaded with it. They can still be unloaded or destroyed explicitly.
     /// </remarks>
     public readonly bool Persistent;
 
@@ -464,15 +462,17 @@ public class Node : Destroyable
         if (parent is not null && !parent.Subnodes.Contains(this))
             parent.Subnodes.Add(this);
 
-        if (Persistent)
-            return;
-
         var shouldBeLoaded = parent?.Loaded == true;
 
-        if (shouldBeLoaded && !Loaded)
-            Load();
-        else if (!shouldBeLoaded && Loaded)
-            Unload();
+        switch (shouldBeLoaded)
+        {
+            case true when !Loaded:
+                Load();
+                break;
+            case false when Loaded && !Persistent:
+                Unload();
+                break;
+        }
     }
 
     private void OnSubnodeAdded(Node node)
@@ -596,17 +596,15 @@ public class Node : Destroyable
     }
 
     /// <summary>
-    /// Loads the node and all non-persistent subnodes.
+    /// Loads the node and its subnodes that are not already loaded.
     /// </summary>
     /// <remarks>
-    /// The node must not already be loaded. If the node has a parent, that
-    /// parent must be loaded first.
+    /// The node must not already be loaded. If it has a parent, that parent
+    /// must be loaded first.
     ///
-    /// Persistent subnodes are not automatically loaded as part of this
-    /// operation.
-    ///
-    /// <see cref="OnLoad"/> is invoked before the node enters the loaded state.
-    /// Subnodes are loaded after their parent.
+    /// <see cref="OnLoad"/> is invoked after this node enters the loaded state
+    /// and before its subnodes are loaded. Persistent subnodes that remained
+    /// loaded are not loaded again.
     /// </remarks>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the node has already been destroyed.
@@ -637,10 +635,8 @@ public class Node : Destroyable
         {
             foreach (var node in Subnodes)
             {
-                if (node.Persistent)
-                    continue;
-
-                node.Load();
+                if (!node.Loaded)
+                    node.Load();
             }
         }
         catch
@@ -662,14 +658,12 @@ public class Node : Destroyable
     }
 
     /// <summary>
-    /// Unloads the node and all non-persistent subnodes.
+    /// Unloads the node and its loaded, non-persistent subnodes.
     /// </summary>
     /// <remarks>
-    /// Persistent subnodes remain loaded when their parent is unloaded.
-    ///
-    /// Subnodes are unloaded before their parent. <see cref="OnUnload"/> is
-    /// invoked after all non-persistent subnodes have been unloaded and before
-    /// this node leaves the loaded state.
+    /// Persistent subnodes retain their current loaded state. Non-persistent
+    /// subnodes are unloaded before their parent. <see cref="OnUnload"/> is
+    /// invoked before this node leaves the loaded state.
     /// </remarks>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the node has already been destroyed.
@@ -686,10 +680,8 @@ public class Node : Destroyable
 
         foreach (var node in Subnodes)
         {
-            if (node.Persistent)
-                continue;
-
-            node.Unload();
+            if (node is { Persistent: false, Loaded: true })
+                node.Unload();
         }
 
         OnUnload();
