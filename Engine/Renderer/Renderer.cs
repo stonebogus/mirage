@@ -32,7 +32,7 @@ public class Renderer : Module, IUpdatable
     /// <summary>
     /// Gets the layers managed by the renderer.
     /// </summary>
-    public readonly ReactiveDictionary<string, Layer> Layers = [];
+    public readonly ReactiveDictionary<string, RenderLayer> Layers = [];
 
     /// <summary>
     /// Initializes a new renderer.
@@ -49,7 +49,7 @@ public class Renderer : Module, IUpdatable
     public Renderer(
         RendererBackend backend,
         Color? clearColor = null,
-        IEnumerable<Layer>? layers = null
+        IEnumerable<RenderLayer>? layers = null
     )
         : base("Renderer")
     {
@@ -68,7 +68,7 @@ public class Renderer : Module, IUpdatable
         Render(deltaTime);
     }
 
-    private void AddLayer(Layer layer)
+    private void AddLayer(RenderLayer layer)
     {
         ArgumentNullException.ThrowIfNull(layer);
 
@@ -103,7 +103,7 @@ public class Renderer : Module, IUpdatable
     /// Composition occurs once when the renderer starts. Layers supplied to
     /// the constructor are registered before composed layers.
     /// </remarks>
-    protected virtual IEnumerable<Layer> Compose()
+    protected virtual IEnumerable<RenderLayer> Compose()
     {
         yield break;
     }
