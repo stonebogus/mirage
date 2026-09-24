@@ -1,12 +1,12 @@
 using Mirage.Common.Lifecycle;
 using Mirage.Scheduler.Interfaces;
 
-namespace Mirage.Scheduler;
+namespace Mirage.Scheduler.Channels;
 
 /// <summary>
 /// Represents the priority of a channel.
 /// </summary>
-public enum ChannelPriority
+public enum UpdateChannelPriority
 {
     /// <summary>
     /// Low priority.
@@ -32,7 +32,7 @@ public enum ChannelPriority
 /// <summary>
 /// Represents a prioritized collection of updatable entries.
 /// </summary>
-public class Channel : Destroyable
+public class UpdateChannel : Destroyable
 {
     private bool _composed;
 
@@ -49,17 +49,17 @@ public class Channel : Destroyable
     /// <summary>
     /// Gets the priority of this channel.
     /// </summary>
-    public readonly ChannelPriority Priority;
+    public readonly UpdateChannelPriority Priority;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Channel"/> class.
+    /// Initializes a new instance of the <see cref="UpdateChannel"/> class.
     /// </summary>
     /// <param name="identifier">The unique identifier for the channel.</param>
     /// <param name="priority">The priority of the channel.</param>
     /// <param name="entries">The initial updatable entries in the channel.</param>
-    public Channel(
+    public UpdateChannel(
         string identifier,
-        ChannelPriority priority = ChannelPriority.Normal,
+        UpdateChannelPriority priority = UpdateChannelPriority.Normal,
         IEnumerable<IUpdatable>? entries = null
     )
     {
@@ -69,18 +69,6 @@ public class Channel : Destroyable
         foreach (var entry in entries ?? [])
             Entries.Add(entry);
     }
-
-    /// <inheritdoc />
-    protected override void OnDestroy()
-    {
-        Entries.Clear();
-    }
-
-    /// <summary>
-    /// Called after all entries in the channel have been updated.
-    /// </summary>
-    /// <param name="deltaTime">The elapsed time since the previous update.</param>
-    protected virtual void OnUpdate(double deltaTime) { }
 
     private void EnsureComposed()
     {
@@ -112,6 +100,18 @@ public class Channel : Destroyable
     {
         yield break;
     }
+
+    /// <inheritdoc />
+    protected override void OnDestroy()
+    {
+        Entries.Clear();
+    }
+
+    /// <summary>
+    /// Called after all entries in the channel have been updated.
+    /// </summary>
+    /// <param name="deltaTime">The elapsed time since the previous update.</param>
+    protected virtual void OnUpdate(double deltaTime) { }
 
     /// <summary>
     /// Updates all entries in the channel.
