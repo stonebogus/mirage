@@ -7,7 +7,7 @@ namespace Mirage.Spatial.Nodes;
 /// <summary>
 /// Provides optional values used to initialize a <see cref="SpatialNode"/>.
 /// </summary>
-public sealed class SpatialNodeOptions : NodeOptions
+public class SpatialNodeOptions : NodeOptions
 {
     /// <summary>
     /// Gets the initial position relative to the node's spatial parent.
