@@ -1,6 +1,8 @@
+using System.Numerics;
 using Mirage.Common;
 using Mirage.Common.Collections;
 using Mirage.Common.Events;
+using Mirage.Graphics.Interfaces;
 using Mirage.Graphics.Primitives;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Windowing;
@@ -13,7 +15,14 @@ namespace Mirage.Rendering;
 public class Renderer : Module, IUpdatable
 {
     private readonly RenderSurface _surface;
+    private readonly Window _window;
     private bool _composed;
+
+    /// <summary>
+    /// Gets the camera used to draw world coordinates.
+    /// Set to null to draw directly in screen coordinates.
+    /// </summary>
+    public readonly Store<ICamera?> Camera;
 
     /// <summary>
     /// Gets the color used to clear each frame.
@@ -23,7 +32,7 @@ public class Renderer : Module, IUpdatable
     /// <summary>
     /// Gets the rendering layers.
     /// </summary>
-    public readonly ReactiveDictionary<string, RenderLayer> Layers = [];
+    public readonly ReactiveDictionary<string, DrawLayer> Layers = [];
 
     /// <summary>
     /// Initializes a renderer for the specified window.
@@ -31,14 +40,15 @@ public class Renderer : Module, IUpdatable
     public Renderer(
         Window window,
         Color? clearColor = null,
-        IEnumerable<RenderLayer>? layers = null
+        IEnumerable<DrawLayer>? layers = null,
+        ICamera? camera = null
     )
         : base("Renderer")
     {
-        ArgumentNullException.ThrowIfNull(window);
-
+        _window = window;
         _surface = new RenderSurface(window);
         ClearColor = new Store<Color>(clearColor ?? Color.Black);
+        Camera = new Store<ICamera?>(camera);
 
         foreach (var layer in layers ?? [])
             Layers.Add(layer.Identifier, layer);
@@ -61,7 +71,7 @@ public class Renderer : Module, IUpdatable
     /// <summary>
     /// Provides additional layers when the renderer starts.
     /// </summary>
-    protected virtual IEnumerable<RenderLayer> Compose()
+    protected virtual IEnumerable<DrawLayer> Compose()
     {
         yield break;
     }
@@ -75,6 +85,7 @@ public class Renderer : Module, IUpdatable
         Layers.Destroy();
         ClearColor.Destroy();
         _surface.Stop();
+        Camera.Destroy();
     }
 
     /// <inheritdoc />
@@ -92,12 +103,12 @@ public class Renderer : Module, IUpdatable
     /// </summary>
     public void Render(double deltaTime)
     {
-        var context = _surface.BeginFrame(deltaTime, ClearColor.Get());
+        var context = _surface.BeginFrame(deltaTime, ClearColor.Get(), Camera.Get());
 
         try
         {
             foreach (var (_, layer) in Layers.OrderBy(pair => pair.Value.Priority))
-                layer.Render(context);
+                layer.Draw(context);
         }
         catch
         {

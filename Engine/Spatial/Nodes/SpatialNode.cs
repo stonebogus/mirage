@@ -17,7 +17,7 @@ public class SpatialNodeOptions : NodeOptions
     /// <summary>
     /// Gets the initial local rotation, expressed in radians.
     /// </summary>
-    public float Rotation { get; init; }
+    public float Rotation { get; init; } = 0f;
 
     /// <summary>
     /// Gets the initial local scale.
@@ -32,9 +32,45 @@ public class SpatialNodeOptions : NodeOptions
 /// Position, rotation, and scale are local to the node. Ordinary nodes between
 /// spatial nodes organize the tree without adding a transformation.
 /// </remarks>
-public class SpatialNode(string name = "SpatialNode", SpatialNodeOptions? options = null)
-    : Node(name, options)
+public class SpatialNode : Node
 {
+    private Vector2 _cachedPosition;
+    private float _cachedRotation;
+    private Vector2 _cachedScale;
+    private bool _hasCachedLocalTransform;
+
+    /// <summary>
+    /// Gets the position relative to the node's spatial parent.
+    /// </summary>
+    public readonly Store<Vector2> Position;
+
+    /// <summary>
+    /// Gets the local rotation, expressed in radians.
+    /// </summary>
+    public readonly Store<float> Rotation;
+
+    /// <summary>
+    /// Gets the local scale.
+    /// </summary>
+    public readonly Store<Vector2> Scale;
+
+    /// <summary>
+    /// Initializes a spatial node.
+    /// </summary>
+    /// <param name="name">The initial name of the node.</param>
+    /// <param name="options">
+    /// The optional values used to initialize the node.
+    /// </param>
+    public SpatialNode(string name = "SpatialNode", SpatialNodeOptions? options = null)
+        : base(name, options)
+    {
+        options ??= new SpatialNodeOptions();
+
+        Position = new Store<Vector2>(options.Position);
+        Rotation = new Store<float>(options.Rotation);
+        Scale = new Store<Vector2>(options.Scale);
+    }
+
     /// <summary>
     /// Gets the world position of this node's origin.
     /// </summary>
@@ -69,23 +105,47 @@ public class SpatialNode(string name = "SpatialNode", SpatialNodeOptions? option
     /// <summary>
     /// Gets the transformation defined by this node's local values.
     /// </summary>
-    public Matrix3x2 LocalTransform =>
-        Matrix3x2.CreateScale(Scale.Get())
-        * Matrix3x2.CreateRotation(Rotation.Get())
-        * Matrix3x2.CreateTranslation(Position.Get());
+    /// <remarks>
+    /// The matrix is recalculated only when position, rotation, or scale
+    /// has changed since the previous read.
+    /// </remarks>
+    public Matrix3x2 LocalTransform
+    {
+        get
+        {
+            var position = Position.Get();
+            var rotation = Rotation.Get();
+            var scale = Scale.Get();
 
-    /// <summary>
-    /// Gets the position relative to the node's spatial parent.
-    /// </summary>
-    public Store<Vector2> Position { get; } = new(options?.Position ?? Vector2.Zero);
+            if (
+                !_hasCachedLocalTransform
+                || position != _cachedPosition
+                || rotation != _cachedRotation
+                || scale != _cachedScale
+            )
+            {
+                field =
+                    Matrix3x2.CreateScale(scale)
+                    * Matrix3x2.CreateRotation(rotation)
+                    * Matrix3x2.CreateTranslation(position);
 
-    /// <summary>
-    /// Gets the local rotation, expressed in radians.
-    /// </summary>
-    public Store<float> Rotation { get; } = new(options?.Rotation ?? 0f);
+                _cachedPosition = position;
+                _cachedRotation = rotation;
+                _cachedScale = scale;
+                _hasCachedLocalTransform = true;
+            }
 
-    /// <summary>
-    /// Gets the local scale.
-    /// </summary>
-    public Store<Vector2> Scale { get; } = new(options?.Scale ?? Vector2.One);
+            return field;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnDestroy()
+    {
+        Position.Destroy();
+        Rotation.Destroy();
+        Scale.Destroy();
+
+        base.OnDestroy();
+    }
 }

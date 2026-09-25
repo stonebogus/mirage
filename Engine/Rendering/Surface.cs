@@ -1,5 +1,5 @@
 using System.Numerics;
-using Mirage.Graphics;
+using Mirage.Graphics.Interfaces;
 using Mirage.Graphics.Primitives;
 using Mirage.Graphics.Resources;
 using Mirage.Windowing;
@@ -104,9 +104,7 @@ internal sealed class RenderSurface(Window window)
         var value = color.Clamped();
 
         if (!SDL.SetRenderDrawColorFloat(_native, value.R, value.G, value.B, value.A))
-        {
             throw Error("Setting the drawing color");
-        }
     }
 
     private static void ValidateRectangle(Vector2 position, Vector2 size)
@@ -115,23 +113,37 @@ internal sealed class RenderSurface(Window window)
             throw new ArgumentOutOfRangeException(nameof(position));
 
         if (!float.IsFinite(size.X) || !float.IsFinite(size.Y) || size.X < 0 || size.Y < 0)
-        {
             throw new ArgumentOutOfRangeException(nameof(size));
-        }
     }
 
+    /// <summary>
+    /// Abandons the active frame without presenting it.
+    /// </summary>
     public void AbortFrame()
     {
         // The next BeginFrame clears the backbuffer before drawing again.
         _frameActive = false;
     }
 
-    public RenderContext BeginFrame(double deltaTime, Color clearColor)
+    /// <summary>
+    /// Clears the window and creates a context for a new frame.
+    /// </summary>
+    /// <param name="deltaTime">
+    /// The elapsed time since the previous frame, in seconds.
+    /// </param>
+    /// <param name="clearColor">The color used to clear the frame.</param>
+    /// <param name="camera">
+    /// The active camera, or <see langword="null"/> to use screen coordinates.
+    /// </param>
+    /// <returns>The context used to draw the frame.</returns>
+    public RenderContext BeginFrame(double deltaTime, Color clearColor, ICamera? camera)
     {
         EnsureStarted();
 
         if (_frameActive)
             throw new InvalidOperationException("A frame is already active.");
+
+        var context = new RenderContext(this, deltaTime, camera, window.Size.Get());
 
         ReleaseDestroyedTextures();
         SetDrawColor(clearColor);
@@ -140,9 +152,12 @@ internal sealed class RenderSurface(Window window)
             throw Error("Clearing the frame");
 
         _frameActive = true;
-        return new RenderContext(this, deltaTime);
+        return context;
     }
 
+    /// <summary>
+    /// Presents the active frame to the window.
+    /// </summary>
     public void EndFrame()
     {
         EnsureFrame();
@@ -153,6 +168,9 @@ internal sealed class RenderSurface(Window window)
             throw Error("Presenting the frame");
     }
 
+    /// <summary>
+    /// Creates the native renderer for the open window.
+    /// </summary>
     public void Start()
     {
         if (_native != nint.Zero)
@@ -180,6 +198,9 @@ internal sealed class RenderSurface(Window window)
         }
     }
 
+    /// <summary>
+    /// Releases native textures and stops the native renderer.
+    /// </summary>
     public void Stop()
     {
         if (_native == nint.Zero)
@@ -196,6 +217,10 @@ internal sealed class RenderSurface(Window window)
         _native = nint.Zero;
     }
 
+    /// <summary>
+    /// Enables or disables vertical synchronization.
+    /// </summary>
+    /// <param name="enabled">Whether vertical synchronization is enabled.</param>
     internal void ApplyVSync(bool enabled)
     {
         if (_native == nint.Zero)
@@ -205,6 +230,9 @@ internal sealed class RenderSurface(Window window)
             throw Error("Changing VSync");
     }
 
+    /// <summary>
+    /// Draws a texture using screen coordinates.
+    /// </summary>
     internal void DrawTexture(Texture texture, Vector2 position, Vector2 size)
     {
         EnsureFrame();
@@ -229,6 +257,9 @@ internal sealed class RenderSurface(Window window)
             throw Error("Drawing a texture");
     }
 
+    /// <summary>
+    /// Fills a rectangle using screen coordinates.
+    /// </summary>
     internal void FillRectangle(Vector2 position, Vector2 size, Color color)
     {
         EnsureFrame();

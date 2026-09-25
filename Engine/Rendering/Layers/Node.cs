@@ -9,8 +9,8 @@ namespace Mirage.Rendering.Layers;
 public sealed class NodeDrawLayer(
     NodeManager manager,
     string identifier = "nodes",
-    RenderLayerPriority priority = RenderLayerPriority.Normal
-) : RenderLayer(identifier, priority)
+    DrawLayerPriority priority = DrawLayerPriority.Normal
+) : DrawLayer(identifier, priority)
 {
     private static void RenderNode(Node node, RenderContext context)
     {
@@ -28,7 +28,7 @@ public sealed class NodeDrawLayer(
     /// Draws the renderable nodes under the active root.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
-    protected override void OnRender(RenderContext context)
+    protected override void OnDraw(RenderContext context)
     {
         RenderNode(manager.ActiveRoot.Get(), context);
     }

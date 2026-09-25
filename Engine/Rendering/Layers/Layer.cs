@@ -6,7 +6,7 @@ namespace Mirage.Rendering;
 /// <summary>
 /// Represents the rendering priority of a layer.
 /// </summary>
-public enum RenderLayerPriority
+public enum DrawLayerPriority
 {
     /// <summary>Drawn before normal-priority layers.</summary>
     Low,
@@ -22,9 +22,9 @@ public enum RenderLayerPriority
 }
 
 /// <summary>
-/// Groups renderable objects and draws them in a single layer.
+/// Groups drawable objects and draws them in a single layer.
 /// </summary>
-public class RenderLayer : Destroyable
+public class DrawLayer : Destroyable
 {
     private bool _composed;
 
@@ -41,7 +41,7 @@ public class RenderLayer : Destroyable
     /// <summary>
     /// Gets the priority that determines when this layer is drawn.
     /// </summary>
-    public readonly RenderLayerPriority Priority;
+    public readonly DrawLayerPriority Priority;
 
     /// <summary>
     /// Initializes a rendering layer.
@@ -49,9 +49,9 @@ public class RenderLayer : Destroyable
     /// <param name="identifier">The layer's unique identifier.</param>
     /// <param name="priority">The layer's rendering priority.</param>
     /// <param name="entries">Objects initially contained in the layer.</param>
-    public RenderLayer(
+    public DrawLayer(
         string identifier,
-        RenderLayerPriority priority = RenderLayerPriority.Normal,
+        DrawLayerPriority priority = DrawLayerPriority.Normal,
         IEnumerable<IDrawable>? entries = null
     )
     {
@@ -63,7 +63,6 @@ public class RenderLayer : Destroyable
 
         foreach (var entry in entries ?? [])
         {
-            ArgumentNullException.ThrowIfNull(entry);
             Entries.Add(entry);
         }
     }
@@ -103,22 +102,21 @@ public class RenderLayer : Destroyable
     /// Draws additional content after this layer's entries.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
-    protected virtual void OnRender(RenderContext context) { }
+    protected virtual void OnDraw(RenderContext context) { }
 
     /// <summary>
     /// Draws this layer's entries and any additional content.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
-    public void Render(RenderContext context)
+    public void Draw(RenderContext context)
     {
         ThrowIfDestroyed();
-        ArgumentNullException.ThrowIfNull(context);
 
         EnsureComposed();
 
         foreach (var entry in Entries)
             entry.Draw(context);
 
-        OnRender(context);
+        OnDraw(context);
     }
 }

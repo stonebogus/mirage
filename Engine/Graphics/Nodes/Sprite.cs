@@ -41,8 +41,9 @@ public class Sprite : SpatialNode, IDrawable
     /// <param name="context">The active drawing context.</param>
     public void Draw(IDrawContext context)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        var transform = GlobalTransform;
+        var globalSize = new Vector2(Size.Get().X * transform.M11, Size.Get().Y * transform.M22);
 
-        context.DrawTexture(Texture.Get(), Position.Get(), Size.Get());
+        context.DrawTexture(Texture.Get(), GlobalPosition, globalSize);
     }
 }
