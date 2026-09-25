@@ -10,17 +10,17 @@ public readonly struct Rect : IEquatable<Rect>
     /// <summary>
     /// Gets the minimum point of the rectangle.
     /// </summary>
-    public readonly Vector2D Minimum;
+    public readonly Vector Minimum;
 
     /// <summary>
     /// Gets the maximum point of the rectangle.
     /// </summary>
-    public readonly Vector2D Maximum;
+    public readonly Vector Maximum;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Rect"/> struct.
     /// </summary>
-    public Rect(Vector2D minimum, Vector2D maximum)
+    public Rect(Vector minimum, Vector maximum)
     {
         Minimum = minimum;
         Maximum = maximum;
@@ -39,7 +39,7 @@ public readonly struct Rect : IEquatable<Rect>
     /// <summary>
     /// Gets the center of the rectangle.
     /// </summary>
-    public Vector2D Center => (Minimum + Maximum) / 2;
+    public Vector Center => (Minimum + Maximum) / 2;
 
     /// <summary>
     /// Gets the area of the rectangle.
@@ -49,7 +49,7 @@ public readonly struct Rect : IEquatable<Rect>
     /// <summary>
     /// Determines whether a point is inside or on the rectangle.
     /// </summary>
-    public bool Contains(Vector2D point) =>
+    public bool Contains(Vector point) =>
         point.X >= Minimum.X
         && point.X <= Maximum.X
         && point.Y >= Minimum.Y
