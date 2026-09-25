@@ -148,7 +148,7 @@ public readonly record struct Color
 
     private static byte ToByte(float value)
     {
-        return (byte)MathF.Round(Math.Clamp(value, 0.0f, 1.0f) * byte.MaxValue);
+        return (byte)MathF.Round(System.Math.Clamp(value, 0.0f, 1.0f) * byte.MaxValue);
     }
 
     private static bool TryParseByte(ReadOnlySpan<char> value, out byte result)
@@ -253,10 +253,10 @@ public readonly record struct Color
         }
 
         return new Color(
-            Math.Clamp(color.R, minimum, maximum),
-            Math.Clamp(color.G, minimum, maximum),
-            Math.Clamp(color.B, minimum, maximum),
-            Math.Clamp(color.A, minimum, maximum)
+            System.Math.Clamp(color.R, minimum, maximum),
+            System.Math.Clamp(color.G, minimum, maximum),
+            System.Math.Clamp(color.B, minimum, maximum),
+            System.Math.Clamp(color.A, minimum, maximum)
         );
     }
 
@@ -337,12 +337,9 @@ public readonly record struct Color
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        if (!TryParse(value, out var color))
-        {
-            throw new FormatException($"'{value}' is not a valid hexadecimal color.");
-        }
-
-        return color;
+        return !TryParse(value, out var color)
+            ? throw new FormatException($"'{value}' is not a valid hexadecimal color.")
+            : color;
     }
 
     /// <summary>
