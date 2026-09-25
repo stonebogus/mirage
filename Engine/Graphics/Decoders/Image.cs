@@ -4,6 +4,12 @@ using StbImageSharp;
 
 namespace Mirage.Graphics.Decoders;
 
+/// <summary>
+/// Decodes supported image files into RGBA8 <see cref="Image"/> resources.
+/// </summary>
+/// <remarks>
+/// The decoder accepts PNG, JPEG, BMP, TGA, PSD, GIF and HDR files.
+/// </remarks>
 public sealed class ImageDecoder : Decoder<Image>
 {
     private static readonly HashSet<string> Extensions = new(StringComparer.OrdinalIgnoreCase)
@@ -18,6 +24,7 @@ public sealed class ImageDecoder : Decoder<Image>
         ".hdr",
     };
 
+    /// <inheritdoc/>
     protected override Image OnDecode(LoadContext context, Stream stream)
     {
         var result = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
@@ -30,6 +37,7 @@ public sealed class ImageDecoder : Decoder<Image>
         );
     }
 
+    /// <inheritdoc/>
     public override bool Supports(string extension)
     {
         return Extensions.Contains(extension);
