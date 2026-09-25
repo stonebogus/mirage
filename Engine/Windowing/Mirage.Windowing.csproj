@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-
     <PackageReference Include="SDL3-CS" Version="3.4.16.1" />
     <PackageReference Include="SDL3-CS.Linux" Version="3.4.16" />
     <PackageReference Include="SDL3-CS.Windows" Version="3.4.16" />
