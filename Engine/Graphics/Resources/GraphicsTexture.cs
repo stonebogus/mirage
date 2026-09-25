@@ -14,7 +14,7 @@ public enum TextureFormat
 }
 
 /// <summary>
-/// Represents immutable backend-agnostic two-dimensional texture data.
+/// Represents immutable two-dimensional texture data.
 /// </summary>
 public sealed class GraphicsTexture : Resource
 {

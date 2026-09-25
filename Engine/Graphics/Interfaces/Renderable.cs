@@ -12,7 +12,7 @@ public interface IRenderable
     /// The context describing the current rendering frame.
     /// </param>
     /// <returns>
-    /// The backend-agnostic graphical data produced by this object.
+    /// The graphics data produced by this object.
     /// </returns>
     RenderData Render(RenderContext context);
 }

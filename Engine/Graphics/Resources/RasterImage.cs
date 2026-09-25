@@ -18,7 +18,7 @@ public enum RasterImageFormat
 /// </summary>
 /// <remarks>
 /// An image contains pixels in CPU memory. It is independent from the encoded
-/// file format and from any platform-specific GPU texture.
+/// file format and from the SDL GPU texture created for rendering.
 /// </remarks>
 public sealed class RasterImage : Resource
 {

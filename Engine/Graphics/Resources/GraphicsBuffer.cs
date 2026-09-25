@@ -35,7 +35,7 @@ public enum BufferUsage
 }
 
 /// <summary>
-/// Represents backend-agnostic graphics buffer data.
+/// Represents graphics buffer data.
 /// </summary>
 public sealed class GraphicsBuffer : Resource
 {

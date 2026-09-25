@@ -35,7 +35,7 @@ public enum ShaderLanguage
 }
 
 /// <summary>
-/// Represents backend-agnostic shader source code.
+/// Represents shader source code used by the graphics API.
 /// </summary>
 public sealed class Shader : Resource
 {
