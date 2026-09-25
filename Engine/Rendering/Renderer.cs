@@ -57,27 +57,13 @@ public class Renderer : Module, IUpdatable
         ClearColor = new Store<Color>(clearColor ?? Color.Black);
 
         foreach (var layer in layers ?? [])
-            AddLayer(layer);
+            Layers.Add(layer.Identifier, layer);
     }
 
     /// <inheritdoc />
     public void Update(double deltaTime)
     {
         Render(deltaTime);
-    }
-
-    private void AddLayer(RenderLayer layer)
-    {
-        ArgumentNullException.ThrowIfNull(layer);
-
-        if (Layers.ContainsKey(layer.Identifier))
-        {
-            throw new InvalidOperationException(
-                $"Duplicate layer identifier found: '{layer.Identifier}'."
-            );
-        }
-
-        Layers.Add(layer.Identifier, layer);
     }
 
     private void EnsureComposed()
