@@ -27,11 +27,10 @@ public class Sprite : SpatialNode, IDrawable
     /// </summary>
     /// <param name="name">The node name.</param>
     /// <param name="texture">The initial texture.</param>
-    public Sprite(string name, Texture texture)
-        : base(name)
+    /// <param name="options">The additional options for the node</param>>
+    public Sprite(string name, Texture texture, SpatialNodeOptions? options = null)
+        : base(name, options)
     {
-        ArgumentNullException.ThrowIfNull(texture);
-
         Texture = new Store<Texture>(texture);
         Size = new Store<Vector2>(new Vector2(texture.Width, texture.Height));
     }
