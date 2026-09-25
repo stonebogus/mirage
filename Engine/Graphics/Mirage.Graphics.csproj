@@ -7,6 +7,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Common\Mirage.Common.csproj" />
     <ProjectReference Include="..\Loading\Mirage.Loading.csproj" />
+    <ProjectReference Include="..\Noding\Mirage.Noding.csproj" />
+    <ProjectReference Include="..\Scheduling\Mirage.Scheduling.csproj" />
+    <ProjectReference Include="..\Spatial\Mirage.Spatial.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="StbImageSharp" Version="2.30.16" />
