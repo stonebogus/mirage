@@ -17,8 +17,6 @@ public class Renderer : Module, IUpdatable
     private readonly List<IRenderable> _entries = [];
     private bool _composed;
 
-    private bool _swapchainAcquired;
-
     /// <summary>
     /// Gets the rendering backend.
     /// </summary>
@@ -60,6 +58,12 @@ public class Renderer : Module, IUpdatable
 
         foreach (var layer in layers ?? [])
             AddLayer(layer);
+    }
+
+    /// <inheritdoc />
+    public void Update(double deltaTime)
+    {
+        Render(deltaTime);
     }
 
     private void AddLayer(RenderLayer layer)
@@ -148,11 +152,5 @@ public class Renderer : Module, IUpdatable
         }
 
         Backend.RenderFrame(context, _entries);
-    }
-
-    /// <inheritdoc />
-    public void Update(double deltaTime)
-    {
-        Render(deltaTime);
     }
 }
