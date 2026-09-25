@@ -1,6 +1,6 @@
 ﻿using Mirage.Common;
 using Mirage.Scheduling.Interfaces;
-using Mirage.Windowing.Windows;
+using Mirage.Windowing;
 
 namespace Mirage.Windowing;
 

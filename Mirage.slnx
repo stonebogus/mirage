@@ -7,9 +7,9 @@
     <Project Path="Engine/Math/Mirage.Math.csproj" />
     <Project Path="Engine/Common/Mirage.Common.csproj" />
     <Project Path="Engine/Graphics/Mirage.Graphics.csproj" />
-    <Project Path="Engine/Noding\Mirage.Noding.csproj" />
-    <Project Path="Engine\Loading\Mirage.Loading.csproj" />
-    <Project Path="Engine\Rendering\Mirage.Rendering.csproj" />
-    <Project Path="Engine\Scheduling\Mirage.Scheduling.csproj" />
+    <Project Path="Engine/Noding/Mirage.Noding.csproj" />
+    <Project Path="Engine/Loading/Mirage.Loading.csproj" />
+    <Project Path="Engine/Rendering/Mirage.Rendering.csproj" />
+    <Project Path="Engine/Scheduling/Mirage.Scheduling.csproj" />
   </Folder>
 </Solution>

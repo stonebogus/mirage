@@ -1,7 +1,6 @@
 using Mirage.Common;
 using Mirage.Scheduling;
 using Mirage.Windowing;
-using Mirage.Windowing.Windows;
 
 namespace Tests.Windowing;
 
