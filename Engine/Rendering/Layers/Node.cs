@@ -4,7 +4,7 @@ using Mirage.Noding;
 namespace Mirage.Rendering.Layers;
 
 /// <summary>
-/// Collects loaded <see cref="IRenderable"/> nodes from the graph's active root.
+/// Draws loaded renderable nodes from the active root.
 /// </summary>
 public sealed class NodeRenderLayer(
     NodeManager manager,
@@ -12,22 +12,24 @@ public sealed class NodeRenderLayer(
     RenderLayerPriority priority = RenderLayerPriority.Normal
 ) : RenderLayer(identifier, priority)
 {
-    private void Visit(Node node)
+    private static void RenderNode(Node node, RenderContext context)
     {
         if (node.Destroyed)
             return;
 
-        if (node.Loaded && node is IRenderable renderable)
-            Entries.Add(renderable);
+        if (node.Loaded && node is IDrawable drawable)
+            drawable.Draw(context);
 
         foreach (var child in node.Subnodes)
-            Visit(child);
+            RenderNode(child, context);
     }
 
-    /// <inheritdoc />
-    protected override void OnCollect(IReadOnlyList<IRenderable> entries)
+    /// <summary>
+    /// Draws the renderable nodes under the active root.
+    /// </summary>
+    /// <param name="context">The active rendering context.</param>
+    protected override void OnRender(RenderContext context)
     {
-        Entries.Clear();
-        Visit(manager.ActiveRoot.Get());
+        RenderNode(manager.ActiveRoot.Get(), context);
     }
 }
