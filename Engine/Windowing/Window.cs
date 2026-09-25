@@ -195,7 +195,9 @@ public partial class Window : Destroyable
     /// </summary>
     public Store<bool> Visible { get; }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Closes the native window and releases its state stores.
+    /// </summary>
     protected override void OnDestroy()
     {
         if (_opened.Get())
@@ -276,7 +278,6 @@ public partial class Window : Destroyable
 public partial class Window
 {
     private IntPtr _nativeWindow;
-    private IntPtr _gpuDevice;
 
     private object? _publishingStore;
     private object? _publishingValue;
@@ -291,7 +292,7 @@ public partial class Window
     /// Gets the native SDL window while it is open.
     /// </summary>
     /// <remarks>
-    /// Used by the SDL3 GPU renderer.
+    /// Used by the renderer to draw into this window.
     /// Do not destroy or mutate the window through this handle.
     /// </remarks>
     public IntPtr Native => _nativeWindow;
@@ -418,52 +419,6 @@ public partial class Window
         Publish(window, Title, () => SDL.GetWindowTitle(window));
     }
 
-    /// <summary>
-    /// Associates an SDL GPU device with this window so its VSync store can
-    /// control the GPU swapchain present mode.
-    /// </summary>
-    /// <param name="device">The claimed SDL GPU device.</param>
-    public void AttachGPUDevice(IntPtr device)
-    {
-        _gpuDevice = device;
-        ApplyVSync();
-    }
-
-    /// <summary>
-    /// Removes the SDL GPU device associated with this window.
-    /// </summary>
-    /// <param name="device">The previously associated SDL GPU device.</param>
-    public void DetachGPUDevice(IntPtr device)
-    {
-        if (_gpuDevice == device)
-            _gpuDevice = IntPtr.Zero;
-    }
-
-    private void ApplyVSync()
-    {
-        if (_gpuDevice == IntPtr.Zero || _nativeWindow == IntPtr.Zero)
-            return;
-
-        var presentMode = VSync.Get() ? SDL.GPUPresentMode.VSync : SDL.GPUPresentMode.Immediate;
-
-        if (!SDL.WindowSupportsGPUPresentMode(_gpuDevice, _nativeWindow, presentMode))
-        {
-            throw new InvalidOperationException(
-                $"SDL GPU present mode '{presentMode}' is unsupported: {SDL.GetError()}"
-            );
-        }
-
-        Ensure(
-            SDL.SetGPUSwapchainParameters(
-                _gpuDevice,
-                _nativeWindow,
-                SDL.GPUSwapchainComposition.SDR,
-                presentMode
-            ),
-            "Changing GPU swapchain VSync"
-        );
-    }
-
     private static (int X, int Y) ToNativePosition(Vector2 position)
     {
         if (
@@ -527,7 +482,9 @@ public partial class Window
         return flags;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Destroys the native window and releases the SDL video subsystem lease.
+    /// </summary>
     protected virtual void OnClose()
     {
         var window = _nativeWindow;
@@ -538,10 +495,13 @@ public partial class Window
         _nativeWindow = IntPtr.Zero;
 
         SDL.DestroyWindow(window);
-        SDL3VideoRuntime.Release();
+        VideoRuntime.Release();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Applies the requested display mode to the native window.
+    /// </summary>
+    /// <param name="mode">The requested display mode.</param>
     protected virtual void OnModeChanged(WindowMode mode)
     {
         if (!ShouldApply(Mode, mode))
@@ -596,7 +556,10 @@ public partial class Window
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Moves the native window to the requested screen position.
+    /// </summary>
+    /// <param name="position">The requested position in screen coordinates.</param>
     protected virtual void OnMove(Vector2 position)
     {
         if (!ShouldApply(Position, position))
@@ -624,7 +587,9 @@ public partial class Window
         Ensure(SDL.SetWindowPosition(window, nativePosition.X, nativePosition.Y), "Moving window");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Creates the native window and applies its initial configuration.
+    /// </summary>
     protected virtual void OnOpen()
     {
         if (_nativeWindow != IntPtr.Zero)
@@ -635,7 +600,7 @@ public partial class Window
 
         var flags = ToSdlFlags(requestedMode, Resizable.Get(), Visible.Get());
 
-        SDL3VideoRuntime.Acquire();
+        VideoRuntime.Acquire();
 
         var window = SDL.CreateWindow(
             Title.Get(),
@@ -646,7 +611,7 @@ public partial class Window
 
         if (window == IntPtr.Zero)
         {
-            SDL3VideoRuntime.Release();
+            VideoRuntime.Release();
 
             throw new InvalidOperationException($"Creating SDL window failed: {SDL.GetError()}");
         }
@@ -672,13 +637,15 @@ public partial class Window
             _nativeWindow = IntPtr.Zero;
 
             SDL.DestroyWindow(window);
-            SDL3VideoRuntime.Release();
+            VideoRuntime.Release();
 
             throw;
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Processes pending window events and synchronizes window state.
+    /// </summary>
     protected virtual void OnProcess()
     {
         var window = _nativeWindow;
@@ -707,7 +674,10 @@ public partial class Window
         SynchronizeState(window);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Applies whether the native window can be resized.
+    /// </summary>
+    /// <param name="resizable">Whether resizing is allowed.</param>
     protected virtual void OnResizableChanged(bool resizable)
     {
         if (!ShouldApply(Resizable, resizable))
@@ -727,7 +697,10 @@ public partial class Window
         Ensure(SDL.SetWindowResizable(window, resizable), "Changing window resizability");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Applies the requested size to the native window.
+    /// </summary>
+    /// <param name="size">The requested client-area size.</param>
     protected virtual void OnResize(Vector2 size)
     {
         if (!ShouldApply(Size, size))
@@ -757,7 +730,10 @@ public partial class Window
         Ensure(SDL.SetWindowSize(window, nativeSize.Width, nativeSize.Height), "Resizing window");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Applies the requested title to the native window.
+    /// </summary>
+    /// <param name="title">The requested window title.</param>
     protected virtual void OnTitleChanged(string title)
     {
         if (!ShouldApply(Title, title))
@@ -774,16 +750,36 @@ public partial class Window
         Ensure(SDL.SetWindowTitle(window, title), "Changing window title");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Applies a VSync change to the renderer attached to this window.
+    /// </summary>
+    /// <param name="vsync">Whether to synchronize frame presentation with the display.</param>
+    /// <remarks>
+    /// If the renderer has not started, it reads the current value of
+    /// <see cref="VSync"/> when it starts.
+    /// </remarks>
     protected virtual void OnVSyncChanged(bool vsync)
     {
         if (!ShouldApply(VSync, vsync))
             return;
 
-        ApplyVSync();
+        var window = _nativeWindow;
+
+        if (window == IntPtr.Zero)
+            return;
+
+        var renderer = SDL.GetRenderer(window);
+
+        if (renderer == IntPtr.Zero)
+            return;
+
+        Ensure(SDL.SetRenderVSync(renderer, vsync ? 1 : 0), "Changing renderer VSync");
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Shows or hides the native window.
+    /// </summary>
+    /// <param name="visible">Whether the window should be visible.</param>
     protected virtual void OnVisibilityChanged(bool visible)
     {
         if (!ShouldApply(Visible, visible))
@@ -810,7 +806,7 @@ public partial class Window
 /// <summary>
 /// Manages shared ownership of SDL's video subsystem.
 /// </summary>
-internal static class SDL3VideoRuntime
+internal static class VideoRuntime
 {
     private static readonly Lock Gate = new();
 
