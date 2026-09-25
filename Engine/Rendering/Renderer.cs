@@ -72,7 +72,7 @@ public class Renderer : Module, IUpdatable
             return;
 
         foreach (var layer in Compose().ToArray())
-            AddLayer(layer);
+            Layers.Add(layer.Identifier, layer);
 
         _composed = true;
     }
