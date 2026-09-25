@@ -390,6 +390,16 @@ public class Node : Destroyable
     }
 
     /// <summary>
+    /// Gets a direct subnode by its name.
+    /// </summary>
+    /// <param name="name">The name of the subnode to get.</param>
+    /// <returns>
+    /// The subnode with the specified name, or <see langword="null"/> if no
+    /// matching subnode was found.
+    /// </returns>
+    public Node? this[string name] => Subnodes.GetByName(name);
+
+    /// <summary>
     /// Gets a value indicating whether the node is currently loaded.
     /// </summary>
     /// <remarks>
