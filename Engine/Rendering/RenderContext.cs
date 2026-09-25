@@ -1,47 +1,48 @@
 using System.Numerics;
+using Mirage.Graphics.Interfaces;
 using Mirage.Graphics.Primitives;
 using Mirage.Graphics.Resources;
 
-namespace Mirage.Graphics;
+namespace Mirage.Rendering;
 
 /// <summary>
 /// Provides drawing operations for a single rendering frame.
 /// </summary>
 /// <remarks>
-/// Renderable objects use this context to draw without depending on SDL.
-/// A renderer-specific implementation performs the actual drawing.
+/// Forwards drawing operations to the active rendering surface.
+/// This context is valid only while its frame is active.
 /// </remarks>
-public abstract class RenderContext
+public sealed class RenderContext : IDrawContext
 {
+    private readonly RenderSurface _surface;
+
     /// <summary>
-    /// Initializes a rendering context for a frame.
+    /// Initializes a context for the active rendering frame.
     /// </summary>
+    /// <param name="surface">The surface receiving drawing operations.</param>
     /// <param name="deltaTime">
     /// The elapsed time since the previous frame, in seconds.
     /// </param>
-    protected RenderContext(double deltaTime)
+    internal RenderContext(RenderSurface surface, double deltaTime)
     {
+        ArgumentNullException.ThrowIfNull(surface);
+
+        _surface = surface;
         DeltaTime = deltaTime;
     }
 
-    /// <summary>
-    /// Gets the elapsed time since the previous frame, in seconds.
-    /// </summary>
+    /// <inheritdoc />
     public double DeltaTime { get; }
 
-    /// <summary>
-    /// Draws an entire texture at the specified position and size.
-    /// </summary>
-    /// <param name="texture">The texture to draw.</param>
-    /// <param name="position">The destination's top-left position.</param>
-    /// <param name="size">The destination's width and height.</param>
-    public abstract void DrawTexture(Texture texture, Vector2 position, Vector2 size);
+    /// <inheritdoc />
+    public void DrawTexture(Texture texture, Vector2 position, Vector2 size)
+    {
+        _surface.DrawTexture(texture, position, size);
+    }
 
-    /// <summary>
-    /// Fills a rectangle at the specified position and size.
-    /// </summary>
-    /// <param name="position">The rectangle's top-left position.</param>
-    /// <param name="size">The rectangle's width and height.</param>
-    /// <param name="color">The fill color.</param>
-    public abstract void FillRectangle(Vector2 position, Vector2 size, Color color);
+    /// <inheritdoc />
+    public void FillRectangle(Vector2 position, Vector2 size, Color color)
+    {
+        _surface.FillRectangle(position, size, color);
+    }
 }
