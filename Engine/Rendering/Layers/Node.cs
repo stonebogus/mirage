@@ -4,9 +4,9 @@ using Mirage.Noding;
 namespace Mirage.Rendering.Layers;
 
 /// <summary>
-/// Draws loaded renderable nodes from the active root.
+/// Draws loaded drawable nodes from the active root.
 /// </summary>
-public sealed class NodeRenderLayer(
+public sealed class NodeDrawLayer(
     NodeManager manager,
     string identifier = "nodes",
     RenderLayerPriority priority = RenderLayerPriority.Normal
