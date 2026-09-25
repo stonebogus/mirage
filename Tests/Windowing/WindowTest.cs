@@ -1,5 +1,5 @@
+using System.Numerics;
 using Mirage.Common.Lifecycle;
-using Mirage.Math.Vectors;
 using Mirage.Windowing;
 
 namespace Tests.Windowing;
@@ -28,9 +28,9 @@ public class WindowTest
 
         Assert.Equal("window", window.Identifier);
         Assert.Equal(WindowMode.Normal, window.Mode.Get());
-        Assert.Equal(new Vector(), window.Position.Get());
+        Assert.Equal(new Vector2(), window.Position.Get());
         Assert.True(window.Resizable.Get());
-        Assert.Equal(new Vector(800, 600), window.Size.Get());
+        Assert.Equal(new Vector2(800, 600), window.Size.Get());
         Assert.Equal("Mirage", window.Title.Get());
         Assert.False(window.VSync.Get());
         Assert.True(window.Visible.Get());
@@ -56,9 +56,9 @@ public class WindowTest
             {
                 Identifier = "main",
                 Mode = WindowMode.Maximized,
-                Position = new Vector(100, 200),
+                Position = new Vector2(100, 200),
                 Resizable = false,
-                Size = new Vector(1280, 720),
+                Size = new Vector2(1280, 720),
                 Title = "Main",
                 VSync = true,
                 Visible = false,
@@ -67,9 +67,9 @@ public class WindowTest
 
         Assert.Equal("main", window.Identifier);
         Assert.Equal(WindowMode.Maximized, window.Mode.Get());
-        Assert.Equal(new Vector(100, 200), window.Position.Get());
+        Assert.Equal(new Vector2(100, 200), window.Position.Get());
         Assert.False(window.Resizable.Get());
-        Assert.Equal(new Vector(1280, 720), window.Size.Get());
+        Assert.Equal(new Vector2(1280, 720), window.Size.Get());
         Assert.Equal("Main", window.Title.Get());
         Assert.True(window.VSync.Get());
         Assert.False(window.Visible.Get());
@@ -114,17 +114,17 @@ public class WindowTest
         var window = new TestWindow();
 
         window.Mode.Set(WindowMode.Fullscreen);
-        window.Position.Set(new Vector(10, 20));
+        window.Position.Set(new Vector2(10, 20));
         window.Resizable.Set(false);
-        window.Size.Set(new Vector(1024, 768));
+        window.Size.Set(new Vector2(1024, 768));
         window.Title.Set("Updated");
         window.VSync.Set(true);
         window.Visible.Set(false);
 
         Assert.Equal(WindowMode.Fullscreen, window.LastMode);
-        Assert.Equal(new Vector(10, 20), window.LastPosition);
+        Assert.Equal(new Vector2(10, 20), window.LastPosition);
         Assert.False(window.LastResizable);
-        Assert.Equal(new Vector(1024, 768), window.LastSize);
+        Assert.Equal(new Vector2(1024, 768), window.LastSize);
         Assert.Equal("Updated", window.LastTitle);
         Assert.True(window.LastVSync);
         Assert.False(window.LastVisible);
@@ -140,9 +140,9 @@ public class WindowTest
         }
 
         public WindowMode LastMode { get; private set; }
-        public Vector LastPosition { get; private set; }
+        public Vector2 LastPosition { get; private set; }
         public bool LastResizable { get; private set; }
-        public Vector LastSize { get; private set; }
+        public Vector2 LastSize { get; private set; }
         public string LastTitle { get; private set; } = string.Empty;
         public bool LastVSync { get; private set; }
         public bool LastVisible { get; private set; }
@@ -152,7 +152,7 @@ public class WindowTest
 
         protected override void OnModeChanged(WindowMode mode) => LastMode = mode;
 
-        protected override void OnMove(Vector position) => LastPosition = position;
+        protected override void OnMove(Vector2 position) => LastPosition = position;
 
         protected override void OnOpen() => OpenCalls++;
 
@@ -163,7 +163,7 @@ public class WindowTest
 
         protected override void OnResizableChanged(bool resizable) => LastResizable = resizable;
 
-        protected override void OnResize(Vector size) => LastSize = size;
+        protected override void OnResize(Vector2 size) => LastSize = size;
 
         protected override void OnTitleChanged(string title) => LastTitle = title;
 

@@ -1,4 +1,4 @@
-using Mirage.Math.Vectors;
+using System.Numerics;
 
 namespace Mirage.Math.Geometry;
 
@@ -10,7 +10,7 @@ public readonly struct Circle : IEquatable<Circle>
     /// <summary>
     /// Gets the center point of the circle.
     /// </summary>
-    public readonly Vector Center;
+    public readonly Vector2 Center;
 
     /// <summary>
     /// Gets the radius of the circle.
@@ -20,7 +20,7 @@ public readonly struct Circle : IEquatable<Circle>
     /// <summary>
     /// Initializes a new instance of the <see cref="Circle"/> struct.
     /// </summary>
-    public Circle(Vector center, float radius)
+    public Circle(Vector2 center, float radius)
     {
         Center = center;
         Radius = radius;
@@ -44,8 +44,8 @@ public readonly struct Circle : IEquatable<Circle>
     /// <summary>
     /// Determines whether a point is inside or on the circle.
     /// </summary>
-    public bool Contains(Vector point) =>
-        Vector.DistanceSquared(Center, point) <= Radius * Radius;
+    public bool Contains(Vector2 point) =>
+        Vector2.DistanceSquared(Center, point) <= Radius * Radius;
 
     /// <inheritdoc />
     public bool Equals(Circle other) => Center == other.Center && Radius == other.Radius;

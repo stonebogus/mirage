@@ -1,4 +1,4 @@
-using Mirage.Math.Vectors;
+using System.Numerics;
 
 namespace Mirage.Math;
 
@@ -176,7 +176,7 @@ public readonly struct Matrix3 : IEquatable<Matrix3>
     /// <summary>
     /// Transforms a vector by a matrix.
     /// </summary>
-    public static Vector operator *(Matrix3 matrix, Vector vector) =>
+    public static Vector2 operator *(Matrix3 matrix, Vector2 vector) =>
         new(
             matrix.M11 * vector.X + matrix.M12 * vector.Y + matrix.M13,
             matrix.M21 * vector.X + matrix.M22 * vector.Y + matrix.M23
@@ -185,13 +185,13 @@ public readonly struct Matrix3 : IEquatable<Matrix3>
     /// <summary>
     /// Creates a translation matrix.
     /// </summary>
-    public static Matrix3 CreateTranslation(Vector translation) =>
+    public static Matrix3 CreateTranslation(Vector2 translation) =>
         new(1, 0, translation.X, 0, 1, translation.Y, 0, 0, 1);
 
     /// <summary>
     /// Creates a scale matrix.
     /// </summary>
-    public static Matrix3 CreateScale(Vector scale) => new(scale.X, 0, 0, 0, scale.Y, 0, 0, 0, 1);
+    public static Matrix3 CreateScale(Vector2 scale) => new(scale.X, 0, 0, 0, scale.Y, 0, 0, 0, 1);
 
     /// <summary>
     /// Creates a rotation matrix around the Z axis.

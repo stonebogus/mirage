@@ -1,4 +1,4 @@
-using Mirage.Math.Vectors;
+using System.Numerics;
 
 namespace Mirage.Math.Geometry;
 
@@ -10,17 +10,17 @@ public readonly struct Rect : IEquatable<Rect>
     /// <summary>
     /// Gets the minimum point of the rectangle.
     /// </summary>
-    public readonly Vector Minimum;
+    public readonly Vector2 Minimum;
 
     /// <summary>
     /// Gets the maximum point of the rectangle.
     /// </summary>
-    public readonly Vector Maximum;
+    public readonly Vector2 Maximum;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Rect"/> struct.
     /// </summary>
-    public Rect(Vector minimum, Vector maximum)
+    public Rect(Vector2 minimum, Vector2 maximum)
     {
         Minimum = minimum;
         Maximum = maximum;
@@ -39,7 +39,7 @@ public readonly struct Rect : IEquatable<Rect>
     /// <summary>
     /// Gets the center of the rectangle.
     /// </summary>
-    public Vector Center => (Minimum + Maximum) / 2;
+    public Vector2 Center => (Minimum + Maximum) / 2;
 
     /// <summary>
     /// Gets the area of the rectangle.
@@ -49,7 +49,7 @@ public readonly struct Rect : IEquatable<Rect>
     /// <summary>
     /// Determines whether a point is inside or on the rectangle.
     /// </summary>
-    public bool Contains(Vector point) =>
+    public bool Contains(Vector2 point) =>
         point.X >= Minimum.X
         && point.X <= Maximum.X
         && point.Y >= Minimum.Y

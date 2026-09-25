@@ -1,6 +1,6 @@
+using System.Numerics;
 using Mirage.Common.Events;
 using Mirage.Common.Lifecycle;
-using Mirage.Math.Vectors;
 using SDL3;
 
 namespace Mirage.Windowing;
@@ -27,7 +27,7 @@ public sealed class WindowOptions
     /// When <see langword="null"/>, the platform chooses the initial position.
     /// Some platforms may ignore an explicitly supplied position.
     /// </remarks>
-    public Vector? Position { get; init; }
+    public Vector2? Position { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the user can resize the window.
@@ -37,7 +37,7 @@ public sealed class WindowOptions
     /// <summary>
     /// Gets the initial size of the window's client area.
     /// </summary>
-    public Vector Size { get; init; } = new(800, 600);
+    public Vector2 Size { get; init; } = new(800, 600);
 
     /// <summary>
     /// Gets the initial title of the window.
@@ -124,9 +124,9 @@ public partial class Window : Destroyable
         Opened = _opened;
 
         Mode = new Store<WindowMode>(options.Mode);
-        Position = new Store<Vector>(options.Position ?? new Vector());
+        Position = new Store<Vector2>(options.Position ?? new Vector2());
         Resizable = new Store<bool>(options.Resizable);
-        Size = new Store<Vector>(options.Size);
+        Size = new Store<Vector2>(options.Size);
         Title = new Store<string>(options.Title);
         VSync = new Store<bool>(options.VSync);
         Visible = new Store<bool>(options.Visible);
@@ -168,7 +168,7 @@ public partial class Window : Destroyable
     /// <summary>
     /// Gets the store that controls and reports the position of the window's client area.
     /// </summary>
-    public Store<Vector> Position { get; }
+    public Store<Vector2> Position { get; }
 
     /// <summary>
     /// Gets the store that controls and reports whether the window is resizable.
@@ -178,7 +178,7 @@ public partial class Window : Destroyable
     /// <summary>
     /// Gets the store that controls and reports the size of the window's client area.
     /// </summary>
-    public Store<Vector> Size { get; }
+    public Store<Vector2> Size { get; }
 
     /// <summary>
     /// Gets the store that controls and reports the title of the window.
@@ -391,7 +391,7 @@ public partial class Window
                     "Getting window position"
                 );
 
-                return new Vector(x, y);
+                return new Vector2(x, y);
             }
         );
 
@@ -405,7 +405,7 @@ public partial class Window
                     "Getting window size"
                 );
 
-                return new Vector(width, height);
+                return new Vector2(width, height);
             }
         );
 
@@ -464,7 +464,7 @@ public partial class Window
         );
     }
 
-    private static (int X, int Y) ToNativePosition(Vector position)
+    private static (int X, int Y) ToNativePosition(Vector2 position)
     {
         if (
             !double.IsFinite(position.X)
@@ -484,7 +484,7 @@ public partial class Window
         return ((int)position.X, (int)position.Y);
     }
 
-    private static (int Width, int Height) ToNativeSize(Vector size)
+    private static (int Width, int Height) ToNativeSize(Vector2 size)
     {
         if (
             !double.IsFinite(size.X)
@@ -597,7 +597,7 @@ public partial class Window
     }
 
     /// <inheritdoc />
-    protected virtual void OnMove(Vector position)
+    protected virtual void OnMove(Vector2 position)
     {
         if (!ShouldApply(Position, position))
             return;
@@ -728,7 +728,7 @@ public partial class Window
     }
 
     /// <inheritdoc />
-    protected virtual void OnResize(Vector size)
+    protected virtual void OnResize(Vector2 size)
     {
         if (!ShouldApply(Size, size))
             return;

@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Mirage.Graphics;
 using Mirage.Graphics.Commands;
@@ -6,7 +7,6 @@ using Mirage.Graphics.Pipelines;
 using Mirage.Graphics.Resources;
 using Mirage.Graphics.Shaders;
 using Mirage.Graphics.Vertices;
-using Mirage.Math.Vectors;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Spatial;
 
@@ -23,9 +23,9 @@ internal sealed class Triangle : SpatialNode, IRenderable, IUpdatable
     {
         Vertex[] vertices =
         [
-            new(new Vector(0.0f, 0.5f), 1.0f, 0.2f, 0.3f),
-            new(new Vector(0.5f, -0.5f), 0.2f, 1.0f, 0.3f),
-            new(new Vector(-0.5f, -0.5f), 0.2f, 0.3f, 1.0f),
+            new(new Vector2(0.0f, 0.5f), 1.0f, 0.2f, 0.3f),
+            new(new Vector2(0.5f, -0.5f), 0.2f, 1.0f, 0.3f),
+            new(new Vector2(-0.5f, -0.5f), 0.2f, 0.3f, 1.0f),
         ];
 
         var bytes = MemoryMarshal.AsBytes(vertices.AsSpan()).ToArray();
@@ -128,9 +128,9 @@ internal sealed class Triangle : SpatialNode, IRenderable, IUpdatable
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private readonly struct Vertex(Vector position, float red, float green, float blue)
+    private readonly struct Vertex(Vector2 position, float red, float green, float blue)
     {
-        public readonly Vector Position = position;
+        public readonly Vector2 Position = position;
         public readonly float Red = red;
         public readonly float Green = green;
         public readonly float Blue = blue;

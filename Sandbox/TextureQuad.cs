@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Mirage.Graphics;
 using Mirage.Graphics.Commands;
@@ -6,7 +7,6 @@ using Mirage.Graphics.Pipelines;
 using Mirage.Graphics.Resources;
 using Mirage.Graphics.Shaders;
 using Mirage.Graphics.Vertices;
-using Mirage.Math.Vectors;
 using Mirage.Spatial;
 
 namespace Mirage.Sandbox;
@@ -23,12 +23,12 @@ internal sealed class TexturedQuad : SpatialNode, IRenderable
     {
         Vertex[] vertices =
         [
-            new(new Vector(-0.5f, 0.5f), new Vector(0.0f, 0.0f)),
-            new(new Vector(0.5f, 0.5f), new Vector(1.0f, 0.0f)),
-            new(new Vector(0.5f, -0.5f), new Vector(1.0f, 1.0f)),
-            new(new Vector(-0.5f, 0.5f), new Vector(0.0f, 0.0f)),
-            new(new Vector(0.5f, -0.5f), new Vector(1.0f, 1.0f)),
-            new(new Vector(-0.5f, -0.5f), new Vector(0.0f, 1.0f)),
+            new(new Vector2(-0.5f, 0.5f), new Vector2(0.0f, 0.0f)),
+            new(new Vector2(0.5f, 0.5f), new Vector2(1.0f, 0.0f)),
+            new(new Vector2(0.5f, -0.5f), new Vector2(1.0f, 1.0f)),
+            new(new Vector2(-0.5f, 0.5f), new Vector2(0.0f, 0.0f)),
+            new(new Vector2(0.5f, -0.5f), new Vector2(1.0f, 1.0f)),
+            new(new Vector2(-0.5f, -0.5f), new Vector2(0.0f, 1.0f)),
         ];
 
         _vertexBuffer = new GraphicsBuffer(
@@ -135,9 +135,9 @@ internal sealed class TexturedQuad : SpatialNode, IRenderable
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private readonly struct Vertex(Vector position, Vector textureCoordinate)
+    private readonly struct Vertex(Vector2 position, Vector2 textureCoordinate)
     {
-        public readonly Vector Position = position;
-        public readonly Vector TextureCoordinate = textureCoordinate;
+        public readonly Vector2 Position = position;
+        public readonly Vector2 TextureCoordinate = textureCoordinate;
     }
 }

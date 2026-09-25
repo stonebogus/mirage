@@ -1,5 +1,5 @@
+using System.Numerics;
 using Mirage.Common.Events;
-using Mirage.Math.Vectors;
 using Mirage.Noding;
 
 namespace Mirage.Spatial;
@@ -12,7 +12,7 @@ public sealed class SpatialNodeOptions : NodeOptions
     /// <summary>
     /// Gets the initial local position of the node.
     /// </summary>
-    public Vector Position { get; init; } = new(0, 0);
+    public Vector2 Position { get; init; } = new(0, 0);
 
     /// <summary>
     /// Gets the initial local rotation of the node, expressed in radians.
@@ -22,7 +22,7 @@ public sealed class SpatialNodeOptions : NodeOptions
     /// <summary>
     /// Gets the initial local scale of the node.
     /// </summary>
-    public Vector Scale { get; init; } = new(1, 1);
+    public Vector2 Scale { get; init; } = new(1, 1);
 }
 
 /// <summary>
@@ -41,7 +41,7 @@ public class SpatialNode(string name = "SpatialNode", SpatialNodeOptions? option
     /// <summary>
     /// Gets the local position of the node.
     /// </summary>
-    public Store<Vector> Position { get; } = new(options?.Position ?? new Vector());
+    public Store<Vector2> Position { get; } = new(options?.Position ?? new Vector2());
 
     /// <summary>
     /// Gets the local rotation of the node, expressed in radians.
@@ -51,5 +51,5 @@ public class SpatialNode(string name = "SpatialNode", SpatialNodeOptions? option
     /// <summary>
     /// Gets the local scale of the node.
     /// </summary>
-    public Store<Vector> Scale { get; } = new(options?.Scale ?? new Vector(1, 1));
+    public Store<Vector2> Scale { get; } = new(options?.Scale ?? new Vector2(1, 1));
 }
