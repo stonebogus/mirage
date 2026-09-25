@@ -139,6 +139,11 @@ public class ReactiveDictionary<TKey, TValue>
     )> OnUpdate { get; }
 
     /// <summary>
+    /// Gets the values currently contained in the reactive dictionary.
+    /// </summary>
+    public IEnumerable<TValue> Values => _items.Values;
+
+    /// <summary>
     /// Determines whether the specified key is contained in the reactive dictionary.
     /// </summary>
     /// <param name="key">The key to locate.</param>
