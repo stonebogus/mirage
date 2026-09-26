@@ -98,6 +98,9 @@ public enum WindowMode
 /// </remarks>
 public partial class Window : Destroyable, IUpdatable
 {
+    /// <summary>
+    /// Stores whether the native window currently has input focus.
+    /// </summary>
     protected readonly Store<bool> _focused = new(false);
     private readonly List<SDL.Event> _frameEvents = [];
     private readonly Store<bool> _opened = new(false);
