@@ -22,8 +22,13 @@
     <ProjectReference Include="../Engine/Common/Mirage.Common.csproj" />
     <ProjectReference Include="..\Engine\Noding\Mirage.Noding.csproj" />
     <ProjectReference Include="..\Engine\Scheduling\Mirage.Scheduling.csproj" />
+    <ProjectReference Include="..\Engine\Handling\Mirage.Handling.csproj" />
     <ProjectReference Include="../Engine/Windowing/Mirage.Windowing.csproj" />
     <ProjectReference Include="..\Engine\Math\Mirage.Math.csproj" />
     <ProjectReference Include="..\Engine\Spatial\Mirage.Spatial.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Handling\" />
   </ItemGroup>
 </Project>

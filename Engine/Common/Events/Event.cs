@@ -150,16 +150,12 @@ public abstract class Event<TPayload> : Destroyable, IEvent<TPayload>
     /// <returns>
     /// An <see cref="EventConnection{TPayload}"/> representing the subscription.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="callback"/> is <see langword="null"/>.
-    /// </exception>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the event has already been destroyed.
     /// </exception>
     public EventConnection<TPayload> Connect(Action<TPayload> callback, bool persistent = false)
     {
         ThrowIfDestroyed();
-        ArgumentNullException.ThrowIfNull(callback);
 
         var connection = new EventConnection<TPayload>(
             callback,

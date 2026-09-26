@@ -6,4 +6,12 @@ namespace Mirage.Handling.Devices;
 public abstract class InputDevice(string identifier) : Destroyable
 {
     public string Identifier { get; } = identifier;
+
+    protected virtual void OnProcess(InputContext context) { }
+
+    public void Process(InputContext context)
+    {
+        ThrowIfDestroyed();
+        OnProcess(context);
+    }
 }
