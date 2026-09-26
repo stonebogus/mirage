@@ -1,4 +1,5 @@
 using System.Numerics;
+using Mirage.Common.Lifecycle;
 using Mirage.Graphics.Interfaces;
 using Mirage.Graphics.Primitives;
 using Mirage.Graphics.Resources;
@@ -375,7 +376,7 @@ internal sealed class RenderSurface(Window window)
         ArgumentNullException.ThrowIfNull(texture);
 
         if (texture.Destroyed)
-            throw new ObjectDisposedException(nameof(texture));
+            throw new DestroyedObjectException(nameof(texture));
 
         var nativeTexture = GetTexture(texture);
 
