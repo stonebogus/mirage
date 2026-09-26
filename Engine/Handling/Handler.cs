@@ -1,6 +1,7 @@
 ﻿using Mirage.Common;
 using Mirage.Common.Collections;
 using Mirage.Handling.Devices;
+using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Windowing;
 
@@ -42,7 +43,7 @@ public class InputHandler : Module, IUpdatable
     }
 
     /// <inheritdoc />
-    public void Update(double deltaTime)
+    public void Update(UpdateContext updateContext)
     {
         var context = new InputContext(Window, Window.FrameEvents);
         foreach (var device in _devices.Values)

@@ -1,4 +1,5 @@
 ﻿using Mirage.Common;
+using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Windowing;
 
@@ -9,7 +10,7 @@ namespace Mirage.Windowing;
 /// </summary>
 /// <remarks>
 /// Window event processing is driven by the scheduler through
-/// <see cref="IUpdatable.Update(double)"/>; individual windows do not own an update loop.
+/// <see cref="IUpdatable.Update(UpdateContext)"/>; individual windows do not own an update loop.
 /// The manager owns and destroys its registered windows.
 /// </remarks>
 public class WindowManager : Module, IUpdatable
@@ -46,10 +47,10 @@ public class WindowManager : Module, IUpdatable
     }
 
     /// <inheritdoc />
-    public void Update(double deltaTime)
+    public void Update(UpdateContext context)
     {
         foreach (var window in _windows.Values)
-            window.Update(deltaTime);
+            window.Update(context);
     }
 
     private void EnsureComposed()

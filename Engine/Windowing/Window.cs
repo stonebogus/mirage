@@ -2,6 +2,7 @@ using System.Numerics;
 using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Common.Lifecycle;
+using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using SDL3;
 
@@ -100,10 +101,6 @@ public enum WindowMode
 /// </remarks>
 public partial class Window : Destroyable, IUpdatable
 {
-    /// <summary>
-    /// Stores whether the native window currently has input focus.
-    /// </summary>
-    protected readonly Store<bool> _focused = new(false);
     private readonly List<SDL.Event> _frameEvents = [];
     private readonly Store<bool> _opened = new(false);
 
@@ -111,6 +108,11 @@ public partial class Window : Destroyable, IUpdatable
     /// Gets a value indicating whether an initial position was explicitly configured.
     /// </summary>
     protected readonly bool HasInitialPosition;
+
+    /// <summary>
+    /// Stores whether the native window currently has input focus.
+    /// </summary>
+    protected readonly Store<bool> _focused = new(false);
 
     /// <summary>
     /// Gets the cursor value selected for this window, or <see langword="null"/> when none is selected.
@@ -229,7 +231,7 @@ public partial class Window : Destroyable, IUpdatable
     public IReadOnlyList<SDL.Event> FrameEvents => _frameEvents;
 
     /// <inheritdoc />
-    public void Update(double deltaTime)
+    public void Update(UpdateContext context)
     {
         ThrowIfDestroyed();
         if (_opened.Get())

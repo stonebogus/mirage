@@ -6,8 +6,13 @@ using Mirage.Scheduling.Channels;
 namespace Mirage.Scheduling;
 
 /// <summary>
-/// Manages the update loop and channels for the game.
+/// Manages the main update loop and its update channels.
 /// </summary>
+/// <remarks>
+/// The scheduler defines the maximum rate at which the main update loop runs.
+/// Each registered <see cref="UpdateChannel"/> may optionally impose a lower
+/// update rate on its own entries.
+/// </remarks>
 public class Scheduler : Module
 {
     private bool _composed;
@@ -18,16 +23,27 @@ public class Scheduler : Module
     public readonly ReactiveDictionary<string, UpdateChannel> Channels = [];
 
     /// <summary>
-    /// Gets the target number of frames per second.
-    /// The default is <c>60</c>; non-positive values disable frame pacing.
+    /// Gets the target number of scheduler iterations per second.
     /// </summary>
+    /// <remarks>
+    /// A positive value limits the maximum rate of the scheduler and,
+    /// consequently, the maximum rate at which any channel can be updated.
+    ///
+    /// A non-positive value disables scheduler frame pacing and allows the
+    /// main loop to run as quickly as possible.
+    /// </remarks>
     public readonly int TargetFramerate;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Scheduler"/> class.
+    /// Initializes a scheduler.
     /// </summary>
-    /// <param name="targetFramerate">The target frames per second; the default is <c>60</c>, and non-positive values disable frame pacing.</param>
-    /// <param name="channels">The initial channels, or <see langword="null"/> for none.</param>
+    /// <param name="targetFramerate">
+    /// The target number of scheduler iterations per second.
+    /// The default is <c>60</c>. A non-positive value disables frame pacing.
+    /// </param>
+    /// <param name="channels">
+    /// The initial channels, or <see langword="null"/> for none.
+    /// </param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when two initial channels have the same identifier.
     /// </exception>
@@ -39,20 +55,24 @@ public class Scheduler : Module
         foreach (var channel in channels ?? [])
         {
             if (Channels.ContainsKey(channel.Identifier))
+            {
                 throw new InvalidOperationException(
                     $"Duplicate channel identifier found: '{channel.Identifier}'"
                 );
+            }
+
             Channels.Add(channel.Identifier, channel);
         }
     }
 
     /// <summary>
-    /// Gets the amount of time elapsed since the previous frame, in seconds.
+    /// Gets the amount of real time elapsed since the previous scheduler
+    /// iteration, in seconds.
     /// </summary>
     public double DeltaTime { get; private set; }
 
     /// <summary>
-    /// Gets the current measured framerate of the game.
+    /// Gets the currently measured scheduler iteration rate.
     /// </summary>
     public double Framerate { get; private set; }
 
@@ -61,16 +81,15 @@ public class Scheduler : Module
         if (_composed)
             return;
 
-        var composedChannels = Compose().ToArray();
-
-        foreach (var channel in composedChannels)
+        foreach (var channel in Compose())
         {
-            ArgumentNullException.ThrowIfNull(channel);
-
             if (Channels.ContainsKey(channel.Identifier))
+            {
                 throw new InvalidOperationException(
                     $"Duplicate channel identifier found: '{channel.Identifier}'"
                 );
+            }
+
             Channels.Add(channel.Identifier, channel);
         }
 
@@ -84,10 +103,10 @@ public class Scheduler : Module
     /// An enumerable sequence containing the channels to register.
     /// </returns>
     /// <remarks>
-    /// The default implementation does not compose any channels. Composition
-    /// occurs once when the scheduler starts, before the update loop can run.
-    /// Channels supplied to the constructor are registered before composed
-    /// channels.
+    /// The default implementation does not compose any channels.
+    ///
+    /// Composition occurs once when the scheduler starts, after channels
+    /// supplied to the constructor have already been registered.
     /// </remarks>
     protected virtual IEnumerable<UpdateChannel> Compose()
     {
@@ -98,18 +117,27 @@ public class Scheduler : Module
     protected override void OnStart()
     {
         EnsureComposed();
+
+        base.OnStart();
     }
 
     /// <summary>
-    /// Runs the update loop.
+    /// Runs the main scheduling loop.
     /// </summary>
     /// <remarks>
-    /// The loop measures the elapsed time between frames, updates all channels
-    /// according to their priority, and waits for the remaining frame time
-    /// required to approach <see cref="TargetFramerate"/>.
+    /// Each iteration measures the real elapsed time and forwards it to every
+    /// registered channel in descending priority order.
     ///
-    /// The loop ends when the service state is no longer
-    /// <see cref="ModuleState.Running"/>.
+    /// A channel may update at most once during each scheduler iteration.
+    /// Therefore, the scheduler's own target framerate acts as the maximum
+    /// possible update rate for all channels when frame pacing is enabled.
+    ///
+    /// Channels may independently target a lower update rate.
+    ///
+    /// When <see cref="TargetFramerate"/> is non-positive, the scheduler runs
+    /// without an explicit rate limit.
+    ///
+    /// The loop ends when the scheduler is no longer running.
     /// </remarks>
     public void Run()
     {
@@ -118,26 +146,31 @@ public class Scheduler : Module
 
         while (State.Get() == ModuleState.Running)
         {
-            var frameDuration = TargetFramerate > 0 ? 1.0 / TargetFramerate : 0;
-
             var frameStartTime = stopwatch.Elapsed.TotalSeconds;
 
             DeltaTime = frameStartTime - previousFrameTime;
             previousFrameTime = frameStartTime;
 
-            Framerate = DeltaTime > 0 ? 1.0 / DeltaTime : TargetFramerate;
+            Framerate = DeltaTime > 0 ? 1.0 / DeltaTime : 0;
 
             foreach (var channel in Channels.OrderByDescending(entry => entry.Value.Priority))
             {
-                channel.Value.Update((float)DeltaTime);
+                channel.Value.Update(DeltaTime);
             }
+
+            if (TargetFramerate <= 0)
+                continue;
+
+            var targetFrameDuration = 1.0 / TargetFramerate;
 
             var elapsedFrameTime = stopwatch.Elapsed.TotalSeconds - frameStartTime;
 
-            var remainingFrameTime = frameDuration - elapsedFrameTime;
+            var remainingFrameTime = targetFrameDuration - elapsedFrameTime;
 
             if (remainingFrameTime > 0)
+            {
                 Thread.Sleep(TimeSpan.FromSeconds(remainingFrameTime));
+            }
         }
     }
 }

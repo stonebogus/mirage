@@ -4,6 +4,7 @@ using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Graphics.Interfaces;
 using Mirage.Graphics.Primitives;
+using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Windowing;
 
@@ -62,7 +63,7 @@ public class Renderer : Module, IUpdatable
     }
 
     /// <inheritdoc />
-    public void Update(double deltaTime) => Render(deltaTime);
+    public void Update(UpdateContext context) => Render(context);
 
     private void EnsureComposed()
     {
@@ -110,13 +111,16 @@ public class Renderer : Module, IUpdatable
     /// <summary>
     /// Draws and presents one frame.
     /// </summary>
-    /// <param name="deltaTime">The elapsed time since the previous frame, in seconds.</param>
+    /// <param name="updateContext">
+    /// The context describing the current update, including its delta time
+    /// and target update rate.
+    /// </param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the renderer is not started or a frame is already active.
     /// </exception>
-    public void Render(double deltaTime)
+    public void Render(UpdateContext updateContext)
     {
-        var context = _surface.BeginFrame(deltaTime, ClearColor.Get(), Camera.Get());
+        var context = _surface.BeginFrame(updateContext.DeltaTime, ClearColor.Get(), Camera.Get());
 
         try
         {
