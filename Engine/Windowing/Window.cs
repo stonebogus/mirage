@@ -1,6 +1,8 @@
 using System.Numerics;
+using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Common.Lifecycle;
+using Mirage.Scheduling.Interfaces;
 using SDL3;
 
 namespace Mirage.Windowing;
@@ -10,6 +12,11 @@ namespace Mirage.Windowing;
 /// </summary>
 public sealed class WindowOptions
 {
+    /// <summary>
+    /// Gets the initial window cursors
+    /// </summary>
+    public IEnumerable<Cursor> Cursors = [];
+
     /// <summary>
     /// Gets the identifier used to distinguish the window within the windowing module.
     /// </summary>
@@ -89,17 +96,76 @@ public enum WindowMode
 /// underlying SDL3 window changes. <see cref="Focused"/> and <see cref="Opened"/>
 /// are read-only because their values are controlled by SDL3.
 /// </remarks>
-public partial class Window : Destroyable
+public partial class Window : Destroyable, IUpdatable
 {
-    /// <summary>
-    /// Stores whether the native window currently has input focus.
-    /// </summary>
     protected readonly Store<bool> _focused = new(false);
+    private readonly List<SDL.Event> _frameEvents = [];
+    private readonly Store<bool> _opened = new(false);
 
     /// <summary>
-    /// Stores whether the native window is currently open.
+    /// Gets a value indicating whether an initial position was explicitly configured.
     /// </summary>
-    protected readonly Store<bool> _opened = new(false);
+    protected readonly bool HasInitialPosition;
+
+    /// <summary>
+    /// Gets the selected cursor, or null to use SDL's default cursor.
+    /// </summary>
+    public readonly Store<Cursor?> Cursor;
+
+    /// <summary>
+    /// Gets the currently added window cursors.
+    /// </summary>
+    public readonly ReactiveDictionary<string, Cursor> Cursors = [];
+
+    /// <summary>
+    /// Gets a read-only store indicating whether the window currently has input focus.
+    /// </summary>
+    public readonly IReadOnlyStore<bool> Focused;
+
+    /// <summary>
+    /// Gets the identifier of the window.
+    /// </summary>
+    public readonly string Identifier;
+
+    /// <summary>
+    /// Gets the store that controls and reports the window's display mode.
+    /// </summary>
+    public readonly Store<WindowMode> Mode;
+
+    /// <summary>
+    /// Gets a read-only store indicating whether the native window is open.
+    /// </summary>
+    public readonly IReadOnlyStore<bool> Opened;
+
+    /// <summary>
+    /// Gets the store that controls and reports the position of the window's client area.
+    /// </summary>
+    public readonly Store<Vector2> Position;
+
+    /// <summary>
+    /// Gets the store that controls and reports whether the window is resizable.
+    /// </summary>
+    public readonly Store<bool> Resizable;
+
+    /// <summary>
+    /// Gets the store that controls and reports the size of the window's client area.
+    /// </summary>
+    public readonly Store<Vector2> Size;
+
+    /// <summary>
+    /// Gets the store that controls and reports the title of the window.
+    /// </summary>
+    public readonly Store<string> Title;
+
+    /// <summary>
+    /// Gets the store that controls and reports whether vertical synchronization is enabled.
+    /// </summary>
+    public readonly Store<bool> VSync;
+
+    /// <summary>
+    /// Gets the store that controls and reports whether the window is visible.
+    /// </summary>
+    public readonly Store<bool> Visible;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Window"/> class.
@@ -123,6 +189,12 @@ public partial class Window : Destroyable
         Focused = _focused;
         Opened = _opened;
 
+        foreach (var cursor in options.Cursors)
+        {
+            Cursors.Add(cursor.Identifier, cursor);
+        }
+        Cursor = new Store<Cursor?>(Cursors.Values.FirstOrDefault());
+
         Mode = new Store<WindowMode>(options.Mode);
         Position = new Store<Vector2>(options.Position ?? new Vector2());
         Resizable = new Store<bool>(options.Resizable);
@@ -141,59 +213,17 @@ public partial class Window : Destroyable
     }
 
     /// <summary>
-    /// Gets a value indicating whether an initial position was explicitly configured.
-    /// </summary>
-    protected bool HasInitialPosition { get; }
+    /// Gets the current window frame events, provided by SDL
+    /// </summary>>
+    public IReadOnlyList<SDL.Event> FrameEvents => _frameEvents;
 
-    /// <summary>
-    /// Gets a read-only store indicating whether the window currently has input focus.
-    /// </summary>
-    public IReadOnlyStore<bool> Focused { get; }
-
-    /// <summary>
-    /// Gets the identifier of the window.
-    /// </summary>
-    public string Identifier { get; }
-
-    /// <summary>
-    /// Gets the store that controls and reports the window's display mode.
-    /// </summary>
-    public Store<WindowMode> Mode { get; }
-
-    /// <summary>
-    /// Gets a read-only store indicating whether the native window is open.
-    /// </summary>
-    public IReadOnlyStore<bool> Opened { get; }
-
-    /// <summary>
-    /// Gets the store that controls and reports the position of the window's client area.
-    /// </summary>
-    public Store<Vector2> Position { get; }
-
-    /// <summary>
-    /// Gets the store that controls and reports whether the window is resizable.
-    /// </summary>
-    public Store<bool> Resizable { get; }
-
-    /// <summary>
-    /// Gets the store that controls and reports the size of the window's client area.
-    /// </summary>
-    public Store<Vector2> Size { get; }
-
-    /// <summary>
-    /// Gets the store that controls and reports the title of the window.
-    /// </summary>
-    public Store<string> Title { get; }
-
-    /// <summary>
-    /// Gets the store that controls and reports whether vertical synchronization is enabled.
-    /// </summary>
-    public Store<bool> VSync { get; }
-
-    /// <summary>
-    /// Gets the store that controls and reports whether the window is visible.
-    /// </summary>
-    public Store<bool> Visible { get; }
+    /// <inheritdoc/>
+    public void Update(double deltaTime)
+    {
+        ThrowIfDestroyed();
+        if (_opened.Get())
+            OnProcess();
+    }
 
     /// <summary>
     /// Closes the native window and releases its state stores.
@@ -251,19 +281,6 @@ public partial class Window : Destroyable
 
         _opened.Set(true);
     }
-
-    /// <summary>
-    /// Processes pending platform events and synchronizes native window state.
-    /// </summary>
-    /// <exception cref="DestroyedObjectException">
-    /// Thrown when the window has already been destroyed.
-    /// </exception>
-    public void Process()
-    {
-        ThrowIfDestroyed();
-        if (_opened.Get())
-            OnProcess();
-    }
 }
 
 /// <summary>
@@ -277,8 +294,6 @@ public partial class Window : Destroyable
 /// </remarks>
 public partial class Window
 {
-    private IntPtr _nativeWindow;
-
     private object? _publishingStore;
     private object? _publishingValue;
 
@@ -295,7 +310,7 @@ public partial class Window
     /// Used by the renderer to draw into this window.
     /// Do not destroy or mutate the window through this handle.
     /// </remarks>
-    public IntPtr Native => _nativeWindow;
+    public IntPtr Native { get; private set; }
 
     private bool BelongsToWindow(in SDL.Event @event, uint windowId)
     {
@@ -337,7 +352,7 @@ public partial class Window
 
     private void Publish<TValue>(IntPtr window, Store<TValue> store, Func<TValue> read)
     {
-        if (_nativeWindow != window || Destroyed)
+        if (Native != window || Destroyed)
             return;
 
         var value = read();
@@ -379,7 +394,7 @@ public partial class Window
 
         Publish(window, Mode, () => FromSdlFlags(flags));
 
-        if (_nativeWindow != window)
+        if (Native != window)
             return;
 
         Publish(
@@ -487,12 +502,12 @@ public partial class Window
     /// </summary>
     protected virtual void OnClose()
     {
-        var window = _nativeWindow;
+        var window = Native;
 
         if (window == IntPtr.Zero)
             return;
 
-        _nativeWindow = IntPtr.Zero;
+        Native = IntPtr.Zero;
 
         SDL.DestroyWindow(window);
         VideoRuntime.Release();
@@ -507,7 +522,7 @@ public partial class Window
         if (!ShouldApply(Mode, mode))
             return;
 
-        var window = _nativeWindow;
+        var window = Native;
 
         if (window == IntPtr.Zero)
             return;
@@ -566,7 +581,7 @@ public partial class Window
             return;
 
         var nativePosition = ToNativePosition(position);
-        var window = _nativeWindow;
+        var window = Native;
 
         if (window == IntPtr.Zero)
             return;
@@ -592,7 +607,7 @@ public partial class Window
     /// </summary>
     protected virtual void OnOpen()
     {
-        if (_nativeWindow != IntPtr.Zero)
+        if (Native != IntPtr.Zero)
             return;
 
         var requestedMode = Mode.Get();
@@ -616,7 +631,7 @@ public partial class Window
             throw new InvalidOperationException($"Creating SDL window failed: {SDL.GetError()}");
         }
 
-        _nativeWindow = window;
+        Native = window;
 
         try
         {
@@ -634,7 +649,7 @@ public partial class Window
         }
         catch
         {
-            _nativeWindow = IntPtr.Zero;
+            Native = IntPtr.Zero;
 
             SDL.DestroyWindow(window);
             VideoRuntime.Release();
@@ -648,30 +663,24 @@ public partial class Window
     /// </summary>
     protected virtual void OnProcess()
     {
-        var window = _nativeWindow;
+        _frameEvents.Clear();
 
+        var window = Native;
         if (window == IntPtr.Zero)
             return;
 
         var windowId = SDL.GetWindowID(window);
 
-        if (windowId == 0)
-        {
-            throw new InvalidOperationException(
-                $"Getting SDL window identifier failed: {SDL.GetError()}"
-            );
-        }
-
         while (SDL.PollEvent(out var @event))
         {
+            _frameEvents.Add(@event);
+
             if (!ProcessEvent(@event, windowId))
-                return;
+                break;
         }
 
-        if (_nativeWindow != window || Destroyed)
-            return;
-
-        SynchronizeState(window);
+        if (Native == window && !Destroyed)
+            SynchronizeState(window);
     }
 
     /// <summary>
@@ -683,7 +692,7 @@ public partial class Window
         if (!ShouldApply(Resizable, resizable))
             return;
 
-        var window = _nativeWindow;
+        var window = Native;
 
         if (window == IntPtr.Zero)
             return;
@@ -706,8 +715,8 @@ public partial class Window
         if (!ShouldApply(Size, size))
             return;
 
-        var nativeSize = ToNativeSize(size);
-        var window = _nativeWindow;
+        var (width, height) = ToNativeSize(size);
+        var window = Native;
 
         if (window == IntPtr.Zero)
             return;
@@ -722,12 +731,12 @@ public partial class Window
             "Getting window size"
         );
 
-        if (currentWidth == nativeSize.Width && currentHeight == nativeSize.Height)
+        if (currentWidth == width && currentHeight == height)
         {
             return;
         }
 
-        Ensure(SDL.SetWindowSize(window, nativeSize.Width, nativeSize.Height), "Resizing window");
+        Ensure(SDL.SetWindowSize(window, width, height), "Resizing window");
     }
 
     /// <summary>
@@ -739,7 +748,7 @@ public partial class Window
         if (!ShouldApply(Title, title))
             return;
 
-        var window = _nativeWindow;
+        var window = Native;
 
         if (window == IntPtr.Zero)
             return;
@@ -763,7 +772,7 @@ public partial class Window
         if (!ShouldApply(VSync, vsync))
             return;
 
-        var window = _nativeWindow;
+        var window = Native;
 
         if (window == IntPtr.Zero)
             return;
@@ -785,7 +794,7 @@ public partial class Window
         if (!ShouldApply(Visible, visible))
             return;
 
-        var window = _nativeWindow;
+        var window = Native;
 
         if (window == IntPtr.Zero)
             return;

@@ -17,6 +17,11 @@ public class WindowManager : Module, IUpdatable
     private bool _composed;
 
     /// <summary>
+    /// Gets the managed windows, indexed by identifier.
+    /// </summary>
+    public readonly IReadOnlyDictionary<string, Window> Windows;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="WindowManager"/> module.
     /// </summary>
     /// <param name="windows">The windows managed by the module.</param>
@@ -39,10 +44,12 @@ public class WindowManager : Module, IUpdatable
         Windows = _windows.AsReadOnly();
     }
 
-    /// <summary>
-    /// Gets the managed windows, indexed by identifier.
-    /// </summary>
-    public IReadOnlyDictionary<string, Window> Windows { get; }
+    /// <inheritdoc />
+    public void Update(double deltaTime)
+    {
+        foreach (var window in _windows.Values)
+            window.Update(deltaTime);
+    }
 
     private void EnsureComposed()
     {
@@ -131,12 +138,5 @@ public class WindowManager : Module, IUpdatable
             if (window.Opened.Get())
                 window.Close();
         }
-    }
-
-    /// <inheritdoc />
-    public void Update(double _)
-    {
-        foreach (var window in _windows.Values)
-            window.Process();
     }
 }

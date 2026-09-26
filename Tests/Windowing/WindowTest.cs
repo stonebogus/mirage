@@ -84,7 +84,7 @@ public class WindowTest
         window.Destroy();
 
         Assert.Equal(1, window.CloseCalls);
-        Assert.Throws<DestroyedObjectException>(() => window.OpenForTest());
+        Assert.Throws<DestroyedObjectException>(window.OpenForTest);
     }
 
     [Fact]
@@ -175,6 +175,6 @@ public class WindowTest
 
         public void OpenForTest() => Open();
 
-        public void ProcessForTest() => Process();
+        public void ProcessForTest() => Update(0);
     }
 }
