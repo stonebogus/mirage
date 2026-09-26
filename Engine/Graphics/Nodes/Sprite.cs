@@ -64,8 +64,6 @@ public class Sprite : SpatialNode, IDrawable
     public Sprite(string name, Texture texture, SpriteOptions? options = null)
         : base(name, options)
     {
-        ArgumentNullException.ThrowIfNull(texture);
-
         options ??= new SpriteOptions();
 
         Texture = new Store<Texture>(texture);
