@@ -73,25 +73,24 @@ public class Sprite : SpatialNode, IDrawable
         Pivot = new Store<Vector2>(options.Pivot);
     }
 
-    /// <summary>
+    /// <inheritdoc />
+    /// <remarks>
     /// Draws the texture with its pivot placed at the node's global position.
-    /// </summary>
-    /// <param name="context">The active drawing context.</param>
+    /// </remarks>
     public void Draw(IDrawContext context)
     {
-        var transform = GlobalTransform;
+        ArgumentNullException.ThrowIfNull(context);
+
         var size = Size.Get();
-
-        var localTopLeft = Origin.Get() - size * Pivot.Get();
-        var globalTopLeft = Vector2.Transform(localTopLeft, transform);
-
-        var scaleX = new Vector2(transform.M11, transform.M12).Length();
-        var scaleY = new Vector2(transform.M21, transform.M22).Length();
+        var topLeft = Origin.Get() - size * Pivot.Get();
+        var transform = GlobalTransform;
 
         context.DrawTexture(
             Texture.Get(),
-            globalTopLeft,
-            new Vector2(size.X * scaleX, size.Y * scaleY)
+            Vector2.Transform(topLeft, transform),
+            Vector2.Transform(topLeft + new Vector2(size.X, 0f), transform),
+            Vector2.Transform(topLeft + size, transform),
+            Vector2.Transform(topLeft + new Vector2(0f, size.Y), transform)
         );
     }
 
