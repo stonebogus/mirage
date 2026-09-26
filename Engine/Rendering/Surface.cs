@@ -238,27 +238,23 @@ internal sealed class RenderSurface(Window window)
         EnsureFrame();
         ArgumentNullException.ThrowIfNull(texture);
 
-        if (!texture.Destroyed)
-        {
-            ValidateRectangle(position, size);
-
-            var nativeTexture = GetTexture(texture);
-
-            var destination = new SDL.FRect
-            {
-                X = position.X,
-                Y = position.Y,
-                W = size.X,
-                H = size.Y,
-            };
-
-            if (!SDL.RenderTexture(_native, nativeTexture, nint.Zero, in destination))
-                throw Error("Drawing a texture");
-        }
-        else
-        {
+        if (texture.Destroyed)
             throw new ObjectDisposedException(nameof(texture));
-        }
+
+        ValidateRectangle(position, size);
+
+        var nativeTexture = GetTexture(texture);
+
+        var destination = new SDL.FRect
+        {
+            X = position.X,
+            Y = position.Y,
+            W = size.X,
+            H = size.Y,
+        };
+
+        if (!SDL.RenderTexture(_native, nativeTexture, nint.Zero, in destination))
+            throw Error("Drawing a texture");
     }
 
     /// <summary>
