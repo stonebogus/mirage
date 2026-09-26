@@ -41,15 +41,23 @@ public interface IDrawContext
     void DrawLine(Vector2 start, Vector2 end, Color color, float thickness = 1f);
 
     /// <summary>
-    /// Draws an entire texture at the specified position and size.
+    /// Draws an entire texture across four specified corners.
     /// </summary>
     /// <param name="texture">The texture to draw.</param>
-    /// <param name="position">The top-left position in screen or world coordinates.</param>
-    /// <param name="size">The drawn size in coordinate units.</param>
+    /// <param name="topLeft">The image's top-left corner in screen or world coordinates.</param>
+    /// <param name="topRight">The image's top-right corner in screen or world coordinates.</param>
+    /// <param name="bottomRight">The image's bottom-right corner in screen or world coordinates.</param>
+    /// <param name="bottomLeft">The image's bottom-left corner in screen or world coordinates.</param>
     /// <exception cref="ObjectDisposedException">
     /// Thrown when the texture or its image has been destroyed.
     /// </exception>
-    void DrawTexture(Texture texture, Vector2 position, Vector2 size);
+    void DrawTexture(
+        Texture texture,
+        Vector2 topLeft,
+        Vector2 topRight,
+        Vector2 bottomRight,
+        Vector2 bottomLeft
+    );
 
     /// <summary>
     /// Fills a circle with a color.
