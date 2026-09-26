@@ -13,8 +13,13 @@ namespace Mirage.Rendering;
 /// </summary>
 internal sealed class RenderSurface(Window window)
 {
+    private const int RenderScale = 2;
     private readonly Dictionary<Texture, nint> _textures = [];
     private bool _frameActive;
+
+    private nint _frameTexture;
+    private int _frameTextureHeight;
+    private int _frameTextureWidth;
     private nint _native;
 
     private static SDL.Vertex CreateVertex(Vector2 position, SDL.FColor color)
@@ -33,6 +38,48 @@ internal sealed class RenderSurface(Window window)
 
         if (!_frameActive)
             throw new InvalidOperationException("Drawing requires an active frame.");
+    }
+
+    private void EnsureFrameTexture(Vector2 viewportSize)
+    {
+        var width = checked(System.Math.Max(1, (int)MathF.Ceiling(viewportSize.X)) * RenderScale);
+        var height = checked(System.Math.Max(1, (int)MathF.Ceiling(viewportSize.Y)) * RenderScale);
+
+        if (
+            _frameTexture != nint.Zero
+            && width == _frameTextureWidth
+            && height == _frameTextureHeight
+        )
+            return;
+
+        var replacement = SDL.CreateTexture(
+            _native,
+            SDL.PixelFormat.ABGR8888,
+            SDL.TextureAccess.Target,
+            width,
+            height
+        );
+
+        if (replacement == nint.Zero)
+            throw Error("Creating the frame texture");
+
+        try
+        {
+            if (!SDL.SetTextureScaleMode(replacement, SDL.ScaleMode.Linear))
+                throw Error("Setting the frame texture scale mode");
+        }
+        catch
+        {
+            SDL.DestroyTexture(replacement);
+            throw;
+        }
+
+        if (_frameTexture != nint.Zero)
+            SDL.DestroyTexture(_frameTexture);
+
+        _frameTexture = replacement;
+        _frameTextureWidth = width;
+        _frameTextureHeight = height;
     }
 
     private void EnsureStarted()
@@ -155,8 +202,13 @@ internal sealed class RenderSurface(Window window)
     /// </summary>
     public void AbortFrame()
     {
-        // The next BeginFrame clears the backbuffer before drawing again.
+        if (!_frameActive)
+            return;
+
         _frameActive = false;
+
+        // Drawing must not remain directed at the intermediate texture.
+        SDL.SetRenderTarget(_native, nint.Zero);
     }
 
     /// <summary>
@@ -177,26 +229,58 @@ internal sealed class RenderSurface(Window window)
         if (_frameActive)
             throw new InvalidOperationException("A frame is already active.");
 
-        var context = new RenderContext(this, deltaTime, camera, window.Size.Get());
+        var viewportSize = window.Size.Get();
 
         ReleaseDestroyedTextures();
-        SetDrawColor(clearColor);
+        EnsureFrameTexture(viewportSize);
 
-        if (!SDL.RenderClear(_native))
-            throw Error("Clearing the frame");
+        if (!SDL.SetRenderTarget(_native, _frameTexture))
+            throw Error("Selecting the frame texture");
+
+        try
+        {
+            if (!SDL.SetRenderScale(_native, RenderScale, RenderScale))
+                throw Error("Setting the frame render scale");
+
+            SetDrawColor(clearColor);
+
+            if (!SDL.RenderClear(_native))
+                throw Error("Clearing the frame");
+        }
+        catch
+        {
+            SDL.SetRenderTarget(_native, nint.Zero);
+            throw;
+        }
 
         _frameActive = true;
-        return context;
+        return new RenderContext(this, deltaTime, camera, viewportSize);
     }
 
     /// <summary>
-    /// Presents the active frame to the window.
+    /// Reduces and presents the active frame to the window.
     /// </summary>
     public void EndFrame()
     {
         EnsureFrame();
 
         _frameActive = false;
+
+        if (!SDL.SetRenderTarget(_native, nint.Zero))
+            throw Error("Selecting the window render target");
+
+        var viewportSize = window.Size.Get();
+
+        var destination = new SDL.FRect
+        {
+            X = 0f,
+            Y = 0f,
+            W = viewportSize.X,
+            H = viewportSize.Y,
+        };
+
+        if (!SDL.RenderTexture(_native, _frameTexture, nint.Zero, in destination))
+            throw Error("Reducing the frame texture");
 
         if (!SDL.RenderPresent(_native))
             throw Error("Presenting the frame");
@@ -241,6 +325,16 @@ internal sealed class RenderSurface(Window window)
             return;
 
         _frameActive = false;
+        SDL.SetRenderTarget(_native, nint.Zero);
+
+        if (_frameTexture != nint.Zero)
+        {
+            SDL.DestroyTexture(_frameTexture);
+            _frameTexture = nint.Zero;
+        }
+
+        _frameTextureWidth = 0;
+        _frameTextureHeight = 0;
 
         foreach (var nativeTexture in _textures.Values)
             SDL.DestroyTexture(nativeTexture);
@@ -396,6 +490,61 @@ internal sealed class RenderSurface(Window window)
 
         if (!SDL.RenderGeometry(_native, nativeTexture, vertices, 6, nint.Zero, 0))
             throw Error("Drawing a texture");
+    }
+
+    /// <summary>
+    /// Draws a textured mesh using vertex positions in screen coordinates.
+    /// </summary>
+    internal void DrawMesh(GraphicMesh mesh, ReadOnlySpan<Vector2> positions)
+    {
+        EnsureFrame();
+
+        var geometry = mesh.Mesh;
+        var localVertices = geometry.Vertices.Span;
+        var textureCoordinates = mesh.TexCoords.Span;
+        var indices = geometry.Indices.Span;
+
+        if (positions.Length != localVertices.Length)
+        {
+            throw new ArgumentException(
+                "The position count must match the mesh vertex count.",
+                nameof(positions)
+            );
+        }
+
+        var white = new SDL.FColor
+        {
+            R = 1f,
+            G = 1f,
+            B = 1f,
+            A = 1f,
+        };
+
+        var vertices = new SDL.Vertex[positions.Length];
+
+        for (var index = 0; index < vertices.Length; index++)
+        {
+            var position = positions[index];
+            var uv = textureCoordinates[index];
+
+            vertices[index] = TexturedVertex(position, uv.X, uv.Y, white);
+        }
+
+        var nativeTexture = GetTexture(mesh.Texture);
+
+        if (
+            !SDL.RenderGeometry(
+                _native,
+                nativeTexture,
+                vertices,
+                vertices.Length,
+                indices,
+                indices.Length
+            )
+        )
+        {
+            throw Error("Drawing a mesh");
+        }
     }
 
     /// <summary>
