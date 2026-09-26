@@ -23,5 +23,7 @@ public sealed record MouseButtonEventPayload(
 /// <summary>
 /// Represents an action triggered by a mouse button.
 /// </summary>
+/// <param name="identifier">The stable action identifier.</param>
+/// <param name="source">The button that activates this action.</param>
 public sealed class MouseButtonEvent(string identifier, MouseButton source)
     : InputEvent<MouseButtonEventPayload, MouseButton>(identifier, source);

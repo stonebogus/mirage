@@ -6,14 +6,30 @@ using Mirage.Windowing;
 
 namespace Mirage.Handling;
 
+/// <summary>
+/// Registers input devices and updates them with events from one window.
+/// </summary>
 public class InputHandler : Module, IUpdatable
 {
     private readonly ReactiveDictionary<string, InputDevice> _devices = [];
     private bool _composed;
 
+    /// <summary>
+    /// Gets the devices owned by this handler, indexed by identifier.
+    /// </summary>
     public readonly IReadOnlyReactiveDictionary<string, InputDevice> Devices;
+
+    /// <summary>
+    /// Gets the window whose frame events are processed by this handler.
+    /// </summary>
     public readonly Window Window;
 
+    /// <summary>
+    /// Initializes a handler for the specified window and devices.
+    /// </summary>
+    /// <param name="index">The index used to distinguish the module identifier.</param>
+    /// <param name="window">The window supplying input events.</param>
+    /// <param name="devices">The devices to register initially, or <see langword="null"/>.</param>
     public InputHandler(int index, Window window, IEnumerable<InputDevice>? devices = null)
         : base($"InputHandler-{index}")
     {
@@ -25,6 +41,7 @@ public class InputHandler : Module, IUpdatable
         Devices = _devices;
     }
 
+    /// <inheritdoc />
     public void Update(double deltaTime)
     {
         var context = new InputContext(Window, Window.FrameEvents);
@@ -68,6 +85,8 @@ public class InputHandler : Module, IUpdatable
         yield break;
     }
 
+    /// <inheritdoc />
+    /// <remarks>This handler destroys its registered devices.</remarks>
     protected override void OnDestroy()
     {
         base.OnDestroy();

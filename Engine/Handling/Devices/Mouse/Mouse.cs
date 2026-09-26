@@ -144,7 +144,7 @@ public class Mouse : InputDevice
         OnWheel.Fire(new MouseWheelEventPayload(delta, position));
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     protected override void OnDestroy()
     {
         foreach (var action in Events.Values)
@@ -156,7 +156,7 @@ public class Mouse : InputDevice
         _position.Destroy();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     protected override void OnProcess(InputContext context)
     {
         EnsureComposed();

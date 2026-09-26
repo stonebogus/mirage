@@ -7,6 +7,13 @@ namespace Mirage.Handling.Devices.Keyboard;
 /// </summary>
 public static class KeyboardKeyMapper
 {
+    /// <summary>
+    /// Maps an SDL physical scancode to the corresponding Mirage key.
+    /// </summary>
+    /// <param name="scancode">The SDL scancode to map.</param>
+    /// <returns>
+    /// The matching key, or <see cref="KeyboardKey.Unknown"/> when no mapping exists.
+    /// </returns>
     public static KeyboardKey FromScancode(SDL.Scancode scancode)
     {
         var code = (int)scancode;

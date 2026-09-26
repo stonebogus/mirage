@@ -10,11 +10,18 @@ public class Keyboard : InputDevice
 {
     private bool _composed;
 
+    /// <summary>
+    /// Gets the keyboard actions registered by identifier.
+    /// </summary>
     public readonly ReactiveDictionary<
         string,
         InputEvent<KeyboardEventPayload, KeyboardKey>
     > Events = [];
 
+    /// <summary>
+    /// Creates a keyboard with the specified actions.
+    /// </summary>
+    /// <param name="events">The actions to register initially.</param>
     public Keyboard(params InputEvent<KeyboardEventPayload, KeyboardKey>[] events)
         : base("Keyboard")
     {
@@ -61,6 +68,7 @@ public class Keyboard : InputDevice
         yield break;
     }
 
+    /// <inheritdoc />
     protected override void OnDestroy()
     {
         foreach (var action in Events.Values)
@@ -69,6 +77,7 @@ public class Keyboard : InputDevice
         Events.Destroy();
     }
 
+    /// <inheritdoc />
     protected override void OnProcess(InputContext context)
     {
         EnsureComposed();
