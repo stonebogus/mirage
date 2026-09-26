@@ -10,7 +10,15 @@ namespace Mirage.Spatial.Nodes;
 public class SpatialNodeOptions : NodeOptions
 {
     /// <summary>
-    /// Gets the initial position relative to the node's spatial parent.
+    /// Gets the initial local origin used as the center of scale and rotation.
+    /// </summary>
+    /// <remarks>
+    /// The origin is measured in local units. It is not normalized.
+    /// </remarks>
+    public Vector2 Origin { get; init; } = Vector2.Zero;
+
+    /// <summary>
+    /// Gets the initial position of the origin relative to the node's spatial parent.
     /// </summary>
     public Vector2 Position { get; init; } = Vector2.Zero;
 
@@ -29,18 +37,26 @@ public class SpatialNodeOptions : NodeOptions
 /// Represents a node positioned in two-dimensional space.
 /// </summary>
 /// <remarks>
-/// Position, rotation, and scale are local to the node. Ordinary nodes between
-/// spatial nodes organize the tree without adding a transformation.
+/// Origin, position, rotation, and scale determine the transformation of this
+/// node and its spatial descendants. Ordinary nodes between spatial nodes
+/// organize the tree without adding a transformation.
 /// </remarks>
 public class SpatialNode : Node
 {
+    private Vector2 _cachedOrigin;
     private Vector2 _cachedPosition;
     private float _cachedRotation;
     private Vector2 _cachedScale;
     private bool _hasCachedLocalTransform;
 
     /// <summary>
-    /// Gets the position relative to the node's spatial parent.
+    /// Gets the local origin around which this node and its descendants
+    /// are scaled and rotated.
+    /// </summary>
+    public readonly Store<Vector2> Origin;
+
+    /// <summary>
+    /// Gets the position of the origin relative to the node's spatial parent.
     /// </summary>
     public readonly Store<Vector2> Position;
 
@@ -66,6 +82,7 @@ public class SpatialNode : Node
     {
         options ??= new SpatialNodeOptions();
 
+        Origin = new Store<Vector2>(options.Origin);
         Position = new Store<Vector2>(options.Position);
         Rotation = new Store<float>(options.Rotation);
         Scale = new Store<Vector2>(options.Scale);
@@ -74,7 +91,7 @@ public class SpatialNode : Node
     /// <summary>
     /// Gets the world position of this node's origin.
     /// </summary>
-    public Vector2 GlobalPosition => Vector2.Transform(Vector2.Zero, GlobalTransform);
+    public Vector2 GlobalPosition => Vector2.Transform(Origin.Get(), GlobalTransform);
 
     /// <summary>
     /// Gets this node's transformation after applying its spatial ancestors.
@@ -106,29 +123,33 @@ public class SpatialNode : Node
     /// Gets the transformation defined by this node's local values.
     /// </summary>
     /// <remarks>
-    /// The matrix is recalculated only when position, rotation, or scale
+    /// The matrix is recalculated only when origin, position, rotation, or scale
     /// has changed since the previous read.
     /// </remarks>
     public Matrix3x2 LocalTransform
     {
         get
         {
+            var origin = Origin.Get();
             var position = Position.Get();
             var rotation = Rotation.Get();
             var scale = Scale.Get();
 
             if (
                 !_hasCachedLocalTransform
+                || origin != _cachedOrigin
                 || position != _cachedPosition
                 || rotation != _cachedRotation
                 || scale != _cachedScale
             )
             {
                 field =
-                    Matrix3x2.CreateScale(scale)
+                    Matrix3x2.CreateTranslation(-origin)
+                    * Matrix3x2.CreateScale(scale)
                     * Matrix3x2.CreateRotation(rotation)
                     * Matrix3x2.CreateTranslation(position);
 
+                _cachedOrigin = origin;
                 _cachedPosition = position;
                 _cachedRotation = rotation;
                 _cachedScale = scale;
@@ -142,6 +163,7 @@ public class SpatialNode : Node
     /// <inheritdoc />
     protected override void OnDestroy()
     {
+        Origin.Destroy();
         Position.Destroy();
         Rotation.Destroy();
         Scale.Destroy();
