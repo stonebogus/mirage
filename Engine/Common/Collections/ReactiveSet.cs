@@ -49,6 +49,7 @@ public interface IReadOnlyReactiveSet<TItem> : IEnumerable<TItem>
 /// Represents a mutable collection of unique items, providing reactive events
 /// and an optional capacity limit with automatic truncation.
 /// </summary>
+/// <remarks>When the limit is reached, adding an item removes the oldest item first.</remarks>
 /// <typeparam name="TItem">The type of items stored in the reactive set.</typeparam>
 public class ReactiveSet<TItem> : Destroyable, IReadOnlyReactiveSet<TItem>
 {
@@ -77,6 +78,9 @@ public class ReactiveSet<TItem> : Destroyable, IReadOnlyReactiveSet<TItem>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="limit"/> is negative.
     /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the initial items contain duplicates.
+    /// </exception>
     public ReactiveSet(IEnumerable<TItem>? items = null, int limit = 0)
     {
         if (limit < 0)
@@ -93,17 +97,17 @@ public class ReactiveSet<TItem> : Destroyable, IReadOnlyReactiveSet<TItem>
     }
 
     /// <summary>
-    /// Gets the event fired whenever an item is added to the reactive set.
+    /// Gets the event fired after an item is added to the reactive set.
     /// </summary>
     public IReadOnlyEvent<TItem> OnAdd { get; }
 
     /// <summary>
-    /// Gets the event fired when the reactive set is cleared.
+    /// Gets the event fired before a clear operation removes its items.
     /// </summary>
     public IReadOnlyEvent<Unit> OnClear { get; }
 
     /// <summary>
-    /// Gets the event fired whenever an item is removed from the reactive set.
+    /// Gets the event fired before an item is removed from the reactive set.
     /// </summary>
     public IReadOnlyEvent<TItem> OnRemove { get; }
 
@@ -220,6 +224,7 @@ public class ReactiveSet<TItem> : Destroyable, IReadOnlyReactiveSet<TItem>
     /// <summary>
     /// Removes all items from the reactive set.
     /// </summary>
+    /// <remarks>Fires <see cref="OnClear"/> before firing <see cref="OnRemove"/> for each item.</remarks>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the reactive set has been destroyed.
     /// </exception>

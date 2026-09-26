@@ -36,6 +36,7 @@ public enum GameState
 /// <remarks>
 /// A game manages its modules by resolving their dependencies, injecting their
 /// shared context, and starting and stopping them in dependency order.
+/// It owns and destroys its registered modules and telemetry manager.
 /// </remarks>
 public abstract class Game : Destroyable
 {
@@ -126,16 +127,6 @@ public abstract class Game : Destroyable
         _composed = true;
     }
 
-    /// <summary>
-    /// Resolves the module startup order using their declared dependencies.
-    /// </summary>
-    /// <returns>
-    /// The modules ordered so that each module appears after its dependencies.
-    /// </returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when a required dependency is missing or a circular dependency
-    /// is detected.
-    /// </exception>
     private IReadOnlyList<Module> ResolveModuleOrder()
     {
         Dictionary<string, Module> modulesByIdentifier = [];
@@ -189,12 +180,6 @@ public abstract class Game : Destroyable
         }
     }
 
-    /// <summary>
-    /// Stops the modules that started successfully before a startup failure.
-    /// </summary>
-    /// <param name="startedModules">
-    /// The modules that started successfully before the failure occurred.
-    /// </param>
     private static void RollbackStartedModules(IReadOnlyList<Module> startedModules)
     {
         for (var index = startedModules.Count - 1; index >= 0; index--)
@@ -219,7 +204,7 @@ public abstract class Game : Destroyable
     /// An enumerable sequence containing the modules to register for this game.
     /// </returns>
     /// <remarks>
-    /// The default implementation does not compose any services.
+    /// The default implementation does not compose any modules.
     ///
     /// Composed modules are registered before modules supplied directly to the
     /// constructor.
@@ -286,7 +271,7 @@ public abstract class Game : Destroyable
     }
 
     /// <summary>
-    /// Starts the game, all registered modules
+    /// Starts the game and all registered modules.
     /// </summary>
     /// <remarks>
     /// Module dependencies are resolved before startup. Each module receives

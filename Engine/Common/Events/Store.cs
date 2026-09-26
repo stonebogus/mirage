@@ -26,7 +26,7 @@ public interface IReadOnlyStore<TValue> : IReadOnlyEvent<TValue>
 public interface IStore<TValue> : IReadOnlyStore<TValue>, IEvent<TValue>
 {
     /// <summary>
-    /// Updates the store's value and notifies listeners if the value has changed.
+    /// Updates the value and notifies listeners only when it differs from the current value.
     /// </summary>
     /// <param name="value">The new value to set.</param>
     void Set(TValue value);
@@ -49,12 +49,9 @@ public interface IStore<TValue> : IReadOnlyStore<TValue>, IEvent<TValue>
 /// store.Set(5); // Logs: Changed from 0 to 5.
 /// </code>
 /// </example>
-/// <remarks>
-/// Initializes a new instance of the <see cref="Store{TValue}"/> class.
-/// </remarks>
 /// <param name="value">The initial value of the store.</param>
 /// <param name="equals">
-/// An optional function used to determine whether two values are equal.
+/// An optional equality function. A <see langword="true"/> result suppresses the update.
 /// </param>
 public class Store<TValue>(TValue value, Func<TValue, TValue, bool>? equals = null)
     : Event<TValue>,
@@ -72,12 +69,12 @@ public class Store<TValue>(TValue value, Func<TValue, TValue, bool>? equals = nu
     }
 
     /// <summary>
-    /// Gets the value held by the store before the most recent change.
+    /// Gets the value held before the most recent change. Initially, it equals the current value.
     /// </summary>
     public TValue Previous { get; private set; } = value;
 
     /// <summary>
-    /// Updates the store's value and notifies listeners if the value has changed.
+    /// Updates the value and notifies listeners only when it differs from the current value.
     /// </summary>
     /// <param name="value">The new value to set.</param>
     /// <exception cref="DestroyedObjectException">
@@ -107,8 +104,8 @@ public class Store<TValue>(TValue value, Func<TValue, TValue, bool>? equals = nu
     /// Returns the string representation of the current value.
     /// </summary>
     /// <returns>
-    /// The string representation of the current value, or <c>null</c> if the
-    /// current value is <see langword="null"/>.
+    /// The string representation of the current value, or the literal <c>"null"</c>
+    /// when the current value is <see langword="null"/>.
     /// </returns>
     public override string ToString()
     {

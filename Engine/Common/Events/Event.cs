@@ -91,6 +91,9 @@ public interface IReadOnlyEvent<TPayload> : IReadOnlyDestroyable
     /// <returns>
     /// An <see cref="EventConnection{TPayload}"/> representing the subscription.
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="callback"/> is <see langword="null"/>.
+    /// </exception>
     EventConnection<TPayload> Connect(Action<TPayload> callback, bool persistent = false);
 }
 
@@ -106,6 +109,9 @@ public interface IEvent<TPayload> : IReadOnlyEvent<TPayload>, IDestroyable
     /// <param name="force">
     /// If <see langword="true"/>, clears all connections, including persistent ones.
     /// </param>
+    /// <exception cref="DestroyedObjectException">
+    /// Thrown when the event has been destroyed.
+    /// </exception>
     void Clear(bool force = false);
 }
 
@@ -150,6 +156,9 @@ public abstract class Event<TPayload> : Destroyable, IEvent<TPayload>
     /// <returns>
     /// An <see cref="EventConnection{TPayload}"/> representing the subscription.
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="callback"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the event has already been destroyed.
     /// </exception>

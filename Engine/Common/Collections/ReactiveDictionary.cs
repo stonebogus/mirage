@@ -8,8 +8,6 @@ namespace Mirage.Common.Collections;
 /// <summary>
 /// Provides read-only access to the entries in a reactive dictionary.
 /// </summary>
-/// <typeparam name="TKey">The type of keys stored in the reactive dictionary.</typeparam>
-/// <typeparam name="TValue">The type of values stored in the reactive dictionary.</typeparam>
 public interface IReadOnlyReactiveDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     where TKey : notnull
 {
@@ -104,6 +102,9 @@ public class ReactiveDictionary<TKey, TValue>
     /// The initial entries to add to the reactive dictionary, or <see langword="null"/>
     /// to start empty.
     /// </param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the initial entries contain duplicate keys.
+    /// </exception>
     public ReactiveDictionary(IEnumerable<KeyValuePair<TKey, TValue>>? items = null)
     {
         foreach (var item in items ?? [])
@@ -116,22 +117,22 @@ public class ReactiveDictionary<TKey, TValue>
     }
 
     /// <summary>
-    /// Gets the event fired whenever an entry is added to the reactive dictionary.
+    /// Gets the event fired after an entry is added to the reactive dictionary.
     /// </summary>
     public IReadOnlyEvent<KeyValuePair<TKey, TValue>> OnAdd { get; }
 
     /// <summary>
-    /// Gets the event fired when the reactive dictionary is cleared.
+    /// Gets the event fired before a clear operation removes its entries.
     /// </summary>
     public IReadOnlyEvent<Unit> OnClear { get; }
 
     /// <summary>
-    /// Gets the event fired whenever an entry is removed from the reactive dictionary.
+    /// Gets the event fired after an entry is removed from the reactive dictionary.
     /// </summary>
     public IReadOnlyEvent<KeyValuePair<TKey, TValue>> OnRemove { get; }
 
     /// <summary>
-    /// Gets the event fired whenever the value associated with an existing key is updated.
+    /// Gets the event fired after the value associated with an existing key is updated.
     /// </summary>
     public IReadOnlyEvent<(
         KeyValuePair<TKey, TValue> Previous,
@@ -277,6 +278,12 @@ public class ReactiveDictionary<TKey, TValue>
     /// </summary>
     /// <param name="key">The key of the entry to add.</param>
     /// <param name="value">The value of the entry to add.</param>
+    /// <exception cref="DestroyedObjectException">
+    /// Thrown when the dictionary has been destroyed.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the key is already present.
+    /// </exception>
     public void Add(TKey key, TValue value)
     {
         ThrowIfDestroyed();
@@ -289,6 +296,10 @@ public class ReactiveDictionary<TKey, TValue>
     /// <summary>
     /// Removes all entries from the reactive dictionary.
     /// </summary>
+    /// <remarks>Fires <see cref="OnClear"/> before firing <see cref="OnRemove"/> for each entry.</remarks>
+    /// <exception cref="DestroyedObjectException">
+    /// Thrown when the dictionary has been destroyed.
+    /// </exception>
     public void Clear()
     {
         ThrowIfDestroyed();
@@ -307,6 +318,9 @@ public class ReactiveDictionary<TKey, TValue>
     /// <see langword="true"/> if the entry was successfully found and removed;
     /// otherwise, <see langword="false"/>.
     /// </returns>
+    /// <exception cref="DestroyedObjectException">
+    /// Thrown when the dictionary has been destroyed.
+    /// </exception>
     public bool Remove(TKey key)
     {
         ThrowIfDestroyed();

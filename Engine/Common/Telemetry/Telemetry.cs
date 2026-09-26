@@ -9,6 +9,7 @@ namespace Mirage.Common.Telemetry;
 /// Represents a telemetry manager responsible for collecting, organizing,
 /// and dispatching messages across multiple prioritized output ports.
 /// </summary>
+/// <remarks>Telemetry owns and destroys its registered ports.</remarks>
 public sealed class Telemetry : Destroyable
 {
     private readonly Signal<Message> _onSend = new();
@@ -22,7 +23,7 @@ public sealed class Telemetry : Destroyable
     /// Initializes a new instance of the <see cref="Telemetry"/> class.
     /// </summary>
     /// <param name="ports">
-    /// The initial telemetry output ports to register.
+    /// The initial telemetry output ports, or <see langword="null"/> for none.
     /// </param>
     public Telemetry(IEnumerable<IPort>? ports = null)
     {
@@ -33,7 +34,7 @@ public sealed class Telemetry : Destroyable
     }
 
     /// <summary>
-    /// Gets the signal fired after a message is dispatched to all output ports.
+    /// Gets the signal fired after a message is dispatched successfully to all output ports.
     /// </summary>
     public IReadOnlyEvent<Message> OnSend { get; }
 

@@ -47,9 +47,8 @@ public interface IDestroyable
 /// Provides a base implementation for objects with a destroyable lifecycle.
 /// </summary>
 /// <remarks>
-/// <see cref="Destroyable"/> manages the destroyed state and provides a lifecycle
-/// hook that derived types can override to release their resources or perform
-/// additional cleanup.
+/// This base class manages the destroyed state and provides a lifecycle hook
+/// that derived types can override to release resources or perform cleanup.
 /// </remarks>
 public abstract class Destroyable : IDestroyable
 {
