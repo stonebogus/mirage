@@ -6,6 +6,9 @@ namespace Mirage.Rendering.Layers;
 /// <summary>
 /// Draws loaded drawable nodes from the active root.
 /// </summary>
+/// <param name="manager">The node manager providing the active root.</param>
+/// <param name="identifier">The layer identifier. The default is <c>"nodes"</c>.</param>
+/// <param name="priority">The drawing priority. The default is <see cref="DrawLayerPriority.Normal"/>.</param>
 public sealed class NodeDrawLayer(
     NodeManager manager,
     string identifier = "nodes",

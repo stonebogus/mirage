@@ -24,7 +24,7 @@ public sealed class ImageDecoder : Decoder<Image>
         ".hdr",
     };
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     protected override Image OnDecode(LoadContext context, Stream stream)
     {
         var result = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
@@ -37,7 +37,7 @@ public sealed class ImageDecoder : Decoder<Image>
         );
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public override bool Supports(string extension)
     {
         return Extensions.Contains(extension);

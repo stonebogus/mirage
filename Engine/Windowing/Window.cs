@@ -13,22 +13,23 @@ namespace Mirage.Windowing;
 public sealed class WindowOptions
 {
     /// <summary>
-    /// Gets the initial window cursors
+    /// Gets the cursors to register initially. The default is an empty sequence.
     /// </summary>
+    /// <remarks>The window stores these references but does not own the cursors.</remarks>
     public IEnumerable<Cursor> Cursors = [];
 
     /// <summary>
-    /// Gets the identifier used to distinguish the window within the windowing module.
+    /// Gets the window identifier. The default is <c>"window"</c>.
     /// </summary>
     public string Identifier { get; init; } = "window";
 
     /// <summary>
-    /// Gets the initial display mode of the window.
+    /// Gets the initial display mode. The default is <see cref="WindowMode.Normal"/>.
     /// </summary>
     public WindowMode Mode { get; init; } = WindowMode.Normal;
 
     /// <summary>
-    /// Gets the initial position of the window's client area, in screen coordinates.
+    /// Gets the initial client-area position in screen coordinates.
     /// </summary>
     /// <remarks>
     /// When <see langword="null"/>, the platform chooses the initial position.
@@ -37,27 +38,27 @@ public sealed class WindowOptions
     public Vector2? Position { get; init; }
 
     /// <summary>
-    /// Gets a value indicating whether the user can resize the window.
+    /// Gets whether the user can resize the window. The default is <see langword="true"/>.
     /// </summary>
     public bool Resizable { get; init; } = true;
 
     /// <summary>
-    /// Gets the initial size of the window's client area.
+    /// Gets the initial client-area size in pixels. The default is <c>(800, 600)</c>.
     /// </summary>
     public Vector2 Size { get; init; } = new(800, 600);
 
     /// <summary>
-    /// Gets the initial title of the window.
+    /// Gets the initial title. The default is <c>"Mirage"</c>.
     /// </summary>
     public string Title { get; init; } = "Mirage";
 
     /// <summary>
-    /// Gets a value indicating whether vertical synchronization is initially enabled.
+    /// Gets whether vertical synchronization is initially enabled. The default is <see langword="false"/>.
     /// </summary>
     public bool VSync { get; init; }
 
     /// <summary>
-    /// Gets a value indicating whether the window is initially visible.
+    /// Gets whether the window is initially visible. The default is <see langword="true"/>.
     /// </summary>
     public bool Visible { get; init; } = true;
 }
@@ -95,6 +96,7 @@ public enum WindowMode
 /// Writable stores describe requested window state and are also updated when the
 /// underlying SDL3 window changes. <see cref="Focused"/> and <see cref="Opened"/>
 /// are read-only because their values are controlled by SDL3.
+/// Registered cursors are references; the window does not own or destroy them.
 /// </remarks>
 public partial class Window : Destroyable, IUpdatable
 {
@@ -111,12 +113,12 @@ public partial class Window : Destroyable, IUpdatable
     protected readonly bool HasInitialPosition;
 
     /// <summary>
-    /// Gets the selected cursor, or null to use SDL's default cursor.
+    /// Gets the cursor value selected for this window, or <see langword="null"/> when none is selected.
     /// </summary>
     public readonly Store<Cursor?> Cursor;
 
     /// <summary>
-    /// Gets the currently added window cursors.
+    /// Gets the registered cursors, indexed by identifier.
     /// </summary>
     public readonly ReactiveDictionary<string, Cursor> Cursors = [];
 
@@ -142,6 +144,7 @@ public partial class Window : Destroyable, IUpdatable
 
     /// <summary>
     /// Gets the store that controls and reports the position of the window's client area.
+    /// The position is expressed in screen coordinates.
     /// </summary>
     public readonly Store<Vector2> Position;
 
@@ -152,6 +155,7 @@ public partial class Window : Destroyable, IUpdatable
 
     /// <summary>
     /// Gets the store that controls and reports the size of the window's client area.
+    /// The size is expressed in pixels.
     /// </summary>
     public readonly Store<Vector2> Size;
 
@@ -178,6 +182,9 @@ public partial class Window : Destroyable, IUpdatable
     /// </param>
     /// <exception cref="ArgumentException">
     /// Thrown when the configured identifier is empty or consists only of whitespace.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the initial cursor collection contains duplicate identifiers.
     /// </exception>
     public Window(WindowOptions? options = null)
     {
@@ -216,11 +223,12 @@ public partial class Window : Destroyable, IUpdatable
     }
 
     /// <summary>
-    /// Gets the current window frame events, provided by SDL
-    /// </summary>>
+    /// Gets the SDL events polled during the most recent window update.
+    /// </summary>
+    /// <remarks>The list is replaced on each update and can contain events for other windows.</remarks>
     public IReadOnlyList<SDL.Event> FrameEvents => _frameEvents;
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void Update(double deltaTime)
     {
         ThrowIfDestroyed();
@@ -228,9 +236,7 @@ public partial class Window : Destroyable, IUpdatable
             OnProcess();
     }
 
-    /// <summary>
-    /// Closes the native window and releases its state stores.
-    /// </summary>
+    /// <inheritdoc />
     protected override void OnDestroy()
     {
         if (_opened.Get())
@@ -310,8 +316,8 @@ public partial class Window
     /// Gets the native SDL window while it is open.
     /// </summary>
     /// <remarks>
-    /// Used by the renderer to draw into this window.
-    /// Do not destroy or mutate the window through this handle.
+    /// The handle is owned by this window and is <see cref="IntPtr.Zero"/> while closed.
+    /// Do not destroy or mutate the window through this borrowed handle.
     /// </remarks>
     public IntPtr Native { get; private set; }
 

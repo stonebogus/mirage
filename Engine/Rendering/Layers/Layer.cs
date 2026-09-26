@@ -33,6 +33,7 @@ public class DrawLayer : Destroyable
     /// </summary>
     public readonly List<IDrawable> Entries = [];
 
+    /// <remarks>The layer stores references to its entries but does not own or destroy them.</remarks>
     /// <summary>
     /// Gets the unique identifier of this layer.
     /// </summary>
@@ -47,8 +48,11 @@ public class DrawLayer : Destroyable
     /// Initializes a rendering layer.
     /// </summary>
     /// <param name="identifier">The layer's unique identifier.</param>
-    /// <param name="priority">The layer's rendering priority.</param>
-    /// <param name="entries">Objects initially contained in the layer.</param>
+    /// <param name="priority">The rendering priority. The default is <see cref="DrawLayerPriority.Normal"/>.</param>
+    /// <param name="entries">The initial drawable references, or <see langword="null"/> for none.</param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="identifier"/> is empty or whitespace.
+    /// </exception>
     public DrawLayer(
         string identifier,
         DrawLayerPriority priority = DrawLayerPriority.Normal,
@@ -85,14 +89,14 @@ public class DrawLayer : Destroyable
     /// Supplies objects to add to this layer on its first rendering frame.
     /// </summary>
     /// <returns>The objects to add to the layer.</returns>
+    /// <remarks>The default implementation adds no objects.</remarks>
     protected virtual IEnumerable<IDrawable> Compose()
     {
         yield break;
     }
 
-    /// <summary>
-    /// Removes references to objects contained in this layer.
-    /// </summary>
+    /// <inheritdoc />
+    /// <remarks>Clears the entry list without destroying its drawable objects.</remarks>
     protected override void OnDestroy()
     {
         Entries.Clear();
@@ -108,6 +112,9 @@ public class DrawLayer : Destroyable
     /// Draws this layer's entries and any additional content.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
+    /// <exception cref="DestroyedObjectException">
+    /// Thrown when this layer has been destroyed.
+    /// </exception>
     public void Draw(RenderContext context)
     {
         ThrowIfDestroyed();

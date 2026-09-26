@@ -14,22 +14,26 @@ namespace Mirage.Windowing;
 public sealed class CursorOptions
 {
     /// <summary>
-    /// Gets the click position within a custom image, in pixels.
+    /// Gets the custom-image hotspot in pixels. The default is <c>(0, 0)</c>.
     /// </summary>
+    /// <remarks>The hotspot is used only when <see cref="Icon"/> is not <see langword="null"/>.</remarks>
     public Vector2 Hotspot { get; init; } = Vector2.Zero;
 
     /// <summary>
-    /// Gets the custom image. When null, the system cursor is used.
+    /// Gets the custom image, or <see langword="null"/> to use a system cursor.
+    /// The default is <see langword="null"/>.
     /// </summary>
+    /// <remarks>The cursor does not own this image.</remarks>
     public Image? Icon { get; init; }
 
     /// <summary>
-    /// Gets the system style used when <see cref="Icon"/> is null.
+    /// Gets the system style used when <see cref="Icon"/> is <see langword="null"/>.
+    /// The default is <see cref="SDL.SystemCursor.Default"/>.
     /// </summary>
     public SDL.SystemCursor SystemIcon { get; init; } = SDL.SystemCursor.Default;
 
     /// <summary>
-    /// Gets whether the cursor is visible when applied.
+    /// Gets whether the cursor is visible when active. The default is <see langword="true"/>.
     /// </summary>
     public bool Visible { get; init; } = true;
 }
@@ -40,7 +44,7 @@ public sealed class CursorOptions
 /// <remarks>
 /// SDL cursor selection and visibility are global. Create, apply, change, and
 /// destroy cursors on the main thread while SDL's video subsystem is initialized.
-/// The cursor does not own its <see cref="Image"/>.
+/// The cursor owns its native SDL handle but does not own its <see cref="Image"/>.
 /// </remarks>
 public sealed class Cursor : Destroyable
 {
@@ -53,13 +57,13 @@ public sealed class Cursor : Destroyable
     public readonly Store<Vector2> Hotspot;
 
     /// <summary>
-    /// Gets the custom cursor image. Set this to null to use <see cref="SystemIcon"/>.
-    /// Changing it recreates the native cursor.
+    /// Gets the custom cursor image. Set this to <see langword="null"/> to use <see cref="SystemIcon"/>.
+    /// Changing it recreates the native cursor. The image is not owned by this cursor.
     /// </summary>
     public readonly Store<Image?> Icon;
 
     /// <summary>
-    /// Gets the system cursor style used when <see cref="Icon"/> is null.
+    /// Gets the system cursor style used when <see cref="Icon"/> is <see langword="null"/>.
     /// Changing it recreates the native cursor when no custom image is set.
     /// </summary>
     public readonly Store<SDL.SystemCursor> SystemIcon;
@@ -74,6 +78,21 @@ public sealed class Cursor : Destroyable
     /// </summary>
     /// <param name="identifier">The cursor identifier.</param>
     /// <param name="options">The initial cursor settings.</param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="identifier"/> is empty or whitespace.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    /// Thrown when the custom image has been destroyed.
+    /// </exception>
+    /// <exception cref="NotSupportedException">
+    /// Thrown when the custom image format is unsupported.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the custom image dimensions or hotspot are invalid.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when SDL cannot create the native cursor.
+    /// </exception>
     public Cursor(string identifier, CursorOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
@@ -113,6 +132,10 @@ public sealed class Cursor : Destroyable
     /// <summary>
     /// Gets the native SDL cursor handle.
     /// </summary>
+    /// <remarks>The handle is owned by this cursor and is valid only until it is destroyed.</remarks>
+    /// <exception cref="DestroyedObjectException">
+    /// Thrown when this cursor has been destroyed.
+    /// </exception>
     public IntPtr Native
     {
         get
@@ -263,6 +286,12 @@ public sealed class Cursor : Destroyable
     /// <summary>
     /// Makes this cursor active in SDL and applies its visibility.
     /// </summary>
+    /// <exception cref="DestroyedObjectException">
+    /// Thrown when this cursor has been destroyed.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when SDL cannot select the cursor or change cursor visibility.
+    /// </exception>
     public void Apply()
     {
         ThrowIfDestroyed();

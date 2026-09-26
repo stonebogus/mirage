@@ -17,6 +17,7 @@ public sealed record LoadContext(string Identifier, string Path);
 /// <summary>
 /// Loads, caches and unloads resources.
 /// </summary>
+/// <remarks>The loader owns successfully loaded resources and destroys them when it is destroyed.</remarks>
 public class Loader : Module
 {
     private readonly Dictionary<ResourceKey, Resource> _resources = [];
@@ -28,7 +29,7 @@ public class Loader : Module
     public readonly ReactiveSet<Decoder> Decoders;
 
     /// <summary>
-    /// Gets the root directory used to locate resources.
+    /// Gets the absolute root directory used to locate resources.
     /// </summary>
     public readonly string Root;
 
@@ -39,13 +40,15 @@ public class Loader : Module
     /// The directory from which resources are loaded.
     /// </param>
     /// <param name="decoders">
-    /// The initially registered resource decoders.
+    /// The initial decoders, or <see langword="null"/> for none.
     /// </param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="root"/> is empty or whitespace.
+    /// </exception>
     public Loader(string root, IEnumerable<Decoder>? decoders = null)
         : base("Loader")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
-
         Root = Path.GetFullPath(root);
         Decoders = [.. decoders ?? []];
     }
@@ -66,15 +69,6 @@ public class Loader : Module
         _composed = true;
     }
 
-    /// <summary>
-    /// Resolves and validates a path relative to the loader root.
-    /// </summary>
-    /// <param name="path">
-    /// The resource path relative to <see cref="Root"/>.
-    /// </param>
-    /// <returns>
-    /// The absolute validated resource path.
-    /// </returns>
     private string ResolvePath(string path)
     {
         var absolutePath = Path.GetFullPath(path, Root);
@@ -107,13 +101,10 @@ public class Loader : Module
     /// <summary>
     /// Composes the decoders managed by this loader.
     /// </summary>
-    /// <returns>
-    /// An enumerable sequence containing the decoders to register.
-    /// </returns>
+    /// <returns>An enumerable sequence of decoders to register.</returns>
     /// <remarks>
-    /// Composition occurs once, either when the loader starts or when a
-    /// resource is loaded for the first time. Decoders supplied to the
-    /// constructor are registered before composed decoders.
+    /// Composition occurs once when the loader starts or first loads a resource.
+    /// Constructor-supplied decoders are registered before composed decoders.
     /// </remarks>
     protected virtual IEnumerable<Decoder> Compose()
     {
@@ -151,6 +142,25 @@ public class Loader : Module
     /// <returns>
     /// The loaded resource.
     /// </returns>
+    /// <remarks>
+    /// Resources are cached by requested type and normalized relative path.
+    /// The loader owns the returned resource.
+    /// </remarks>
+    /// <exception cref="Mirage.Common.Lifecycle.DestroyedObjectException">
+    /// Thrown when the loader has been destroyed.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="path"/> is empty or resolves outside <see cref="Root"/>.
+    /// </exception>
+    /// <exception cref="FileNotFoundException">
+    /// Thrown when the resource file does not exist.
+    /// </exception>
+    /// <exception cref="NotSupportedException">
+    /// Thrown when the path has no extension or no decoder supports the requested resource type and extension.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when multiple decoders match or a decoder returns the wrong resource type.
+    /// </exception>
     public TResource Load<TResource>(string path)
         where TResource : Resource
     {
@@ -230,8 +240,5 @@ public class Loader : Module
         return resource;
     }
 
-    /// <summary>
-    /// Identifies one cached resource.
-    /// </summary>
     private readonly record struct ResourceKey(Type Type, string Identifier);
 }

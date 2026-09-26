@@ -8,7 +8,7 @@ namespace Mirage.Graphics.Resources;
 public enum RasterImageFormat
 {
     /// <summary>
-    /// Four normalized 8-bit red, green, blue and alpha channels.
+    /// Four 8-bit channels in red, green, blue, alpha order.
     /// </summary>
     Rgba8,
 }
@@ -19,6 +19,7 @@ public enum RasterImageFormat
 /// <remarks>
 /// An image contains pixels in CPU memory. It is independent from the encoded
 /// file format and from the SDL GPU texture created for rendering.
+/// The image copies and owns its pixel buffer.
 /// </remarks>
 public sealed class Image : Resource
 {

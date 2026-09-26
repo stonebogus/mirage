@@ -12,7 +12,7 @@ namespace Mirage.Graphics.Nodes;
 public class SpriteOptions : SpatialNodeOptions
 {
     /// <summary>
-    /// Gets the initial normalized pivot of the image.
+    /// Gets the initial normalized pivot. The default is <c>(0.5, 0.5)</c>.
     /// </summary>
     /// <remarks>
     /// (0, 0) is the top-left corner, (0.5, 0.5) is the center,
@@ -21,8 +21,8 @@ public class SpriteOptions : SpatialNodeOptions
     public Vector2 Pivot { get; init; } = new(0.5f, 0.5f);
 
     /// <summary>
-    /// Gets the initial drawn size, or <see langword="null"/> to use
-    /// the texture's natural size.
+    /// Gets the initial drawn size in texture pixel units, or <see langword="null"/>
+    /// to use the texture's natural dimensions. The default is <see langword="null"/>.
     /// </summary>
     public Vector2? Size { get; init; }
 }
@@ -33,6 +33,7 @@ public class SpriteOptions : SpatialNodeOptions
 /// <remarks>
 /// The spatial origin controls the node's transformation and its children.
 /// <see cref="Pivot"/> controls how the image is placed around that origin.
+/// The sprite does not own its <see cref="Texture"/> or the texture's image.
 /// </remarks>
 public class Sprite : SpatialNode, IDrawable
 {
@@ -42,7 +43,7 @@ public class Sprite : SpatialNode, IDrawable
     public readonly Store<Vector2> Pivot;
 
     /// <summary>
-    /// Gets the size at which the sprite is drawn.
+    /// Gets the drawn size in texture pixel units.
     /// </summary>
     public readonly Store<Vector2> Size;
 
@@ -56,7 +57,10 @@ public class Sprite : SpatialNode, IDrawable
     /// </summary>
     /// <param name="name">The node name.</param>
     /// <param name="texture">The initial texture.</param>
-    /// <param name="options">The initial sprite and spatial values.</param>
+    /// <param name="options">The initial sprite and spatial values, or <see langword="null"/> for defaults.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="texture"/> is <see langword="null"/>.
+    /// </exception>
     public Sprite(string name, Texture texture, SpriteOptions? options = null)
         : base(name, options)
     {

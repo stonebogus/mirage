@@ -10,6 +10,7 @@ namespace Mirage.Windowing;
 /// <remarks>
 /// Window event processing is driven by the scheduler through
 /// <see cref="IUpdatable.Update(double)"/>; individual windows do not own an update loop.
+/// The manager owns and destroys its registered windows.
 /// </remarks>
 public class WindowManager : Module, IUpdatable
 {
@@ -24,7 +25,7 @@ public class WindowManager : Module, IUpdatable
     /// <summary>
     /// Initializes a new instance of the <see cref="WindowManager"/> module.
     /// </summary>
-    /// <param name="windows">The windows managed by the module.</param>
+    /// <param name="windows">The initial windows, or <see langword="null"/> for none.</param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when multiple windows have the same identifier.
     /// </exception>
