@@ -77,8 +77,6 @@ public class Sprite : SpatialNode, IDrawable
     /// </remarks>
     public void Draw(IDrawContext context)
     {
-        ArgumentNullException.ThrowIfNull(context);
-
         var size = Size.Get();
         var topLeft = Origin.Get() - size * Pivot.Get();
         var transform = GlobalTransform;
