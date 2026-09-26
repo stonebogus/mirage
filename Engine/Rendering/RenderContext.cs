@@ -79,6 +79,44 @@ public sealed class RenderContext : IDrawContext
     }
 
     /// <inheritdoc />
+    public void DrawMesh(GraphicMesh mesh, Matrix3x2 transform)
+    {
+        ArgumentNullException.ThrowIfNull(mesh);
+
+        if (mesh.Destroyed)
+            throw new ObjectDisposedException(nameof(mesh));
+
+        if (mesh.Mesh.Destroyed)
+            throw new ObjectDisposedException(nameof(mesh.Mesh));
+
+        if (mesh.Texture.Destroyed || mesh.Texture.Image.Destroyed)
+            throw new ObjectDisposedException(nameof(mesh.Texture));
+
+        var localVertices = mesh.Mesh.Vertices.Span;
+        var screenVertices = new Vector2[localVertices.Length];
+
+        var minimum = new Vector2(float.PositiveInfinity);
+        var maximum = new Vector2(float.NegativeInfinity);
+
+        for (var index = 0; index < localVertices.Length; index++)
+        {
+            var worldPosition = Vector2.Transform(localVertices[index], transform);
+            var screenPosition = ToScreen(worldPosition);
+
+            ValidatePoint(screenPosition, nameof(transform));
+
+            screenVertices[index] = screenPosition;
+            minimum = Vector2.Min(minimum, screenPosition);
+            maximum = Vector2.Max(maximum, screenPosition);
+        }
+
+        if (!IsVisible(minimum, maximum - minimum))
+            return;
+
+        _surface.DrawMesh(mesh, screenVertices);
+    }
+
+    /// <inheritdoc />
     public void DrawTexture(
         Texture texture,
         Vector2 topLeft,
