@@ -373,10 +373,6 @@ internal sealed class RenderSurface(Window window)
     )
     {
         EnsureFrame();
-        ArgumentNullException.ThrowIfNull(texture);
-
-        if (texture.Destroyed)
-            throw new DestroyedObjectException(nameof(texture));
 
         var nativeTexture = GetTexture(texture);
 
