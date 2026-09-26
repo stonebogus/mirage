@@ -309,6 +309,47 @@ internal sealed class RenderSurface(Window window)
             throw Error("Changing VSync");
     }
 
+    /// <summary>
+    /// Draws a line with a specified thickness using screen coordinates.
+    /// </summary>
+    internal void DrawLine(Vector2 start, Vector2 end, Color color, float thickness)
+    {
+        EnsureFrame();
+
+        if (!float.IsFinite(thickness) || thickness <= 0f)
+            throw new ArgumentOutOfRangeException(nameof(thickness));
+
+        var direction = end - start;
+        var halfThickness = thickness / 2f;
+
+        if (direction == Vector2.Zero)
+        {
+            FillRectangle(start - new Vector2(halfThickness), new Vector2(thickness), color);
+            return;
+        }
+
+        var normal = Vector2.Normalize(new Vector2(-direction.Y, direction.X)) * halfThickness;
+
+        var a = start - normal;
+        var b = start + normal;
+        var c = end + normal;
+        var d = end - normal;
+
+        var nativeColor = ToNativeColor(color);
+        Span<SDL.Vertex> vertices = stackalloc SDL.Vertex[6];
+
+        vertices[0] = CreateVertex(a, nativeColor);
+        vertices[1] = CreateVertex(b, nativeColor);
+        vertices[2] = CreateVertex(c, nativeColor);
+
+        vertices[3] = CreateVertex(a, nativeColor);
+        vertices[4] = CreateVertex(c, nativeColor);
+        vertices[5] = CreateVertex(d, nativeColor);
+
+        if (!SDL.RenderGeometry(_native, nint.Zero, vertices, 6, nint.Zero, 0))
+            throw Error("Drawing a line");
+    }
+
     internal void DrawTexture(Texture texture, Vector2 position, Vector2 size)
     {
         EnsureFrame();

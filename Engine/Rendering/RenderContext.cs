@@ -48,6 +48,37 @@ public sealed class RenderContext : IDrawContext
     public double DeltaTime { get; }
 
     /// <inheritdoc />
+    public void DrawLine(Vector2 start, Vector2 end, Color color, float thickness = 1f)
+    {
+        ValidatePoint(start, nameof(start));
+        ValidatePoint(end, nameof(end));
+
+        if (!float.IsFinite(thickness) || thickness <= 0f)
+            throw new ArgumentOutOfRangeException(nameof(thickness));
+
+        var screenStart = ToScreen(start);
+        var screenEnd = ToScreen(end);
+        var screenThickness = thickness * Camera?.Zoom ?? thickness;
+
+        if (!float.IsFinite(screenThickness) || screenThickness <= 0f)
+            throw new ArgumentOutOfRangeException(nameof(thickness));
+
+        var extent = new Vector2(screenThickness / 2f);
+        var minimum = Vector2.Min(screenStart, screenEnd) - extent;
+        var maximum = Vector2.Max(screenStart, screenEnd) + extent;
+
+        if (
+            maximum.X < 0f
+            || maximum.Y < 0f
+            || minimum.X > ViewportSize.X
+            || minimum.Y > ViewportSize.Y
+        )
+            return;
+
+        _surface.DrawLine(screenStart, screenEnd, color, screenThickness);
+    }
+
+    /// <inheritdoc />
     public void DrawTexture(Texture texture, Vector2 position, Vector2 size)
     {
         var screenPosition = ToScreen(position);
@@ -57,6 +88,31 @@ public sealed class RenderContext : IDrawContext
             return;
 
         _surface.DrawTexture(texture, screenPosition, screenSize);
+    }
+
+    /// <inheritdoc />
+    public void FillCircle(Vector2 center, float radius, Color color)
+    {
+        ValidatePoint(center, nameof(center));
+
+        if (!float.IsFinite(radius) || radius < 0f)
+            throw new ArgumentOutOfRangeException(nameof(radius));
+
+        if (radius == 0f)
+            return;
+
+        var screenCenter = ToScreen(center);
+        var screenRadius = radius * Camera?.Zoom ?? radius;
+
+        if (!float.IsFinite(screenRadius) || screenRadius <= 0f)
+            return;
+
+        var extent = new Vector2(screenRadius);
+
+        if (!IsVisible(screenCenter - extent, extent * 2f))
+            return;
+
+        _surface.FillCircle(screenCenter, screenRadius, color);
     }
 
     /// <inheritdoc />
@@ -70,9 +126,6 @@ public sealed class RenderContext : IDrawContext
 
         _surface.FillRectangle(screenPosition, screenSize, color);
     }
-
-    /// <inheritdoc />
-    public Vector2 ViewportSize { get; }
 
     /// <inheritdoc />
     public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
@@ -95,35 +148,7 @@ public sealed class RenderContext : IDrawContext
     }
 
     /// <inheritdoc />
-    public void FillCircle(Vector2 center, float radius, Color color)
-    {
-        ValidatePoint(center, nameof(center));
-
-        if (!float.IsFinite(radius) || radius < 0f)
-            throw new ArgumentOutOfRangeException(nameof(radius));
-
-        if (radius == 0f)
-            return;
-
-        var screenCenter = ToScreen(center);
-        var screenRadius = Camera is null ? radius : radius * Camera.Zoom;
-
-        if (!float.IsFinite(screenRadius) || screenRadius <= 0f)
-            return;
-
-        var extent = new Vector2(screenRadius);
-
-        if (!IsVisible(screenCenter - extent, extent * 2f))
-            return;
-
-        _surface.FillCircle(screenCenter, screenRadius, color);
-    }
-
-    private static void ValidatePoint(Vector2 point, string parameterName)
-    {
-        if (!float.IsFinite(point.X) || !float.IsFinite(point.Y))
-            throw new ArgumentOutOfRangeException(parameterName);
-    }
+    public Vector2 ViewportSize { get; }
 
     private bool IsVisible(Vector2 position, Vector2 size) =>
         position.X < ViewportSize.X
@@ -140,4 +165,10 @@ public sealed class RenderContext : IDrawContext
     }
 
     private Vector2 ToScreenSize(Vector2 size) => Camera is null ? size : size * Camera.Zoom;
+
+    private static void ValidatePoint(Vector2 point, string parameterName)
+    {
+        if (!float.IsFinite(point.X) || !float.IsFinite(point.Y))
+            throw new ArgumentOutOfRangeException(parameterName);
+    }
 }

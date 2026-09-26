@@ -29,6 +29,18 @@ public interface IDrawContext
     Vector2 ViewportSize { get; }
 
     /// <summary>
+    /// Draws a line with a specified thickness.
+    /// </summary>
+    /// <param name="start">The start point in screen or world coordinates.</param>
+    /// <param name="end">The end point in screen or world coordinates.</param>
+    /// <param name="color">The line color.</param>
+    /// <param name="thickness">The line thickness in coordinate units. Defaults to 1.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the thickness is not finite or is not positive.
+    /// </exception>
+    void DrawLine(Vector2 start, Vector2 end, Color color, float thickness = 1f);
+
+    /// <summary>
     /// Draws an entire texture at the specified position and size.
     /// </summary>
     /// <param name="texture">The texture to draw.</param>
