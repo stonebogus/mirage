@@ -117,6 +117,16 @@ internal sealed class RenderSurface(Window window)
             throw Error("Setting the drawing color");
     }
 
+    private static SDL.Vertex TexturedVertex(Vector2 position, float u, float v, SDL.FColor color)
+    {
+        return new SDL.Vertex
+        {
+            Position = new SDL.FPoint { X = position.X, Y = position.Y },
+            Color = color,
+            TexCoord = new SDL.FPoint { X = u, Y = v },
+        };
+    }
+
     private static SDL.FColor ToNativeColor(Color color)
     {
         var value = color.Clamped();
@@ -350,7 +360,16 @@ internal sealed class RenderSurface(Window window)
             throw Error("Drawing a line");
     }
 
-    internal void DrawTexture(Texture texture, Vector2 position, Vector2 size)
+    /// <summary>
+    /// Draws a texture across four corners in screen coordinates.
+    /// </summary>
+    internal void DrawTexture(
+        Texture texture,
+        Vector2 topLeft,
+        Vector2 topRight,
+        Vector2 bottomRight,
+        Vector2 bottomLeft
+    )
     {
         EnsureFrame();
         ArgumentNullException.ThrowIfNull(texture);
@@ -358,19 +377,27 @@ internal sealed class RenderSurface(Window window)
         if (texture.Destroyed)
             throw new ObjectDisposedException(nameof(texture));
 
-        ValidateRectangle(position, size);
-
         var nativeTexture = GetTexture(texture);
 
-        var destination = new SDL.FRect
+        var white = new SDL.FColor
         {
-            X = position.X,
-            Y = position.Y,
-            W = size.X,
-            H = size.Y,
+            R = 1f,
+            G = 1f,
+            B = 1f,
+            A = 1f,
         };
 
-        if (!SDL.RenderTexture(_native, nativeTexture, nint.Zero, in destination))
+        Span<SDL.Vertex> vertices = stackalloc SDL.Vertex[6];
+
+        vertices[0] = TexturedVertex(topLeft, 0f, 0f, white);
+        vertices[1] = TexturedVertex(topRight, 1f, 0f, white);
+        vertices[2] = TexturedVertex(bottomRight, 1f, 1f, white);
+
+        vertices[3] = TexturedVertex(topLeft, 0f, 0f, white);
+        vertices[4] = TexturedVertex(bottomRight, 1f, 1f, white);
+        vertices[5] = TexturedVertex(bottomLeft, 0f, 1f, white);
+
+        if (!SDL.RenderGeometry(_native, nativeTexture, vertices, 6, nint.Zero, 0))
             throw Error("Drawing a texture");
     }
 
