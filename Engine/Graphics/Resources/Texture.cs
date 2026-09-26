@@ -17,11 +17,6 @@ public sealed class Texture : Resource
     /// <param name="image">The image containing the texture pixels.</param>
     public Texture(Image image)
     {
-        ArgumentNullException.ThrowIfNull(image);
-
-        if (image.Destroyed)
-            throw new ObjectDisposedException(nameof(image));
-
         Image = image;
     }
 
