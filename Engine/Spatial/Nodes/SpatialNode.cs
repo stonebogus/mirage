@@ -93,7 +93,28 @@ public class SpatialNode : Node
     /// <summary>
     /// Gets the world position of this node's origin.
     /// </summary>
+    /// <remarks>
+    /// The position is derived from <see cref="GlobalTransform"/> and therefore
+    /// includes the transformations of all spatial ancestors.
+    /// </remarks>
     public Vector2 GlobalPosition => Vector2.Transform(Origin.Get(), GlobalTransform);
+
+    /// <summary>
+    /// Gets the world rotation of this node, expressed in radians.
+    /// </summary>
+    /// <remarks>
+    /// The rotation is extracted from <see cref="GlobalTransform"/> and therefore
+    /// includes the transformations of all spatial ancestors.
+    /// </remarks>
+    public float GlobalRotation
+    {
+        get
+        {
+            var transform = GlobalTransform;
+
+            return MathF.Atan2(transform.M12, transform.M11);
+        }
+    }
 
     /// <summary>
     /// Gets this node's transformation after applying its spatial ancestors.
