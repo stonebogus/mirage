@@ -8,18 +8,20 @@ namespace Mirage.Math.Geometry;
 public readonly struct Rect : IEquatable<Rect>
 {
     /// <summary>
-    /// Gets the minimum point of the rectangle.
+    /// Gets the minimum point of the rectangle in application-defined coordinate units.
     /// </summary>
     public readonly Vector2 Minimum;
 
     /// <summary>
-    /// Gets the maximum point of the rectangle.
+    /// Gets the maximum point of the rectangle in application-defined coordinate units.
     /// </summary>
     public readonly Vector2 Maximum;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Rect"/> struct.
+    /// Creates a rectangle from its minimum and maximum points.
     /// </summary>
+    /// <param name="minimum">The minimum point in the rectangle's coordinate space.</param>
+    /// <param name="maximum">The maximum point in the rectangle's coordinate space.</param>
     public Rect(Vector2 minimum, Vector2 maximum)
     {
         Minimum = minimum;
@@ -27,12 +29,12 @@ public readonly struct Rect : IEquatable<Rect>
     }
 
     /// <summary>
-    /// Gets the width of the rectangle.
+    /// Gets the width in coordinate units.
     /// </summary>
     public float Width => Maximum.X - Minimum.X;
 
     /// <summary>
-    /// Gets the height of the rectangle.
+    /// Gets the height in coordinate units.
     /// </summary>
     public float Height => Maximum.Y - Minimum.Y;
 
@@ -42,13 +44,15 @@ public readonly struct Rect : IEquatable<Rect>
     public Vector2 Center => (Minimum + Maximum) / 2;
 
     /// <summary>
-    /// Gets the area of the rectangle.
+    /// Gets the area in squared coordinate units.
     /// </summary>
     public float Area => Width * Height;
 
     /// <summary>
     /// Determines whether a point is inside or on the rectangle.
     /// </summary>
+    /// <param name="point">The point to test.</param>
+    /// <returns><see langword="true"/> when the point lies inside or on the boundary.</returns>
     public bool Contains(Vector2 point) =>
         point.X >= Minimum.X
         && point.X <= Maximum.X
@@ -58,6 +62,8 @@ public readonly struct Rect : IEquatable<Rect>
     /// <summary>
     /// Determines whether this rectangle intersects another rectangle.
     /// </summary>
+    /// <param name="other">The rectangle to test against.</param>
+    /// <returns><see langword="true"/> when the rectangles overlap or touch.</returns>
     public bool Intersects(Rect other) =>
         Minimum.X <= other.Maximum.X
         && Maximum.X >= other.Minimum.X

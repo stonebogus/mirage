@@ -4,7 +4,7 @@ using Mirage.Scheduling.Interfaces;
 namespace Mirage.Scheduling.Channels;
 
 /// <summary>
-/// Represents the priority of a channel.
+/// Represents the priority of a channel. Higher priorities run first.
 /// </summary>
 public enum UpdateChannelPriority
 {
@@ -32,6 +32,7 @@ public enum UpdateChannelPriority
 /// <summary>
 /// Represents a prioritized collection of updatable entries.
 /// </summary>
+/// <remarks>The channel clears its entry references when destroyed but does not destroy the entries.</remarks>
 public class UpdateChannel : Destroyable
 {
     private bool _composed;
@@ -55,8 +56,8 @@ public class UpdateChannel : Destroyable
     /// Initializes a new instance of the <see cref="UpdateChannel"/> class.
     /// </summary>
     /// <param name="identifier">The unique identifier for the channel.</param>
-    /// <param name="priority">The priority of the channel.</param>
-    /// <param name="entries">The initial updatable entries in the channel.</param>
+    /// <param name="priority">The priority of the channel; the default is <see cref="UpdateChannelPriority.Normal"/>.</param>
+    /// <param name="entries">The initial entries, or <see langword="null"/> for none.</param>
     public UpdateChannel(
         string identifier,
         UpdateChannelPriority priority = UpdateChannelPriority.Normal,
@@ -110,7 +111,7 @@ public class UpdateChannel : Destroyable
     /// <summary>
     /// Called after all entries in the channel have been updated.
     /// </summary>
-    /// <param name="deltaTime">The elapsed time since the previous update.</param>
+    /// <param name="deltaTime">The elapsed time since the previous update, in seconds.</param>
     protected virtual void OnUpdate(double deltaTime) { }
 
     /// <summary>

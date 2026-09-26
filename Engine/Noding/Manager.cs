@@ -8,6 +8,7 @@ namespace Mirage.Noding;
 /// <summary>
 /// Coordinates node lifecycles between roots.
 /// </summary>
+/// <remarks>The manager owns and destroys every registered root.</remarks>
 public sealed class NodeManager : Module
 {
     private readonly Store<Node> _activeRoot;
@@ -18,7 +19,7 @@ public sealed class NodeManager : Module
     /// </summary>
     /// <param name="initial">The initially selected root.</param>
     /// <param name="roots">
-    /// Additional roots to register in the <see cref="NodeManager"/>.
+    /// Additional roots to register; <see langword="null"/> means no additional roots.
     /// </param>
     public NodeManager(Node initial, IEnumerable<Node>? roots = null)
         : base("NodeManager")
@@ -44,6 +45,7 @@ public sealed class NodeManager : Module
     /// </summary>
     /// <remarks>
     /// The selected root is only loaded while the graph module is running.
+    /// Changes made by <see cref="Switch(string)"/> are published through this store.
     /// </remarks>
     public IReadOnlyStore<Node> ActiveRoot { get; }
 
@@ -217,7 +219,7 @@ public sealed class NodeManager : Module
         }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     protected override void OnDestroy()
     {
         var active = _activeRoot.Get();
@@ -244,7 +246,7 @@ public sealed class NodeManager : Module
         base.OnDestroy();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     protected override void OnStart()
     {
         var active = _activeRoot.Get();
@@ -255,7 +257,7 @@ public sealed class NodeManager : Module
         Telemetry.Send($"NodeManager loaded active root '{active.Name.Get()}'.", Identifier);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     protected override void OnStop()
     {
         var active = _activeRoot.Get();
@@ -275,6 +277,9 @@ public sealed class NodeManager : Module
     /// When the graph is running, the current root is unloaded and the selected
     /// root is loaded immediately.
     /// </remarks>
+    /// <exception cref="Mirage.Common.Lifecycle.DestroyedObjectException">
+    /// Thrown when the manager has been destroyed.
+    /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="identifier"/> is empty or consists only of
     /// whitespace.

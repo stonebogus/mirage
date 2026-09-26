@@ -19,14 +19,18 @@ public class Scheduler : Module
 
     /// <summary>
     /// Gets the target number of frames per second.
+    /// The default is <c>60</c>; non-positive values disable frame pacing.
     /// </summary>
     public readonly int TargetFramerate;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Scheduler"/> class.
     /// </summary>
-    /// <param name="targetFramerate">The target number of frames per second.</param>
-    /// <param name="channels">The channels managed by the scheduler.</param>
+    /// <param name="targetFramerate">The target frames per second; the default is <c>60</c>, and non-positive values disable frame pacing.</param>
+    /// <param name="channels">The initial channels, or <see langword="null"/> for none.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when two initial channels have the same identifier.
+    /// </exception>
     public Scheduler(int targetFramerate = 60, IEnumerable<UpdateChannel>? channels = null)
         : base("Scheduler")
     {
@@ -105,7 +109,7 @@ public class Scheduler : Module
     /// required to approach <see cref="TargetFramerate"/>.
     ///
     /// The loop ends when the service state is no longer
-    /// <see cref="GameState.Running"/>.
+    /// <see cref="ModuleState.Running"/>.
     /// </remarks>
     public void Run()
     {

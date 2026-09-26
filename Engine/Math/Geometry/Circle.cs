@@ -8,18 +8,20 @@ namespace Mirage.Math.Geometry;
 public readonly struct Circle : IEquatable<Circle>
 {
     /// <summary>
-    /// Gets the center point of the circle.
+    /// Gets the center point in application-defined coordinate units.
     /// </summary>
     public readonly Vector2 Center;
 
     /// <summary>
-    /// Gets the radius of the circle.
+    /// Gets the radius in coordinate units.
     /// </summary>
     public readonly float Radius;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Circle"/> struct.
+    /// Creates a circle from its center and radius.
     /// </summary>
+    /// <param name="center">The center point in the circle's coordinate space.</param>
+    /// <param name="radius">The radius in coordinate units.</param>
     public Circle(Vector2 center, float radius)
     {
         Center = center;
@@ -27,23 +29,25 @@ public readonly struct Circle : IEquatable<Circle>
     }
 
     /// <summary>
-    /// Gets the diameter of the circle.
+    /// Gets the diameter in coordinate units.
     /// </summary>
     public float Diameter => Radius * 2;
 
     /// <summary>
-    /// Gets the circumference of the circle.
+    /// Gets the circumference in coordinate units.
     /// </summary>
     public float Circumference => 2 * System.MathF.PI * Radius;
 
     /// <summary>
-    /// Gets the area of the circle.
+    /// Gets the area in squared coordinate units.
     /// </summary>
     public float Area => System.MathF.PI * Radius * Radius;
 
     /// <summary>
     /// Determines whether a point is inside or on the circle.
     /// </summary>
+    /// <param name="point">The point to test.</param>
+    /// <returns><see langword="true"/> when the point lies inside or on the circumference.</returns>
     public bool Contains(Vector2 point) =>
         Vector2.DistanceSquared(Center, point) <= Radius * Radius;
 

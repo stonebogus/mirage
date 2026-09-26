@@ -11,24 +11,26 @@ public class SpatialNodeOptions : NodeOptions
 {
     /// <summary>
     /// Gets the initial local origin used as the center of scale and rotation.
+    /// The default is <see cref="Vector2.Zero"/>.
     /// </summary>
     /// <remarks>
-    /// The origin is measured in local units. It is not normalized.
+    /// Coordinates use the same application-defined units as <see cref="Position"/>.
     /// </remarks>
     public Vector2 Origin { get; init; } = Vector2.Zero;
 
     /// <summary>
-    /// Gets the initial position of the origin relative to the node's spatial parent.
+    /// Gets the initial local origin position relative to the nearest spatial ancestor.
+    /// The default is <see cref="Vector2.Zero"/>.
     /// </summary>
     public Vector2 Position { get; init; } = Vector2.Zero;
 
     /// <summary>
-    /// Gets the initial local rotation, expressed in radians.
+    /// Gets the initial local rotation in radians. The default is <c>0</c>.
     /// </summary>
     public float Rotation { get; init; } = 0f;
 
     /// <summary>
-    /// Gets the initial local scale.
+    /// Gets the initial local scale factor. The default is <see cref="Vector2.One"/>.
     /// </summary>
     public Vector2 Scale { get; init; } = Vector2.One;
 }
@@ -75,7 +77,7 @@ public class SpatialNode : Node
     /// </summary>
     /// <param name="name">The initial name of the node.</param>
     /// <param name="options">
-    /// The optional values used to initialize the node.
+    /// The initial spatial and node values, or <see langword="null"/> for defaults.
     /// </param>
     public SpatialNode(string name = "SpatialNode", SpatialNodeOptions? options = null)
         : base(name, options)

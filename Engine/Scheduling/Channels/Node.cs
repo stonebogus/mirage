@@ -6,6 +6,9 @@ namespace Mirage.Scheduling.Channels;
 /// <summary>
 /// Updates loaded <see cref="IUpdatable"/> nodes in the graph's active root.
 /// </summary>
+/// <param name="manager">The node manager providing the active root.</param>
+/// <param name="identifier">The channel identifier. The default is <c>"nodes"</c>.</param>
+/// <param name="priority">The update priority. The default is <see cref="UpdateChannelPriority.Normal"/>.</param>
 public sealed class NodeUpdateChannel(
     NodeManager manager,
     string identifier = "nodes",

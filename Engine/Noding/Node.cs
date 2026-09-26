@@ -10,25 +10,22 @@ namespace Mirage.Noding;
 public class NodeOptions
 {
     /// <summary>
-    /// Gets the initial parent of the node.
+    /// Gets the initial parent node. The default is <see langword="null"/>, which creates a root.
     /// </summary>
-    /// <remarks>
-    /// A value of <see langword="null"/> creates a root node.
-    /// </remarks>
     public Node? Parent { get; init; }
 
     /// <summary>
-    /// Gets whether the node remains loaded when its parent is unloaded.
+    /// Gets whether the node remains loaded when its parent is unloaded. The default is <see langword="false"/>.
     /// </summary>
     public bool Persistent { get; init; }
 
     /// <summary>
-    /// Gets the initial subnodes to add to the node.
+    /// Gets the initial subnodes to add. The default is <see langword="null"/>, which adds none.
     /// </summary>
     public IEnumerable<Node>? Subnodes { get; init; }
 
     /// <summary>
-    /// Gets the initial tags to assign to the node.
+    /// Gets the initial tags to assign. The default is <see langword="null"/>, which adds none.
     /// </summary>
     public IEnumerable<string>? Tags { get; init; }
 }
