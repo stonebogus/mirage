@@ -236,6 +236,71 @@ public sealed class RenderContext : IDrawContext
         return (position - Camera.Position) * Camera.Zoom + ViewportSize / 2f;
     }
 
+    /// <inheritdoc />
+    public Vector2 MeasureText(
+        Font font,
+        string text,
+        float size,
+        FontStyle style = FontStyle.Normal
+    )
+    {
+        return _surface.MeasureText(font, text, size, style);
+    }
+
+    /// <inheritdoc />
+    public void DrawText(
+        Font font,
+        string text,
+        float size,
+        Color color,
+        FontStyle style,
+        Vector2 topLeft,
+        Vector2 topRight,
+        Vector2 bottomRight,
+        Vector2 bottomLeft
+    )
+    {
+        ValidatePoint(topLeft, nameof(topLeft));
+        ValidatePoint(topRight, nameof(topRight));
+        ValidatePoint(bottomRight, nameof(bottomRight));
+        ValidatePoint(bottomLeft, nameof(bottomLeft));
+
+        var screenTopLeft = ToScreen(topLeft);
+        var screenTopRight = ToScreen(topRight);
+        var screenBottomRight = ToScreen(bottomRight);
+        var screenBottomLeft = ToScreen(bottomLeft);
+
+        ValidatePoint(screenTopLeft, nameof(topLeft));
+        ValidatePoint(screenTopRight, nameof(topRight));
+        ValidatePoint(screenBottomRight, nameof(bottomRight));
+        ValidatePoint(screenBottomLeft, nameof(bottomLeft));
+
+        var minimum = Vector2.Min(
+            Vector2.Min(screenTopLeft, screenTopRight),
+            Vector2.Min(screenBottomRight, screenBottomLeft)
+        );
+
+        var maximum = Vector2.Max(
+            Vector2.Max(screenTopLeft, screenTopRight),
+            Vector2.Max(screenBottomRight, screenBottomLeft)
+        );
+
+        if (!IsVisible(minimum, maximum - minimum))
+            return;
+
+        _surface.DrawText(
+            font,
+            text,
+            size,
+            color,
+            style,
+            screenTopLeft,
+            screenTopRight,
+            screenBottomRight,
+            screenBottomLeft
+        );
+    }
+
     private Vector2 ToScreenSize(Vector2 size) => Camera is null ? size : size * Camera.Zoom;
 
     private static void ValidatePoint(Vector2 point, string parameterName)

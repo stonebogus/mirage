@@ -1,5 +1,5 @@
 using System.Numerics;
-using Mirage.Common.Lifecycle;
+using System.Runtime.InteropServices;
 using Mirage.Graphics.Interfaces;
 using Mirage.Graphics.Primitives;
 using Mirage.Graphics.Resources;
@@ -14,13 +14,16 @@ namespace Mirage.Rendering;
 internal sealed class RenderSurface(Window window)
 {
     private const int RenderScale = 2;
+
     private readonly Dictionary<Texture, nint> _textures = [];
+
     private bool _frameActive;
 
     private nint _frameTexture;
     private int _frameTextureHeight;
     private int _frameTextureWidth;
     private nint _native;
+    private bool _textInitialized;
 
     private static SDL.Vertex CreateVertex(Vector2 position, SDL.FColor color)
     {
@@ -30,6 +33,37 @@ internal sealed class RenderSurface(Window window)
             Color = color,
             TexCoord = default,
         };
+    }
+
+    private void DrawNativeTexture(
+        nint nativeTexture,
+        Vector2 topLeft,
+        Vector2 topRight,
+        Vector2 bottomRight,
+        Vector2 bottomLeft,
+        string operation
+    )
+    {
+        var white = new SDL.FColor
+        {
+            R = 1f,
+            G = 1f,
+            B = 1f,
+            A = 1f,
+        };
+
+        Span<SDL.Vertex> vertices = stackalloc SDL.Vertex[6];
+
+        vertices[0] = TexturedVertex(topLeft, 0f, 0f, white);
+        vertices[1] = TexturedVertex(topRight, 1f, 0f, white);
+        vertices[2] = TexturedVertex(bottomRight, 1f, 1f, white);
+
+        vertices[3] = TexturedVertex(topLeft, 0f, 0f, white);
+        vertices[4] = TexturedVertex(bottomRight, 1f, 1f, white);
+        vertices[5] = TexturedVertex(bottomLeft, 0f, 1f, white);
+
+        if (!SDL.RenderGeometry(_native, nativeTexture, vertices, 6, nint.Zero, 0))
+            throw Error(operation);
     }
 
     private void EnsureFrame()
@@ -43,6 +77,7 @@ internal sealed class RenderSurface(Window window)
     private void EnsureFrameTexture(Vector2 viewportSize)
     {
         var width = checked(System.Math.Max(1, (int)MathF.Ceiling(viewportSize.X)) * RenderScale);
+
         var height = checked(System.Math.Max(1, (int)MathF.Ceiling(viewportSize.Y)) * RenderScale);
 
         if (
@@ -50,7 +85,9 @@ internal sealed class RenderSurface(Window window)
             && width == _frameTextureWidth
             && height == _frameTextureHeight
         )
+        {
             return;
+        }
 
         var replacement = SDL.CreateTexture(
             _native,
@@ -145,6 +182,38 @@ internal sealed class RenderSurface(Window window)
         }
     }
 
+    private static OpenedFont OpenFont(Font font, float size, FontStyle style)
+    {
+        // SDL_IOFromConstMem borrows this buffer. Keep it pinned until both
+        // the native font and its IO stream have been closed.
+        var bytes = font.Data.ToArray();
+        var pin = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+
+        var stream = NativeText.IOFromConstMem(pin.AddrOfPinnedObject(), (nuint)bytes.Length);
+
+        if (stream == nint.Zero)
+        {
+            pin.Free();
+            throw Error("Opening font bytes");
+        }
+
+        // This class closes the stream explicitly, including when opening
+        // the font fails.
+        var nativeFont = NativeText.OpenFontIO(stream, false, size);
+
+        if (nativeFont == nint.Zero)
+        {
+            var error = Error("Opening a font");
+            NativeText.CloseIO(stream);
+            pin.Free();
+            throw error;
+        }
+
+        NativeText.SetFontStyle(nativeFont, (uint)style);
+
+        return new OpenedFont(nativeFont, stream, pin);
+    }
+
     private void ReleaseDestroyedTextures()
     {
         foreach (var (texture, nativeTexture) in _textures.ToArray())
@@ -175,6 +244,8 @@ internal sealed class RenderSurface(Window window)
         };
     }
 
+    private static byte ToByte(float value) => (byte)MathF.Round(value * 255f);
+
     private static SDL.FColor ToNativeColor(Color color)
     {
         var value = color.Clamped();
@@ -195,6 +266,18 @@ internal sealed class RenderSurface(Window window)
 
         if (!float.IsFinite(size.X) || !float.IsFinite(size.Y) || size.X < 0 || size.Y < 0)
             throw new ArgumentOutOfRangeException(nameof(size));
+    }
+
+    private static void ValidateText(Font font, string text, float size, FontStyle style)
+    {
+        if (!float.IsFinite(size) || size <= 0f)
+            throw new ArgumentOutOfRangeException(nameof(size));
+
+        const FontStyle supported =
+            FontStyle.Bold | FontStyle.Italic | FontStyle.Underline | FontStyle.Strikethrough;
+
+        if ((style & ~supported) != 0)
+            throw new ArgumentOutOfRangeException(nameof(style));
     }
 
     /// <summary>
@@ -295,9 +378,11 @@ internal sealed class RenderSurface(Window window)
             return;
 
         if (!window.Opened.Get() || window.Native == nint.Zero)
+        {
             throw new InvalidOperationException(
                 "The window must be open before the renderer starts."
             );
+        }
 
         _native = SDL.CreateRenderer(window.Native, null);
 
@@ -307,9 +392,20 @@ internal sealed class RenderSurface(Window window)
         try
         {
             ApplyVSync(window.VSync.Get());
+
+            if (!NativeText.Init())
+                throw Error("Initializing SDL3_ttf");
+
+            _textInitialized = true;
         }
         catch
         {
+            if (_textInitialized)
+            {
+                NativeText.Quit();
+                _textInitialized = false;
+            }
+
             SDL.DestroyRenderer(_native);
             _native = nint.Zero;
             throw;
@@ -341,6 +437,12 @@ internal sealed class RenderSurface(Window window)
 
         _textures.Clear();
 
+        if (_textInitialized)
+        {
+            NativeText.Quit();
+            _textInitialized = false;
+        }
+
         SDL.DestroyRenderer(_native);
         _native = nint.Zero;
     }
@@ -348,12 +450,11 @@ internal sealed class RenderSurface(Window window)
     /// <summary>
     /// Fills a triangle using screen coordinates.
     /// </summary>
-    internal unsafe void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
+    internal void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
     {
         EnsureFrame();
 
         var nativeColor = ToNativeColor(color);
-
         Span<SDL.Vertex> vertices = stackalloc SDL.Vertex[3];
 
         vertices[0] = CreateVertex(a, nativeColor);
@@ -364,7 +465,10 @@ internal sealed class RenderSurface(Window window)
             throw Error("Filling a triangle");
     }
 
-    internal unsafe void FillCircle(Vector2 center, float radius, Color color)
+    /// <summary>
+    /// Fills a circle using screen coordinates.
+    /// </summary>
+    internal void FillCircle(Vector2 center, float radius, Color color)
     {
         EnsureFrame();
 
@@ -405,6 +509,10 @@ internal sealed class RenderSurface(Window window)
             throw Error("Filling a circle");
     }
 
+    /// <summary>
+    /// Enables or disables vertical synchronization.
+    /// </summary>
+    /// <param name="enabled">Whether vertical synchronization is enabled.</param>
     internal void ApplyVSync(bool enabled)
     {
         if (_native == nint.Zero)
@@ -469,27 +577,14 @@ internal sealed class RenderSurface(Window window)
         EnsureFrame();
 
         var nativeTexture = GetTexture(texture);
-
-        var white = new SDL.FColor
-        {
-            R = 1f,
-            G = 1f,
-            B = 1f,
-            A = 1f,
-        };
-
-        Span<SDL.Vertex> vertices = stackalloc SDL.Vertex[6];
-
-        vertices[0] = TexturedVertex(topLeft, 0f, 0f, white);
-        vertices[1] = TexturedVertex(topRight, 1f, 0f, white);
-        vertices[2] = TexturedVertex(bottomRight, 1f, 1f, white);
-
-        vertices[3] = TexturedVertex(topLeft, 0f, 0f, white);
-        vertices[4] = TexturedVertex(bottomRight, 1f, 1f, white);
-        vertices[5] = TexturedVertex(bottomLeft, 0f, 1f, white);
-
-        if (!SDL.RenderGeometry(_native, nativeTexture, vertices, 6, nint.Zero, 0))
-            throw Error("Drawing a texture");
+        DrawNativeTexture(
+            nativeTexture,
+            topLeft,
+            topRight,
+            bottomRight,
+            bottomLeft,
+            "Drawing a texture"
+        );
     }
 
     /// <summary>
@@ -548,6 +643,94 @@ internal sealed class RenderSurface(Window window)
     }
 
     /// <summary>
+    /// Measures text before camera scaling or drawing transformations.
+    /// </summary>
+    internal Vector2 MeasureText(Font font, string text, float size, FontStyle style)
+    {
+        EnsureFrame();
+        ValidateText(font, text, size, style);
+
+        if (text.Length == 0)
+            return Vector2.Zero;
+
+        using var opened = OpenFont(font, size, style);
+
+        if (!NativeText.GetStringSize(opened.Handle, text, 0, out var width, out var height))
+        {
+            throw Error("Measuring text");
+        }
+
+        return new Vector2(width, height);
+    }
+
+    /// <summary>
+    /// Draws text across four corners in screen coordinates.
+    /// </summary>
+    internal void DrawText(
+        Font font,
+        string text,
+        float size,
+        Color color,
+        FontStyle style,
+        Vector2 topLeft,
+        Vector2 topRight,
+        Vector2 bottomRight,
+        Vector2 bottomLeft
+    )
+    {
+        EnsureFrame();
+        ValidateText(font, text, size, style);
+
+        if (text.Length == 0)
+            return;
+
+        using var opened = OpenFont(font, size, style);
+
+        var value = color.Clamped();
+        var nativeColor = new NativeText.NativeColor(
+            ToByte(value.R),
+            ToByte(value.G),
+            ToByte(value.B),
+            ToByte(value.A)
+        );
+
+        var textSurface = NativeText.RenderTextBlended(opened.Handle, text, 0, nativeColor);
+
+        if (textSurface == nint.Zero)
+            throw Error("Rasterizing text");
+
+        nint nativeTexture;
+
+        try
+        {
+            nativeTexture = NativeText.CreateTextureFromSurface(_native, textSurface);
+
+            if (nativeTexture == nint.Zero)
+                throw Error("Creating a text texture");
+        }
+        finally
+        {
+            SDL.DestroySurface(textSurface);
+        }
+
+        try
+        {
+            DrawNativeTexture(
+                nativeTexture,
+                topLeft,
+                topRight,
+                bottomRight,
+                bottomLeft,
+                "Drawing text"
+            );
+        }
+        finally
+        {
+            SDL.DestroyTexture(nativeTexture);
+        }
+    }
+
+    /// <summary>
     /// Fills a rectangle using screen coordinates.
     /// </summary>
     internal void FillRectangle(Vector2 position, Vector2 size, Color color)
@@ -566,5 +749,18 @@ internal sealed class RenderSurface(Window window)
 
         if (!SDL.RenderFillRect(_native, in rectangle))
             throw Error("Filling a rectangle");
+    }
+
+    private sealed class OpenedFont(nint handle, nint stream, GCHandle pin) : IDisposable
+    {
+        private GCHandle _pin = pin;
+        public nint Handle { get; } = handle;
+
+        public void Dispose()
+        {
+            NativeText.CloseFont(Handle);
+            NativeText.CloseIO(stream);
+            _pin.Free();
+        }
     }
 }

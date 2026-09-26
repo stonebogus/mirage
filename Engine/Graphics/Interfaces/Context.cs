@@ -29,6 +29,40 @@ public interface IDrawContext
     Vector2 ViewportSize { get; }
 
     /// <summary>
+    /// Measures text before camera zoom or drawing transformations are applied.
+    /// </summary>
+    /// <param name="font">The font used to measure the text.</param>
+    /// <param name="text">The text to measure.</param>
+    /// <param name="size">The font size in points.</param>
+    /// <param name="style">The synthetic font style.</param>
+    /// <returns>The untransformed text dimensions in coordinate units.</returns>
+    Vector2 MeasureText(Font font, string text, float size, FontStyle style = FontStyle.Normal);
+
+    /// <summary>
+    /// Draws text across four specified corners.
+    /// </summary>
+    /// <param name="font">The font used to draw the text.</param>
+    /// <param name="text">The text to draw.</param>
+    /// <param name="size">The font size in points.</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="style">The synthetic font style.</param>
+    /// <param name="topLeft">The top-left corner in screen or world coordinates.</param>
+    /// <param name="topRight">The top-right corner in screen or world coordinates.</param>
+    /// <param name="bottomRight">The bottom-right corner in screen or world coordinates.</param>
+    /// <param name="bottomLeft">The bottom-left corner in screen or world coordinates.</param>
+    void DrawText(
+        Font font,
+        string text,
+        float size,
+        Color color,
+        FontStyle style,
+        Vector2 topLeft,
+        Vector2 topRight,
+        Vector2 bottomRight,
+        Vector2 bottomLeft
+    );
+
+    /// <summary>
     /// Draws a line with a specified thickness.
     /// </summary>
     /// <param name="start">The start point in screen or world coordinates.</param>
