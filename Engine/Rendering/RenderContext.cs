@@ -79,15 +79,49 @@ public sealed class RenderContext : IDrawContext
     }
 
     /// <inheritdoc />
-    public void DrawTexture(Texture texture, Vector2 position, Vector2 size)
+    public void DrawTexture(
+        Texture texture,
+        Vector2 topLeft,
+        Vector2 topRight,
+        Vector2 bottomRight,
+        Vector2 bottomLeft
+    )
     {
-        var screenPosition = ToScreen(position);
-        var screenSize = ToScreenSize(size);
+        ValidatePoint(topLeft, nameof(topLeft));
+        ValidatePoint(topRight, nameof(topRight));
+        ValidatePoint(bottomRight, nameof(bottomRight));
+        ValidatePoint(bottomLeft, nameof(bottomLeft));
 
-        if (!IsVisible(screenPosition, screenSize))
+        var screenTopLeft = ToScreen(topLeft);
+        var screenTopRight = ToScreen(topRight);
+        var screenBottomRight = ToScreen(bottomRight);
+        var screenBottomLeft = ToScreen(bottomLeft);
+
+        ValidatePoint(screenTopLeft, nameof(topLeft));
+        ValidatePoint(screenTopRight, nameof(topRight));
+        ValidatePoint(screenBottomRight, nameof(bottomRight));
+        ValidatePoint(screenBottomLeft, nameof(bottomLeft));
+
+        var minimum = Vector2.Min(
+            Vector2.Min(screenTopLeft, screenTopRight),
+            Vector2.Min(screenBottomRight, screenBottomLeft)
+        );
+
+        var maximum = Vector2.Max(
+            Vector2.Max(screenTopLeft, screenTopRight),
+            Vector2.Max(screenBottomRight, screenBottomLeft)
+        );
+
+        if (!IsVisible(minimum, maximum - minimum))
             return;
 
-        _surface.DrawTexture(texture, screenPosition, screenSize);
+        _surface.DrawTexture(
+            texture,
+            screenTopLeft,
+            screenTopRight,
+            screenBottomRight,
+            screenBottomLeft
+        );
     }
 
     /// <inheritdoc />
