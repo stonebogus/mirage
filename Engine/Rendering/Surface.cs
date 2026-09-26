@@ -184,8 +184,6 @@ internal sealed class RenderSurface(Window window)
 
     private static OpenedFont OpenFont(Font font, float size, FontStyle style)
     {
-        // SDL_IOFromConstMem borrows this buffer. Keep it pinned until both
-        // the native font and its IO stream have been closed.
         var bytes = font.Data.ToArray();
         var pin = GCHandle.Alloc(bytes, GCHandleType.Pinned);
 
@@ -197,8 +195,6 @@ internal sealed class RenderSurface(Window window)
             throw Error("Opening font bytes");
         }
 
-        // This class closes the stream explicitly, including when opening
-        // the font fails.
         var nativeFont = NativeText.OpenFontIO(stream, false, size);
 
         if (nativeFont == nint.Zero)
@@ -587,17 +583,13 @@ internal sealed class RenderSurface(Window window)
         );
     }
 
-    /// <summary>
-    /// Draws a textured mesh using vertex positions in screen coordinates.
-    /// </summary>
     internal void DrawMesh(GraphicMesh mesh, ReadOnlySpan<Vector2> positions)
     {
         EnsureFrame();
 
-        var geometry = mesh.Mesh;
-        var localVertices = geometry.Vertices.Span;
+        var localVertices = mesh.Vertices.Span;
         var textureCoordinates = mesh.TexCoords.Span;
-        var indices = geometry.Indices.Span;
+        var indices = mesh.Indices.Span;
 
         if (positions.Length != localVertices.Length)
         {

@@ -1,45 +1,59 @@
 using System.Numerics;
-using Mirage.Common;
+using Mirage.Graphics.Primitives;
 using Mirage.Spatial.Resources;
 
 namespace Mirage.Graphics.Resources;
 
 /// <summary>
-/// Associates triangle geometry with a texture and its vertex coordinates.
+/// Represents reusable two-dimensional triangle geometry with texture mapping.
 /// </summary>
 /// <remarks>
-/// Texture coordinates correspond to vertices by index and use normalized
-/// coordinates. This resource copies its texture coordinates. It borrows the
-/// mesh and texture; it does not destroy them.
+/// A graphic mesh extends spatial triangle geometry with a texture and one
+/// normalized texture coordinate for each vertex.
+///
+/// The mesh copies its vertices, indices, and texture coordinates. It borrows
+/// the texture and does not destroy it.
 /// </remarks>
-public sealed class GraphicMesh : Resource
+public sealed class GraphicMesh : Mesh
 {
-    private ReadOnlyMemory<Vector2> _texCoords;
+    private ReadOnlyMemory<Vector2> _textureCoordinates;
 
     /// <summary>
-    /// Initializes the visual data for a textured mesh.
+    /// Initializes a textured mesh from vertex positions, a texture, texture
+    /// coordinates, and optional triangle indices.
     /// </summary>
-    /// <param name="mesh">The geometry whose vertices receive texture coordinates.</param>
-    /// <param name="texture">The texture to draw on the mesh.</param>
+    /// <param name="vertices">The local vertex positions to copy.</param>
+    /// <param name="texture">The texture mapped onto the mesh.</param>
     /// <param name="textureCoordinates">
-    /// One normalized texture coordinate for each vertex in
-    /// <paramref name="mesh"/>, in the same order.
+    /// One normalized texture coordinate for each vertex, in the same order.
+    /// </param>
+    /// <param name="indices">
+    /// The triangle indices to copy, or <see langword="null"/> to use the
+    /// vertices sequentially in groups of three.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when an argument is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="ObjectDisposedException">
-    /// Thrown when the mesh, texture, or texture image has been destroyed.
+    /// Thrown when <paramref name="vertices"/>,
+    /// <paramref name="texture"/>, or
+    /// <paramref name="textureCoordinates"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when the coordinate count differs from the vertex count or a
-    /// coordinate contains a nonfinite value.
+    /// Thrown when the texture coordinate count differs from the vertex count
+    /// or a texture coordinate contains a nonfinite value.
     /// </exception>
-    public GraphicMesh(Mesh mesh, Texture texture, IEnumerable<Vector2> textureCoordinates)
+    public GraphicMesh(
+        IEnumerable<Vector2> vertices,
+        Texture texture,
+        IEnumerable<Vector2> textureCoordinates,
+        IEnumerable<int>? indices = null
+    )
+        : base(vertices, indices)
     {
+        ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(textureCoordinates);
+
         var coordinates = textureCoordinates.ToArray();
 
-        if (coordinates.Length != mesh.Vertices.Length)
+        if (coordinates.Length != Vertices.Length)
         {
             throw new ArgumentException(
                 "The number of texture coordinates must match the number of mesh vertices.",
@@ -60,40 +74,35 @@ public sealed class GraphicMesh : Resource
             }
         }
 
-        Mesh = mesh;
         Texture = texture;
-        _texCoords = coordinates;
+        _textureCoordinates = coordinates;
     }
-
-    /// <summary>
-    /// Gets the geometry used by this visual.
-    /// </summary>
-    public Mesh Mesh { get; }
 
     /// <summary>
     /// Gets the normalized texture coordinates, ordered like the mesh vertices.
     /// </summary>
     /// <exception cref="ObjectDisposedException">
-    /// Thrown when this visual has been destroyed.
+    /// Thrown when this mesh has been destroyed.
     /// </exception>
     public ReadOnlyMemory<Vector2> TexCoords
     {
         get
         {
             ThrowIfDestroyed();
-            return _texCoords;
+            return _textureCoordinates;
         }
     }
 
     /// <summary>
-    /// Gets the texture mapped onto the geometry.
+    /// Gets the texture mapped onto the mesh.
     /// </summary>
     public Texture Texture { get; }
 
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        _texCoords = ReadOnlyMemory<Vector2>.Empty;
+        _textureCoordinates = ReadOnlyMemory<Vector2>.Empty;
+
         base.OnDestroy();
     }
 }
