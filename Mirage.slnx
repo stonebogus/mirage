@@ -1,5 +1,4 @@
 <Solution>
-  <Project Path="Tests/Tests.csproj" />
   <Project Path="Sandbox/Sandbox.csproj" />
   <Folder Name="/Engine/">
     <Project Path="Engine/Spatial/Mirage.Spatial.csproj" />
