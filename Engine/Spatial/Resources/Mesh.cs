@@ -10,7 +10,7 @@ namespace Mirage.Spatial.Resources;
 /// The mesh copies its vertices and indices. Vertex positions are local coordinates;
 /// the caller determines how to place the mesh.
 /// </remarks>
-public sealed class Mesh : Resource
+public class Mesh : Resource
 {
     private ReadOnlyMemory<int> _indices;
     private ReadOnlyMemory<Vector2> _vertices;
