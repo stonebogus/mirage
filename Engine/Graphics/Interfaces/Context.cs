@@ -41,6 +41,22 @@ public interface IDrawContext
     void DrawLine(Vector2 start, Vector2 end, Color color, float thickness = 1f);
 
     /// <summary>
+    /// Draws a textured mesh after transforming its local vertices.
+    /// </summary>
+    /// <param name="mesh">The geometry, texture, and vertex texture coordinates.</param>
+    /// <param name="transform">
+    /// The transformation from mesh-local coordinates to world coordinates.
+    /// When no camera is active, the result uses screen coordinates.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="mesh"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    /// Thrown when the graphic mesh or one of its referenced resources has been destroyed.
+    /// </exception>
+    void DrawMesh(GraphicMesh mesh, Matrix3x2 transform);
+
+    /// <summary>
     /// Draws an entire texture across four specified corners.
     /// </summary>
     /// <param name="texture">The texture to draw.</param>
