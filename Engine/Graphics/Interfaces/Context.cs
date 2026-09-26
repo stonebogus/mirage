@@ -40,10 +40,30 @@ public interface IDrawContext
     void DrawTexture(Texture texture, Vector2 position, Vector2 size);
 
     /// <summary>
+    /// Fills a circle with a color.
+    /// </summary>
+    /// <param name="center">The center in screen or world coordinates.</param>
+    /// <param name="radius">The radius in coordinate units.</param>
+    /// <param name="color">The fill color.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the radius is negative or not finite.
+    /// </exception>
+    void FillCircle(Vector2 center, float radius, Color color);
+
+    /// <summary>
     /// Fills a rectangle with a color.
     /// </summary>
     /// <param name="position">The top-left position in screen or world coordinates.</param>
     /// <param name="size">The rectangle size in coordinate units.</param>
     /// <param name="color">The fill color.</param>
     void FillRectangle(Vector2 position, Vector2 size, Color color);
+
+    /// <summary>
+    /// Fills a triangle with a color.
+    /// </summary>
+    /// <param name="a">The first vertex in screen or world coordinates.</param>
+    /// <param name="b">The second vertex in screen or world coordinates.</param>
+    /// <param name="c">The third vertex in screen or world coordinates.</param>
+    /// <param name="color">The fill color.</param>
+    void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color);
 }

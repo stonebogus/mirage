@@ -16,6 +16,16 @@ internal sealed class RenderSurface(Window window)
     private bool _frameActive;
     private nint _native;
 
+    private static SDL.Vertex CreateVertex(Vector2 position, SDL.FColor color)
+    {
+        return new SDL.Vertex
+        {
+            Position = new SDL.FPoint { X = position.X, Y = position.Y },
+            Color = color,
+            TexCoord = default,
+        };
+    }
+
     private void EnsureFrame()
     {
         EnsureStarted();
@@ -105,6 +115,19 @@ internal sealed class RenderSurface(Window window)
 
         if (!SDL.SetRenderDrawColorFloat(_native, value.R, value.G, value.B, value.A))
             throw Error("Setting the drawing color");
+    }
+
+    private static SDL.FColor ToNativeColor(Color color)
+    {
+        var value = color.Clamped();
+
+        return new SDL.FColor
+        {
+            R = value.R,
+            G = value.G,
+            B = value.B,
+            A = value.A,
+        };
     }
 
     private static void ValidateRectangle(Vector2 position, Vector2 size)
@@ -218,9 +241,65 @@ internal sealed class RenderSurface(Window window)
     }
 
     /// <summary>
-    /// Enables or disables vertical synchronization.
+    /// Fills a triangle using screen coordinates.
     /// </summary>
-    /// <param name="enabled">Whether vertical synchronization is enabled.</param>
+    internal unsafe void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
+    {
+        EnsureFrame();
+
+        var nativeColor = ToNativeColor(color);
+
+        Span<SDL.Vertex> vertices = stackalloc SDL.Vertex[3];
+
+        vertices[0] = CreateVertex(a, nativeColor);
+        vertices[1] = CreateVertex(b, nativeColor);
+        vertices[2] = CreateVertex(c, nativeColor);
+
+        if (!SDL.RenderGeometry(_native, nint.Zero, vertices, 3, nint.Zero, 0))
+            throw Error("Filling a triangle");
+    }
+
+    internal unsafe void FillCircle(Vector2 center, float radius, Color color)
+    {
+        EnsureFrame();
+
+        if (!float.IsFinite(radius) || radius < 0f)
+            throw new ArgumentOutOfRangeException(nameof(radius));
+
+        if (radius == 0f)
+            return;
+
+        var segments = global::System.Math.Clamp(
+            (int)MathF.Ceiling(MathF.Min(radius * 0.5f, 128f)),
+            16,
+            128
+        );
+
+        var vertexCount = segments * 3;
+        Span<SDL.Vertex> vertices = stackalloc SDL.Vertex[vertexCount];
+
+        var nativeColor = ToNativeColor(color);
+
+        for (var index = 0; index < segments; index++)
+        {
+            var startAngle = MathF.Tau * index / segments;
+            var endAngle = MathF.Tau * (index + 1) / segments;
+
+            var start = center + new Vector2(MathF.Cos(startAngle), MathF.Sin(startAngle)) * radius;
+
+            var end = center + new Vector2(MathF.Cos(endAngle), MathF.Sin(endAngle)) * radius;
+
+            var firstVertex = index * 3;
+
+            vertices[firstVertex] = CreateVertex(center, nativeColor);
+            vertices[firstVertex + 1] = CreateVertex(start, nativeColor);
+            vertices[firstVertex + 2] = CreateVertex(end, nativeColor);
+        }
+
+        if (!SDL.RenderGeometry(_native, nint.Zero, vertices, vertexCount, nint.Zero, 0))
+            throw Error("Filling a circle");
+    }
+
     internal void ApplyVSync(bool enabled)
     {
         if (_native == nint.Zero)
@@ -230,9 +309,6 @@ internal sealed class RenderSurface(Window window)
             throw Error("Changing VSync");
     }
 
-    /// <summary>
-    /// Draws a texture using screen coordinates.
-    /// </summary>
     internal void DrawTexture(Texture texture, Vector2 position, Vector2 size)
     {
         EnsureFrame();
