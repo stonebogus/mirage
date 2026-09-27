@@ -294,7 +294,7 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
     public string Identifier { get; }
 
     /// <inheritdoc />
-    public void Update(UpdateContext context)
+    public virtual void Update(UpdateContext context)
     {
         ThrowIfDestroyed();
         if (_opened.Get())

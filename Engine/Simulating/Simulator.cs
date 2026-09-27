@@ -233,7 +233,8 @@ public class Simulator : Module, IUpdatable
         base.OnStop();
     }
 
-    public void Update(UpdateContext context)
+    /// <inheritdoc />
+    public virtual void Update(UpdateContext context)
     {
         ThrowIfDestroyed();
 

@@ -52,7 +52,7 @@ public class InputHandler : Module, IUpdatable
     /// <exception cref="InvalidOperationException">
     /// Thrown when the module is not running, including before configuration has completed.
     /// </exception>
-    public void Update(UpdateContext updateContext)
+    public virtual void Update(UpdateContext updateContext)
     {
         ThrowIfDestroyed();
 

@@ -51,7 +51,7 @@ public class WindowManager : Module, IUpdatable
     /// <exception cref="InvalidOperationException">
     /// Thrown when the module is not running, including before configuration has completed.
     /// </exception>
-    public void Update(UpdateContext context)
+    public virtual void Update(UpdateContext context)
     {
         ThrowIfDestroyed();
 

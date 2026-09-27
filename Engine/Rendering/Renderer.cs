@@ -72,7 +72,7 @@ public class Renderer : Module, IUpdatable
     }
 
     /// <inheritdoc />
-    public void Update(UpdateContext context) => Render(context);
+    public virtual void Update(UpdateContext context) => Render(context);
 
     private void EnsureComposed()
     {
