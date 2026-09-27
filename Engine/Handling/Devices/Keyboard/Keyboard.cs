@@ -22,7 +22,7 @@ public class Keyboard : InputDevice
     > Events = [];
 
     /// <summary>
-    /// Creates a keyboard with the specified actions.
+    /// Initializes a new instance of the <see cref="Keyboard"/> class.
     /// </summary>
     /// <param name="events">The actions to register initially.</param>
     public Keyboard(params InputEvent<KeyboardEventPayload, KeyboardKey>[] events)

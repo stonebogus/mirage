@@ -27,7 +27,7 @@ public class WindowManager : Module, IUpdatable
     public readonly IReadOnlyDictionary<string, Window> Windows;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="WindowManager"/> module.
+    /// Initializes a new instance of the <see cref="WindowManager"/> class.
     /// </summary>
     /// <param name="windows">The initial windows, or <see langword="null"/> for none.</param>
     /// <exception cref="InvalidOperationException">

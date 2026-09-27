@@ -4,8 +4,11 @@ using Mirage.Scheduling.Interfaces;
 namespace Mirage.Scheduling.Channels;
 
 /// <summary>
-/// Updates loaded <see cref="IUpdatable"/> nodes in the graph's active root.
+/// Initializes a new instance of the <see cref="NodeUpdateChannel"/> class.
 /// </summary>
+/// <remarks>
+/// Updates loaded <see cref="IUpdatable"/> nodes in the graph's active root.
+/// </remarks>
 /// <param name="manager">The node manager providing the active root.</param>
 /// <param name="identifier">The channel identifier. The default is <c>"nodes"</c>.</param>
 /// <param name="updateRate"> The target number of updates per second. A non-positive value updates once per scheduler iteration. </param>

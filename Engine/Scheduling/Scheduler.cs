@@ -38,7 +38,7 @@ public class Scheduler : Module
     public readonly int TargetFramerate;
 
     /// <summary>
-    /// Initializes a new instance of a <see cref="Scheduler"/> class.
+    /// Initializes a new instance of the <see cref="Scheduler"/> class.
     /// </summary>
     /// <param name="targetFramerate">
     /// The target number of scheduler iterations per second.

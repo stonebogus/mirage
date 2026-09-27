@@ -16,7 +16,7 @@ public class Mesh : Resource
     private ReadOnlyMemory<Vector2> _vertices;
 
     /// <summary>
-    /// Initializes a mesh from vertex positions and optional triangle indices.
+    /// Initializes a new instance of the <see cref="Mesh"/> class.
     /// </summary>
     /// <param name="vertices">The local vertex positions to copy.</param>
     /// <param name="indices">

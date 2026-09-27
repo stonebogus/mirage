@@ -54,13 +54,23 @@ public enum ModuleState
 }
 
 /// <summary>
-/// Represents a game module with a managed lifecycle and declared dependencies.
+/// Initializes a new instance of the <see cref="Module"/> class.
 /// </summary>
 /// <remarks>
+/// <para>
+/// Represents a game module with a managed lifecycle and declared dependencies.
+/// </para>
 /// Modules are initialized and managed by a <see cref="Game"/> instance.
 /// Their dependencies are injected before the module is started.
 /// </remarks>
-public abstract class Module : Destroyable
+/// <param name="identifier">
+/// The unique identifier of the module.
+/// </param>
+/// <param name="dependencies">
+/// The identifiers of the modules required by this module.
+/// </param>
+public abstract class Module(string identifier, IEnumerable<string>? dependencies = null)
+    : Destroyable
 {
     private readonly Dictionary<string, Module> _injectedDependencies = [];
     private readonly Store<ModuleState> _state = new(ModuleState.Idle);
@@ -69,29 +79,12 @@ public abstract class Module : Destroyable
     /// <summary>
     /// Gets the identifiers of the modules required by this module.
     /// </summary>
-    public readonly IReadOnlyList<string> Dependencies;
+    public readonly IReadOnlyList<string> Dependencies = [.. dependencies ?? []];
 
     /// <summary>
     /// Gets the unique module identifier.
     /// </summary>
-    public readonly string Identifier;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Module"/> class.
-    /// </summary>
-    /// <param name="identifier">
-    /// The unique identifier of the module.
-    /// </param>
-    /// <param name="dependencies">
-    /// The identifiers of the modules required by this module.
-    /// </param>
-    protected Module(string identifier, IEnumerable<string>? dependencies = null)
-    {
-        Identifier = identifier;
-        Dependencies = [.. dependencies ?? []];
-
-        State = _state;
-    }
+    public readonly string Identifier = identifier;
 
     /// <summary>
     /// Gets the telemetry manager available to the module after injection.
@@ -101,7 +94,7 @@ public abstract class Module : Destroyable
     /// <summary>
     /// Gets a read-only store for the current lifecycle state of the module.
     /// </summary>
-    public IReadOnlyStore<ModuleState> State { get; }
+    public IReadOnlyStore<ModuleState> State => _state;
 
     /// <inheritdoc />
     protected override void OnDestroy()

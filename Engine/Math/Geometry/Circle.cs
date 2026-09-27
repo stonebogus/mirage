@@ -3,30 +3,24 @@ using System.Numerics;
 namespace Mirage.Math.Geometry;
 
 /// <summary>
-/// Represents a circle in two-dimensional space.
+/// Initializes a new instance of the <see cref="Circle"/> struct.
 /// </summary>
-public readonly struct Circle : IEquatable<Circle>
+/// <remarks>
+/// Represents a circle in two-dimensional space.
+/// </remarks>
+/// <param name="center">The center point in the circle's coordinate space.</param>
+/// <param name="radius">The radius in coordinate units.</param>
+public readonly struct Circle(Vector2 center, float radius) : IEquatable<Circle>
 {
     /// <summary>
     /// Gets the center point in application-defined coordinate units.
     /// </summary>
-    public readonly Vector2 Center;
+    public readonly Vector2 Center = center;
 
     /// <summary>
     /// Gets the radius in coordinate units.
     /// </summary>
-    public readonly float Radius;
-
-    /// <summary>
-    /// Creates a circle from its center and radius.
-    /// </summary>
-    /// <param name="center">The center point in the circle's coordinate space.</param>
-    /// <param name="radius">The radius in coordinate units.</param>
-    public Circle(Vector2 center, float radius)
-    {
-        Center = center;
-        Radius = radius;
-    }
+    public readonly float Radius = radius;
 
     /// <summary>
     /// Gets the diameter in coordinate units.

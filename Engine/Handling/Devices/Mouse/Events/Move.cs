@@ -4,8 +4,11 @@ using Mirage.Common.Events;
 namespace Mirage.Handling.Devices.Mouse.Events;
 
 /// <summary>
-/// Describes a change in the cursor position.
+/// Initializes a new instance of the <see cref="MouseMoveEventPayload"/> class.
 /// </summary>
+/// <remarks>
+/// Describes a change in the cursor position.
+/// </remarks>
 /// <param name="Position">
 /// The cursor position within the window after the movement.
 /// </param>
@@ -15,7 +18,10 @@ namespace Mirage.Handling.Devices.Mouse.Events;
 public sealed record MouseMoveEventPayload(Vector2 Position, Vector2 Delta);
 
 /// <summary>
-/// Stores the latest mouse movement and notifies listeners when it changes.
+/// Initializes a new instance of the <see cref="MouseMoveEvent"/> class.
 /// </summary>
+/// <remarks>
+/// Stores the latest mouse movement and notifies listeners when it changes.
+/// </remarks>
 public sealed class MouseMoveEvent()
     : Store<MouseMoveEventPayload>(new MouseMoveEventPayload(Vector2.Zero, Vector2.Zero));

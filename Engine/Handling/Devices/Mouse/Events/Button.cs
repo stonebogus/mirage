@@ -3,8 +3,11 @@ using System.Numerics;
 namespace Mirage.Handling.Devices.Mouse.Events;
 
 /// <summary>
-/// Describes a mouse button press or release.
+/// Initializes a new instance of the <see cref="MouseButtonEventPayload"/> class.
 /// </summary>
+/// <remarks>
+/// Describes a mouse button press or release.
+/// </remarks>
 /// <param name="Button">The button that changed state.</param>
 /// <param name="Down">
 /// Whether the button was pressed; <see langword="false"/> means it was released.
@@ -21,8 +24,11 @@ public sealed record MouseButtonEventPayload(
 );
 
 /// <summary>
-/// Represents an action triggered by a mouse button.
+/// Initializes a new instance of the <see cref="MouseButtonEvent"/> class.
 /// </summary>
+/// <remarks>
+/// Represents an action triggered by a mouse button.
+/// </remarks>
 /// <param name="identifier">The stable action identifier.</param>
 /// <param name="source">The button that activates this action.</param>
 public sealed class MouseButtonEvent(string identifier, MouseButton source)

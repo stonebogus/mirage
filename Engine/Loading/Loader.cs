@@ -4,8 +4,11 @@ using Mirage.Common.Collections;
 namespace Mirage.Loading;
 
 /// <summary>
-/// Describes a resource loading operation.
+/// Initializes a new instance of the <see cref="LoadContext"/> class.
 /// </summary>
+/// <remarks>
+/// Describes a resource loading operation.
+/// </remarks>
 /// <param name="Identifier">
 /// The normalized resource identifier relative to the loader root.
 /// </param>
@@ -37,7 +40,7 @@ public class Loader : Module
     public readonly string Root;
 
     /// <summary>
-    /// Initializes a new resource loader.
+    /// Initializes a new instance of the <see cref="Loader"/> class.
     /// </summary>
     /// <param name="root">
     /// The directory from which resources are loaded.

@@ -4,8 +4,11 @@ using Mirage.Noding;
 namespace Mirage.Rendering.Layers;
 
 /// <summary>
-/// Draws loaded drawable nodes from the active root.
+/// Initializes a new instance of the <see cref="NodeDrawLayer"/> class.
 /// </summary>
+/// <remarks>
+/// Draws loaded drawable nodes from the active root.
+/// </remarks>
 /// <param name="manager">The node manager providing the active root.</param>
 /// <param name="identifier">The layer identifier. The default is <c>"nodes"</c>.</param>
 /// <param name="priority">The drawing priority. The default is <see cref="DrawLayerPriority.Normal"/>.</param>

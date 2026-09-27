@@ -53,7 +53,7 @@ public class Sprite : SpatialNode, IDrawable
     public readonly Store<Texture> Texture;
 
     /// <summary>
-    /// Initializes a sprite using the supplied options.
+    /// Initializes a new instance of the <see cref="Sprite"/> class.
     /// </summary>
     /// <param name="name">The node name.</param>
     /// <param name="texture">The initial texture.</param>

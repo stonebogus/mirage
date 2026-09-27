@@ -15,7 +15,7 @@ namespace Mirage.Graphics.Primitives;
 public readonly record struct Color
 {
     /// <summary>
-    /// Initializes a color using normalized components or a hexadecimal value.
+    /// Initializes a new instance of the <see cref="Color"/> struct.
     /// </summary>
     /// <param name="red">The red component.</param>
     /// <param name="green">The green component.</param>
@@ -49,7 +49,7 @@ public readonly record struct Color
     }
 
     /// <summary>
-    /// Initializes a color from a hexadecimal value.
+    /// Initializes a new instance of the <see cref="Color"/> struct.
     /// </summary>
     /// <param name="hexadecimal">
     /// A hexadecimal color in <c>#RGB</c>, <c>#RGBA</c>,

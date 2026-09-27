@@ -31,10 +31,13 @@ public class NodeOptions
 }
 
 /// <summary>
-/// Represents a collection of <see cref="Node"/> instances belonging to a parent node.
+/// Initializes a new instance of the <see cref="NodeReactiveSet"/> class.
 /// </summary>
 /// <param name="owner">The node that owns this collection.</param>
 /// <remarks>
+/// <para>
+/// Represents a collection of <see cref="Node"/> instances belonging to a parent node.
+/// </para>
 /// In addition to the standard <see cref="ReactiveSet{TItem}"/> collection operations,
 /// this class provides methods for locating nodes by identifier, name, path, or tag.
 /// Searches can optionally include descendant nodes recursively.

@@ -23,7 +23,7 @@ public class PhysicsMaterial : Resource
     public readonly Store<float> Restitution;
 
     /// <summary>
-    /// Initializes a physical material.
+    /// Initializes a new instance of the <see cref="PhysicsMaterial"/> class.
     /// </summary>
     /// <param name="friction">
     /// The initial coefficient of friction. Must be finite and non-negative.

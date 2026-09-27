@@ -11,7 +11,7 @@ namespace Mirage.Scheduling;
 public readonly record struct UpdateContext
 {
     /// <summary>
-    /// Initializes an update context.
+    /// Initializes a new instance of the <see cref="UpdateContext"/> struct.
     /// </summary>
     /// <param name="deltaTime">
     /// The amount of simulated time represented by this update, in seconds.

@@ -29,7 +29,7 @@ public class InputHandler : Module, IUpdatable
     public readonly Window Window;
 
     /// <summary>
-    /// Initializes a handler for the specified window and devices.
+    /// Initializes a new instance of the <see cref="InputHandler"/> class.
     /// </summary>
     /// <param name="index">The index used to distinguish the module identifier.</param>
     /// <param name="window">The window supplying input events.</param>

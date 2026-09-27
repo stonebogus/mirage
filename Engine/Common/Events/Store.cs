@@ -33,9 +33,12 @@ public interface IStore<TValue> : IReadOnlyStore<TValue>, IEvent<TValue>
 }
 
 /// <summary>
+/// Initializes a new instance of the <see cref="Store{TValue}"/> class.
+/// </summary>
+/// <remarks>
 /// Represents a reactive state container that holds a value and notifies listeners
 /// when the value changes.
-/// </summary>
+/// </remarks>
 /// <typeparam name="TValue">The type of value stored in the container.</typeparam>
 /// <example>
 /// <code>

@@ -73,7 +73,7 @@ public class SpatialNode : Node
     public readonly Store<Vector2> Scale;
 
     /// <summary>
-    /// Initializes a spatial node.
+    /// Initializes a new instance of the <see cref="SpatialNode"/> class.
     /// </summary>
     /// <param name="name">The initial name of the node.</param>
     /// <param name="options">

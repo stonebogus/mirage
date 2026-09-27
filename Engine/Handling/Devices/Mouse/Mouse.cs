@@ -38,7 +38,7 @@ public class Mouse : InputDevice
     public readonly IReadOnlyStore<Vector2> Position;
 
     /// <summary>
-    /// Initializes a mouse with the specified button actions.
+    /// Initializes a new instance of the <see cref="Mouse"/> class.
     /// </summary>
     /// <param name="events">The button actions to register.</param>
     public Mouse(params MouseButtonEvent[] events)

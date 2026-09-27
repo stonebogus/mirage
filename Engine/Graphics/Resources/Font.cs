@@ -49,7 +49,7 @@ public sealed class Font : Resource
     private ReadOnlyMemory<byte> _data;
 
     /// <summary>
-    /// Initializes a font from encoded font file data.
+    /// Initializes a new instance of the <see cref="Font"/> class.
     /// </summary>
     /// <param name="data">The font file bytes to copy.</param>
     /// <exception cref="ArgumentException">

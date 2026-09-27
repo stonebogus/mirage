@@ -74,7 +74,7 @@ public sealed class Cursor : Destroyable
     public readonly Store<bool> Visible;
 
     /// <summary>
-    /// Creates a cursor with the supplied identifier and options.
+    /// Initializes a new instance of the <see cref="Cursor"/> class.
     /// </summary>
     /// <param name="identifier">The cursor identifier.</param>
     /// <param name="options">The initial cursor settings.</param>

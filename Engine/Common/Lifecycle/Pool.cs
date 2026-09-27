@@ -17,8 +17,11 @@ public interface IPoolable : IRestorable
 }
 
 /// <summary>
-/// Represents a pool of reusable objects.
+/// Initializes a new instance of the <see cref="Pool{TItem}"/> class.
 /// </summary>
+/// <remarks>
+/// Represents a pool of reusable objects.
+/// </remarks>
 /// <typeparam name="TItem">
 /// The type of objects managed by the pool.
 /// </typeparam>

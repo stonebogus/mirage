@@ -42,7 +42,7 @@ public class Renderer : Module, IUpdatable
     public readonly ReactiveDictionary<string, DrawLayer> Layers = [];
 
     /// <summary>
-    /// Initializes a renderer for the specified window.
+    /// Initializes a new instance of the <see cref="Renderer"/> class.
     /// </summary>
     /// <param name="window">The window that receives rendered frames.</param>
     /// <param name="clearColor">The frame clear color, or <see langword="null"/> for <see cref="Color.Black"/>.</param>

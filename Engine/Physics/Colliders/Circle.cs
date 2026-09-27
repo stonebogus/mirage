@@ -12,7 +12,7 @@ namespace Mirage.Physics.Colliders;
 public class CircleCollider : Collider
 {
     /// <summary>
-    /// Initializes a circular collider.
+    /// Initializes a new instance of the <see cref="CircleCollider"/> class.
     /// </summary>
     /// <param name="radius">
     /// The radius of the circle in local units.

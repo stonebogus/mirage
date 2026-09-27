@@ -4,8 +4,11 @@ using Mirage.Common.Events;
 namespace Mirage.Handling.Devices.Mouse.Events;
 
 /// <summary>
-/// Describes a mouse wheel movement.
+/// Initializes a new instance of the <see cref="MouseWheelEventPayload"/> class.
 /// </summary>
+/// <remarks>
+/// Describes a mouse wheel movement.
+/// </remarks>
 /// <param name="Delta">
 /// The horizontal and vertical scroll amounts reported by SDL3.
 /// </param>

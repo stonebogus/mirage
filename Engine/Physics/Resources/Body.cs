@@ -80,7 +80,7 @@ public class PhysicsBody : Resource
     public readonly Store<BodyType> Type;
 
     /// <summary>
-    /// Initializes a physics body.
+    /// Initializes a new instance of the <see cref="PhysicsBody"/> class.
     /// </summary>
     /// <param name="colliders">
     /// The colliders that define the body's collision geometry.

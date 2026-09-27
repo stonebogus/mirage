@@ -24,6 +24,14 @@ public class Simulator : Module, IUpdatable
 
     public readonly int SubstepCount;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Simulator"/> class.
+    /// </summary>
+    /// <param name="spaces">The initial simulation spaces, or <see langword="null"/> for none.</param>
+    /// <param name="substepCount">The positive number of physics substeps performed for each update. The default is <c>4</c>.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="substepCount"/> is not positive.
+    /// </exception>
     public Simulator(IEnumerable<SimulationSpace>? spaces = null, int substepCount = 4)
         : base("Simulator")
     {

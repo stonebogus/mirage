@@ -86,7 +86,7 @@ public class UpdateChannel : Destroyable
     public readonly double UpdateRate;
 
     /// <summary>
-    /// Initializes a new instance of a <see cref="UpdateChannel"/>.
+    /// Initializes a new instance of the <see cref="UpdateChannel"/> class.
     /// </summary>
     /// <param name="identifier">
     /// The unique identifier of the channel.

@@ -3,30 +3,24 @@ using System.Numerics;
 namespace Mirage.Math.Geometry;
 
 /// <summary>
-/// Represents an axis-aligned rectangle in two-dimensional space.
+/// Initializes a new instance of the <see cref="Rect"/> struct.
 /// </summary>
-public readonly struct Rect : IEquatable<Rect>
+/// <remarks>
+/// Represents an axis-aligned rectangle in two-dimensional space.
+/// </remarks>
+/// <param name="minimum">The minimum point in the rectangle's coordinate space.</param>
+/// <param name="maximum">The maximum point in the rectangle's coordinate space.</param>
+public readonly struct Rect(Vector2 minimum, Vector2 maximum) : IEquatable<Rect>
 {
     /// <summary>
     /// Gets the minimum point of the rectangle in application-defined coordinate units.
     /// </summary>
-    public readonly Vector2 Minimum;
+    public readonly Vector2 Minimum = minimum;
 
     /// <summary>
     /// Gets the maximum point of the rectangle in application-defined coordinate units.
     /// </summary>
-    public readonly Vector2 Maximum;
-
-    /// <summary>
-    /// Creates a rectangle from its minimum and maximum points.
-    /// </summary>
-    /// <param name="minimum">The minimum point in the rectangle's coordinate space.</param>
-    /// <param name="maximum">The maximum point in the rectangle's coordinate space.</param>
-    public Rect(Vector2 minimum, Vector2 maximum)
-    {
-        Minimum = minimum;
-        Maximum = maximum;
-    }
+    public readonly Vector2 Maximum = maximum;
 
     /// <summary>
     /// Gets the width in coordinate units.

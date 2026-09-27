@@ -4,8 +4,11 @@ using Mirage.Common.Lifecycle;
 namespace Mirage.Handling.Devices;
 
 /// <summary>
-/// Provides a lifecycle and processing hook for a window input source.
+/// Initializes a new instance of the <see cref="InputDevice"/> class.
 /// </summary>
+/// <remarks>
+/// Provides a lifecycle and processing hook for a window input source.
+/// </remarks>
 /// <param name="identifier">The stable identifier of this device.</param>
 public abstract class InputDevice(string identifier) : Destroyable
 {

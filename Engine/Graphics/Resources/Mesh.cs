@@ -19,8 +19,7 @@ public sealed class GraphicMesh : Mesh
     private ReadOnlyMemory<Vector2> _textureCoordinates;
 
     /// <summary>
-    /// Initializes a textured mesh from vertex positions, a texture, texture
-    /// coordinates, and optional triangle indices.
+    /// Initializes a new instance of the <see cref="GraphicMesh"/> class.
     /// </summary>
     /// <param name="vertices">The local vertex positions to copy.</param>
     /// <param name="texture">The texture mapped onto the mesh.</param>

@@ -29,7 +29,7 @@ public class SimulationSpace : Destroyable
     public readonly ReactiveSet<ISimulatable> Simulatables = [];
 
     /// <summary>
-    /// Initializes a new instance of a <see cref="SimulationSpace"/> class.
+    /// Initializes a new instance of the <see cref="SimulationSpace"/> class.
     /// </summary>
     /// <param name="identifier">
     /// The unique identifier of the space.

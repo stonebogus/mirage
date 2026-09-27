@@ -22,9 +22,12 @@ public enum MessageKind
 }
 
 /// <summary>
+/// Initializes a new instance of the <see cref="Message"/> struct.
+/// </summary>
+/// <remarks>
 /// Defines an immutable telemetry message containing the log content,
 /// origin source, severity classification, and optional metadata.
-/// </summary>
+/// </remarks>
 /// <param name="Content">The primary text content or payload of the message.</param>
 /// <param name="Source">
 /// The origin component, service, or module that generated the message.

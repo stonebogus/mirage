@@ -48,7 +48,7 @@ public class DrawLayer : Destroyable
     public readonly DrawLayerPriority Priority;
 
     /// <summary>
-    /// Initializes a rendering layer.
+    /// Initializes a new instance of the <see cref="DrawLayer"/> class.
     /// </summary>
     /// <param name="identifier">The layer's unique identifier.</param>
     /// <param name="priority">The rendering priority. The default is <see cref="DrawLayerPriority.Normal"/>.</param>

@@ -41,7 +41,7 @@ public sealed class Image : Resource
     public readonly uint Width;
 
     /// <summary>
-    /// Initializes a new image.
+    /// Initializes a new instance of the <see cref="Image"/> class.
     /// </summary>
     /// <param name="width">
     /// The image width, in pixels.

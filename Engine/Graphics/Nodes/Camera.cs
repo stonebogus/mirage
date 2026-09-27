@@ -27,7 +27,7 @@ public class Camera : SpatialNode, ICamera
     public readonly Store<float> Zoom;
 
     /// <summary>
-    /// Initializes a camera node.
+    /// Initializes a new instance of the <see cref="Camera"/> class.
     /// </summary>
     /// <param name="name">The node name.</param>
     /// <param name="options">The initial camera and spatial values, or <see langword="null"/> for defaults.</param>
