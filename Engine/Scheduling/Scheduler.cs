@@ -17,8 +17,8 @@ public class Scheduler : Module
 {
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the identifiable set of channels managed by the scheduler.
@@ -83,7 +83,7 @@ public class Scheduler : Module
 
         _compositionStarted = true;
 
-        Channels.Add(Compose().ToArray());
+        Channels.Add([.. Compose()]);
 
         _composed = true;
     }
@@ -129,6 +129,13 @@ public class Scheduler : Module
     protected virtual void Configure() { }
 
     /// <inheritdoc />
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        Channels.Destroy();
+    }
+
+    /// <inheritdoc />
     protected override void OnStart()
     {
         EnsureComposed();
@@ -138,13 +145,6 @@ public class Scheduler : Module
             channel.Prepare();
         }
         base.OnStart();
-    }
-
-    /// <inheritdoc />
-    protected override void OnDestroy()
-    {
-        base.OnDestroy();
-        Channels.Destroy();
     }
 
     /// <summary>
