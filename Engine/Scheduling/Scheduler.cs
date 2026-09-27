@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Mirage.Common;
 using Mirage.Common.Collections;
 using Mirage.Scheduling.Channels;
@@ -16,6 +16,9 @@ namespace Mirage.Scheduling;
 public class Scheduler : Module
 {
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
 
     /// <summary>
     /// Gets the channels managed by the scheduler.
@@ -54,6 +57,7 @@ public class Scheduler : Module
 
         foreach (var channel in channels ?? [])
         {
+            ArgumentNullException.ThrowIfNull(channel);
             if (Channels.ContainsKey(channel.Identifier))
             {
                 throw new InvalidOperationException(
@@ -87,47 +91,87 @@ public class Scheduler : Module
         if (_composed)
             return;
 
-        foreach (var channel in Compose())
-        {
-            if (Channels.ContainsKey(channel.Identifier))
-            {
-                throw new InvalidOperationException(
-                    $"Duplicate channel identifier found: '{channel.Identifier}'"
-                );
-            }
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
 
-            Channels.Add(channel.Identifier, channel);
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
+        HashSet<string> identifiers = [];
+
+        foreach (var channel in composedObjects)
+        {
+            ArgumentNullException.ThrowIfNull(channel);
+
+            if (Channels.ContainsKey(channel.Identifier) || !identifiers.Add(channel.Identifier))
+                throw new InvalidOperationException(
+                    $"Duplicate channel identifier found: '{channel.Identifier}'."
+                );
         }
+
+        foreach (var channel in composedObjects)
+            Channels.Add(channel.Identifier, channel);
 
         _composed = true;
     }
 
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
+    }
+
     /// <summary>
-    /// Composes the channels managed by this scheduler.
+    /// Composes the channels managed by this object.
     /// </summary>
-    /// <returns>
-    /// An enumerable sequence containing the channels to register.
-    /// </returns>
+    /// <returns>The channels to register, in enumeration order.</returns>
     /// <remarks>
-    /// The default implementation does not compose any channels.
-    ///
-    /// Composition occurs once when the scheduler starts, after channels
-    /// supplied to the constructor have already been registered.
+    /// Composition occurs once when the scheduler first starts, before channels are prepared.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The scheduler references channels without owning or destroying them.
+    /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<UpdateChannel> Compose()
     {
         yield break;
     }
 
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
+
     /// <inheritdoc />
     protected override void OnStart()
     {
         EnsureComposed();
+        EnsureConfigured();
         foreach (var channel in Channels.Values)
         {
             channel.Prepare();
         }
         base.OnStart();
+    }
+
+    /// <inheritdoc />
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        Channels.Destroy();
     }
 
     /// <summary>

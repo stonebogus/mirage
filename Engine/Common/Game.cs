@@ -43,6 +43,9 @@ public abstract class Game : Destroyable
     private readonly Dictionary<string, Module> _modules = [];
     private readonly Store<GameState> _state = new(GameState.Idle);
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
     private bool _injected;
     private IReadOnlyList<Module>? _moduleOrder;
 
@@ -94,37 +97,46 @@ public abstract class Game : Destroyable
     /// </summary>
     public IReadOnlyStore<GameState> State { get; }
 
-    private void ComposeModules()
+    private void EnsureComposed()
     {
         if (_composed)
             return;
 
-        var composedModules = Compose().ToArray();
-        Dictionary<string, Module> pendingModules = [];
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
 
-        foreach (var module in composedModules)
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
+        HashSet<string> identifiers = [];
+
+        foreach (var module in composedObjects)
         {
             ArgumentNullException.ThrowIfNull(module);
 
-            if (_modules.ContainsKey(module.Identifier))
-            {
+            if (_modules.ContainsKey(module.Identifier) || !identifiers.Add(module.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate module identifier found: '{module.Identifier}'."
                 );
-            }
-
-            if (!pendingModules.TryAdd(module.Identifier, module))
-            {
-                throw new InvalidOperationException(
-                    $"Duplicate composed module identifier found: '{module.Identifier}'."
-                );
-            }
         }
 
-        foreach (var module in pendingModules)
-            _modules.Add(module.Key, module.Value);
+        foreach (var module in composedObjects)
+            _modules.Add(module.Identifier, module);
 
         _composed = true;
+    }
+
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
     }
 
     private IReadOnlyList<Module> ResolveModuleOrder()
@@ -198,21 +210,33 @@ public abstract class Game : Destroyable
     }
 
     /// <summary>
-    /// Composes the modules belonging to this game.
+    /// Composes the modules managed by this object.
     /// </summary>
-    /// <returns>
-    /// An enumerable sequence containing the modules to register for this game.
-    /// </returns>
+    /// <returns>The modules to register, in enumeration order.</returns>
     /// <remarks>
-    /// The default implementation does not compose any modules.
-    ///
-    /// Composed modules are registered before modules supplied directly to the
-    /// constructor.
+    /// Composition occurs once when the game first starts, before dependency resolution and injection.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The game owns and destroys its registered modules.
+    /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<Module> Compose()
     {
         yield break;
     }
+
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed modules are available through
+    /// <see cref="Modules"/> and <see cref="Require{TModule}"/>. Configuration occurs
+    /// before dependency resolution, injection, and module startup.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
 
     /// <inheritdoc />
     protected override void OnDestroy()
@@ -309,7 +333,8 @@ public abstract class Game : Destroyable
 
         try
         {
-            ComposeModules();
+            EnsureComposed();
+            EnsureConfigured();
 
             var sortedModules = ResolveModuleOrder();
 

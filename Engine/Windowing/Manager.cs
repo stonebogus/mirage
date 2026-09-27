@@ -1,4 +1,4 @@
-﻿using Mirage.Common;
+using Mirage.Common;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Windowing;
@@ -17,6 +17,9 @@ public class WindowManager : Module, IUpdatable
 {
     private readonly Dictionary<string, Window> _windows = [];
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
 
     /// <summary>
     /// Gets the managed windows, indexed by identifier.
@@ -47,8 +50,18 @@ public class WindowManager : Module, IUpdatable
     }
 
     /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the module is not running, including before configuration has completed.
+    /// </exception>
     public void Update(UpdateContext context)
     {
+        ThrowIfDestroyed();
+
+        if (State.Get() != ModuleState.Running)
+            throw new InvalidOperationException(
+                "The module must be running before processing updates."
+            );
+
         foreach (var window in _windows.Values)
             window.Update(context);
     }
@@ -58,37 +71,69 @@ public class WindowManager : Module, IUpdatable
         if (_composed)
             return;
 
-        var composedWindows = Compose().ToArray();
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
 
-        foreach (var window in composedWindows)
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
+        HashSet<string> identifiers = [];
+
+        foreach (var window in composedObjects)
         {
             ArgumentNullException.ThrowIfNull(window);
 
-            if (!_windows.TryAdd(window.Identifier, window))
+            if (_windows.ContainsKey(window.Identifier) || !identifiers.Add(window.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate window identifier found: '{window.Identifier}'."
                 );
         }
 
+        foreach (var window in composedObjects)
+            _windows.Add(window.Identifier, window);
+
         _composed = true;
     }
 
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
+    }
+
     /// <summary>
-    /// Composes the windows managed by this module.
+    /// Composes the windows managed by this object.
     /// </summary>
-    /// <returns>
-    /// An enumerable sequence containing the windows to register.
-    /// </returns>
+    /// <returns>The windows to register, in enumeration order.</returns>
     /// <remarks>
-    /// The default implementation does not compose any windows. Composition
-    /// occurs once when the module starts, before any window is opened.
-    /// Windows supplied to the constructor are registered before composed
-    /// windows.
+    /// Composition occurs once when the manager first starts, before windows are opened.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The manager owns and destroys its registered windows.
+    /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<Window> Compose()
     {
         yield break;
     }
+
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
 
     /// <inheritdoc />
     protected override void OnDestroy()
@@ -109,6 +154,7 @@ public class WindowManager : Module, IUpdatable
     protected override void OnStart()
     {
         EnsureComposed();
+        EnsureConfigured();
 
         List<Window> openedWindows = [];
 

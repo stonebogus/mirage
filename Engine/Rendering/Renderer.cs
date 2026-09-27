@@ -21,6 +21,9 @@ public class Renderer : Module, IUpdatable
     private readonly RenderSurface _surface;
     private readonly Window _window;
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
 
     /// <summary>
     /// Gets the camera used to draw world coordinates, or <see langword="null"/>
@@ -59,7 +62,10 @@ public class Renderer : Module, IUpdatable
         Camera = new Store<ICamera?>(camera);
 
         foreach (var layer in layers ?? [])
+        {
+            ArgumentNullException.ThrowIfNull(layer);
             Layers.Add(layer.Identifier, layer);
+        }
     }
 
     /// <inheritdoc />
@@ -70,25 +76,75 @@ public class Renderer : Module, IUpdatable
         if (_composed)
             return;
 
-        foreach (var layer in Compose().ToArray())
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
+
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
+        HashSet<string> identifiers = [];
+
+        foreach (var layer in composedObjects)
+        {
+            ArgumentNullException.ThrowIfNull(layer);
+
+            if (Layers.ContainsKey(layer.Identifier) || !identifiers.Add(layer.Identifier))
+                throw new InvalidOperationException(
+                    $"Duplicate layer identifier found: '{layer.Identifier}'."
+                );
+        }
+
+        foreach (var layer in composedObjects)
             Layers.Add(layer.Identifier, layer);
 
         _composed = true;
     }
 
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
+    }
+
     /// <summary>
-    /// Provides additional layers when the renderer starts.
+    /// Composes the layers managed by this object.
     /// </summary>
-    /// <returns>The layers to register before rendering begins.</returns>
-    /// <remarks>The default implementation returns no layers.</remarks>
+    /// <returns>The layers to register, in enumeration order.</returns>
+    /// <remarks>
+    /// Composition occurs once when the renderer first starts, before its render surface starts.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The renderer owns and destroys its layers, but not its window or camera.
+    /// If composition fails, later lifecycle calls reject further initialization.
+    /// </remarks>
     protected virtual IEnumerable<DrawLayer> Compose()
     {
         yield break;
     }
 
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
+
     /// <inheritdoc />
     protected override void OnDestroy()
     {
+        base.OnDestroy();
+
         foreach (var (_, layer) in Layers.ToArray())
             layer.Destroy();
 
@@ -102,6 +158,7 @@ public class Renderer : Module, IUpdatable
     protected override void OnStart()
     {
         EnsureComposed();
+        EnsureConfigured();
         _surface.Start();
     }
 

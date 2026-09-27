@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Engine/Handling/Mirage.Handling.csproj" />
+    <ProjectReference Include="../../Engine/Rendering/Mirage.Rendering.csproj" />
+    <ProjectReference Include="../../Engine/Simulating/Mirage.Simulating.csproj" />
+    <ProjectReference Include="../../Engine/Loading/Mirage.Loading.csproj" />
+  </ItemGroup>
+  <Target Name="RunCompositionRegressionTests" AfterTargets="VSTest" DependsOnTargets="Build">
+    <Exec Command="dotnet &quot;$(TargetPath)&quot;" />
+  </Target>
+</Project>

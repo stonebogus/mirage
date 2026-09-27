@@ -27,13 +27,16 @@ public enum DrawLayerPriority
 public class DrawLayer : Destroyable
 {
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
 
     /// <summary>
     /// Gets the renderable objects added directly to this layer.
     /// </summary>
+    /// <remarks>The layer references its entries without owning or destroying them.</remarks>
     public readonly List<IDrawable> Entries = [];
 
-    /// <remarks>The layer stores references to its entries but does not own or destroy them.</remarks>
     /// <summary>
     /// Gets the unique identifier of this layer.
     /// </summary>
@@ -67,6 +70,7 @@ public class DrawLayer : Destroyable
 
         foreach (var entry in entries ?? [])
         {
+            ArgumentNullException.ThrowIfNull(entry);
             Entries.Add(entry);
         }
     }
@@ -76,24 +80,63 @@ public class DrawLayer : Destroyable
         if (_composed)
             return;
 
-        foreach (var entry in Compose())
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
+
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
+
+        foreach (var entry in composedObjects)
         {
             ArgumentNullException.ThrowIfNull(entry);
-            Entries.Add(entry);
         }
+
+        foreach (var entry in composedObjects)
+            Entries.Add(entry);
 
         _composed = true;
     }
 
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
+    }
+
     /// <summary>
-    /// Supplies objects to add to this layer on its first rendering frame.
+    /// Composes the entries managed by this object.
     /// </summary>
-    /// <returns>The objects to add to the layer.</returns>
-    /// <remarks>The default implementation adds no objects.</remarks>
+    /// <returns>The entries to register, in enumeration order.</returns>
+    /// <remarks>
+    /// Composition occurs once before the first draw.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The layer references entries without owning or destroying them.
+    /// If composition fails, later lifecycle calls reject further initialization.
+    /// </remarks>
     protected virtual IEnumerable<IDrawable> Compose()
     {
         yield break;
     }
+
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
 
     /// <inheritdoc />
     /// <remarks>Clears the entry list without destroying its drawable objects.</remarks>
@@ -120,6 +163,7 @@ public class DrawLayer : Destroyable
         ThrowIfDestroyed();
 
         EnsureComposed();
+        EnsureConfigured();
 
         foreach (var entry in Entries)
             entry.Draw(context);

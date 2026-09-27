@@ -13,6 +13,9 @@ public class Mouse : InputDevice
 {
     private readonly Store<Vector2> _position = new(Vector2.Zero);
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
 
     /// <summary>
     /// Gets the registered button actions by identifier.
@@ -42,7 +45,10 @@ public class Mouse : InputDevice
         : base("Mouse")
     {
         foreach (var @event in events)
+        {
+            ArgumentNullException.ThrowIfNull(@event);
             Events.Add(@event.Identifier, @event);
+        }
 
         Position = _position;
     }
@@ -52,39 +58,69 @@ public class Mouse : InputDevice
         if (_composed)
             return;
 
-        var composedEvents = Compose().ToArray();
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
+
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
         HashSet<string> identifiers = [];
 
-        foreach (var @event in composedEvents)
+        foreach (var @event in composedObjects)
         {
             ArgumentNullException.ThrowIfNull(@event);
 
             if (Events.ContainsKey(@event.Identifier) || !identifiers.Add(@event.Identifier))
                 throw new InvalidOperationException(
-                    $"Duplicate mouse event identifier found: '{@event.Identifier}'."
+                    $"Duplicate event identifier found: '{@event.Identifier}'."
                 );
         }
 
-        foreach (var @event in composedEvents)
+        foreach (var @event in composedObjects)
             Events.Add(@event.Identifier, @event);
 
         _composed = true;
     }
 
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
+    }
+
     /// <summary>
-    /// Composes the button events handled by this mouse.
+    /// Composes the events managed by this object.
     /// </summary>
-    /// <returns>
-    /// An enumerable sequence containing the button events to register.
-    /// </returns>
+    /// <returns>The events to register, in enumeration order.</returns>
     /// <remarks>
-    /// Composition occurs once before the mouse processes input. Events
-    /// supplied to the constructor are registered before composed events.
+    /// Composition occurs once before the first input processing call.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The mouse owns and destroys its registered events.
+    /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<MouseButtonEvent> Compose()
     {
         yield break;
     }
+
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
 
     private static MouseButton? FromSdlButton(byte button)
     {
@@ -160,6 +196,7 @@ public class Mouse : InputDevice
     protected override void OnProcess(InputContext context)
     {
         EnsureComposed();
+        EnsureConfigured();
 
         if (!context.Window.Opened.Get())
             return;

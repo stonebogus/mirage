@@ -92,6 +92,32 @@ internal sealed class MyGame : Game
 
 The engine takes care of the lifecycle of the composed modules while the game decides how those systems are connected.
 
+Composition follows `Construct → Compose → Configure → Start/use`. Constructors establish
+required dependencies and initial values. Override `Compose()` to declare managed objects,
+and `Configure()` to connect events or configure relationships after all composed objects
+have been registered. Constructor-provided objects are registered first, followed by composed
+objects in enumeration order.
+
+`Game.Configure()` runs before module dependency resolution, injection, and startup;
+`Require<TModule>()` can access composed modules there. `Game.OnStart()` remains runtime
+startup behavior after all modules have started. Each child system configures at its own
+startup or first-use boundary; configuring a parent does not eagerly initialize its children.
+
+Composition and configuration are each attempted at most once. Stop/start and load/unload
+cycles reuse the configured structure. If either structural phase throws, later lifecycle
+calls reject initialization instead of repeating partial event connections or other side
+effects. Destroy the failed object and create a new instance. Objects registered before a
+failure retain the containing type's normal ownership rules; objects rejected before
+registration remain the caller's responsibility.
+
+The configuration phase applies to games, schedulers, update channels, renderers, draw layers,
+window managers, input handlers, keyboards, mice, loaders, nodes, simulators, and simulation
+spaces. Lazy systems stay lazy: draw layers configure on their first draw, input devices on
+first processing, and loaders on startup or first load. Update channels configure when
+prepared by their scheduler or before a direct first update; simulation spaces configure when
+prepared by their simulator. Ownership is documented on each composition hook.
+
+
 ## Nodes
 
 Nodes are the structural foundation of Mirage.
@@ -273,3 +299,14 @@ The default branch may not contain the latest changes.
 ## License
 
 Mirage is licensed under the [MIT License](LICENSE).
+## Composition regression tests
+
+The repository includes a dependency-free executable regression suite. Run it with:
+
+```sh
+dotnet build Mirage.slnx -m:1
+dotnet test Tests/Composition/Mirage.Composition.Tests.csproj -m:1
+```
+
+The suite uses SDL's dummy video driver and software renderer, so no display is needed.
+It can also be run directly with `dotnet run --project Tests/Composition --no-build`.

@@ -1,4 +1,4 @@
-﻿using Mirage.Common.Collections;
+using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Common.Lifecycle;
 
@@ -310,6 +310,9 @@ public class NodeReactiveSet(Node owner) : ReactiveSet<Node>
 public class Node : Destroyable
 {
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
 
     private bool _restoringParent;
 
@@ -377,7 +380,10 @@ public class Node : Destroyable
             return;
 
         foreach (var node in options.Subnodes ?? [])
+        {
+            ArgumentNullException.ThrowIfNull(node);
             Subnodes.Add(node);
+        }
 
         if (options.Parent is not null)
             Parent.Set(options.Parent);
@@ -426,12 +432,41 @@ public class Node : Destroyable
         if (_composed)
             return;
 
-        var composedNodes = Compose().ToArray();
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
 
-        foreach (var node in composedNodes)
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
+        HashSet<Node> objects = [];
+
+        foreach (var node in composedObjects)
+        {
+            ArgumentNullException.ThrowIfNull(node);
+
+            if (Subnodes.Contains(node) || !objects.Add(node))
+                throw new InvalidOperationException("Duplicate composed object found.");
+            node.ThrowIfDestroyed();
+            node.ValidateParent(this);
+        }
+
+        foreach (var node in composedObjects)
             Subnodes.Add(node);
 
         _composed = true;
+    }
+
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
     }
 
     private void OnParentChanged(Node? parent)
@@ -533,23 +568,31 @@ public class Node : Destroyable
     }
 
     /// <summary>
-    /// Composes the subnodes belonging to this node.
+    /// Composes the subnodes managed by this object.
     /// </summary>
-    /// <returns>
-    /// An enumerable sequence containing the subnodes to create for this node.
-    /// </returns>
+    /// <returns>The subnodes to register, in enumeration order.</returns>
     /// <remarks>
-    /// The default implementation does not compose any subnodes.
-    ///
-    /// Composition occurs once, immediately before the node is loaded for the
-    /// first time. All composed subnodes are therefore available to
-    /// <see cref="OnLoad"/>. Later load cycles reuse the same subnodes and do
-    /// not invoke this method again.
+    /// Composition occurs once before the first load, before this node or its subnodes start loading.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The node owns and destroys its subnodes.
+    /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<Node> Compose()
     {
         yield break;
     }
+
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
 
     /// <inheritdoc />
     protected override void OnDestroy()
@@ -632,12 +675,14 @@ public class Node : Destroyable
             );
 
         EnsureComposed();
+        EnsureConfigured();
 
         Loaded = true;
-        OnLoad();
 
         try
         {
+            OnLoad();
+
             foreach (var node in Subnodes)
             {
                 if (!node.Loaded)

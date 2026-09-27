@@ -4,4 +4,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Mirage.Common.csproj" />
+    <ProjectReference Include="..\Physics\Mirage.Physics.csproj" />
+    <ProjectReference Include="..\Scheduling\Mirage.Scheduling.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Box2D.NET" Version="3.1.654" />
+  </ItemGroup>
 </Project>

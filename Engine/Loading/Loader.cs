@@ -1,4 +1,4 @@
-﻿using Mirage.Common;
+using Mirage.Common;
 using Mirage.Common.Collections;
 
 namespace Mirage.Loading;
@@ -22,6 +22,9 @@ public class Loader : Module
 {
     private readonly Dictionary<ResourceKey, Resource> _resources = [];
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
 
     /// <summary>
     /// Gets the registered resource decoders.
@@ -50,7 +53,12 @@ public class Loader : Module
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
         Root = Path.GetFullPath(root);
-        Decoders = [.. decoders ?? []];
+        Decoders = [];
+        foreach (var decoder in decoders ?? [])
+        {
+            ArgumentNullException.ThrowIfNull(decoder);
+            Decoders.Add(decoder);
+        }
     }
 
     private void EnsureComposed()
@@ -58,15 +66,39 @@ public class Loader : Module
         if (_composed)
             return;
 
-        var composedDecoders = Compose().ToArray();
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
 
-        foreach (var decoder in composedDecoders)
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
+        HashSet<Decoder> objects = [];
+
+        foreach (var decoder in composedObjects)
         {
             ArgumentNullException.ThrowIfNull(decoder);
-            Decoders.Add(decoder);
+
+            if (Decoders.Contains(decoder) || !objects.Add(decoder))
+                throw new InvalidOperationException("Duplicate composed object found.");
         }
 
+        foreach (var decoder in composedObjects)
+            Decoders.Add(decoder);
+
         _composed = true;
+    }
+
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
     }
 
     private string ResolvePath(string path)
@@ -99,21 +131,37 @@ public class Loader : Module
     }
 
     /// <summary>
-    /// Composes the decoders managed by this loader.
+    /// Composes the decoders managed by this object.
     /// </summary>
-    /// <returns>An enumerable sequence of decoders to register.</returns>
+    /// <returns>The decoders to register, in enumeration order.</returns>
     /// <remarks>
-    /// Composition occurs once when the loader starts or first loads a resource.
-    /// Constructor-supplied decoders are registered before composed decoders.
+    /// Composition occurs once when the loader first starts or first loads a resource.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The loader references decoders without owning or destroying them.
+    /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<Decoder> Compose()
     {
         yield break;
     }
 
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
+
     /// <inheritdoc />
     protected override void OnDestroy()
     {
+        base.OnDestroy();
+
         foreach (var resource in _resources.Values.Where(resource => !resource.Destroyed))
         {
             resource.Destroy();
@@ -128,6 +176,7 @@ public class Loader : Module
     protected override void OnStart()
     {
         EnsureComposed();
+        EnsureConfigured();
     }
 
     /// <summary>
@@ -168,6 +217,7 @@ public class Loader : Module
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         EnsureComposed();
+        EnsureConfigured();
 
         var absolutePath = ResolvePath(path);
 

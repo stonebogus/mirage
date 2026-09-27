@@ -1,4 +1,4 @@
-﻿using Mirage.Common;
+using Mirage.Common;
 using Mirage.Common.Collections;
 using Mirage.Handling.Devices;
 using Mirage.Scheduling;
@@ -14,6 +14,9 @@ public class InputHandler : Module, IUpdatable
 {
     private readonly ReactiveDictionary<string, InputDevice> _devices = [];
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
 
     /// <summary>
     /// Gets the devices owned by this handler, indexed by identifier.
@@ -37,14 +40,25 @@ public class InputHandler : Module, IUpdatable
         Window = window;
         foreach (var device in devices ?? [])
         {
+            ArgumentNullException.ThrowIfNull(device);
             _devices.Add(device.Identifier, device);
         }
         Devices = _devices;
     }
 
     /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the module is not running, including before configuration has completed.
+    /// </exception>
     public void Update(UpdateContext updateContext)
     {
+        ThrowIfDestroyed();
+
+        if (State.Get() != ModuleState.Running)
+            throw new InvalidOperationException(
+                "The module must be running before processing updates."
+            );
+
         var context = new InputContext(Window, Window.FrameEvents);
         foreach (var device in _devices.Values)
         {
@@ -57,34 +71,69 @@ public class InputHandler : Module, IUpdatable
         if (_composed)
             return;
 
-        var composedDevices = Compose().ToArray();
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
+
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
         HashSet<string> identifiers = [];
 
-        foreach (var device in composedDevices)
+        foreach (var device in composedObjects)
         {
-            identifiers.Add(device.Identifier);
+            ArgumentNullException.ThrowIfNull(device);
+
+            if (_devices.ContainsKey(device.Identifier) || !identifiers.Add(device.Identifier))
+                throw new InvalidOperationException(
+                    $"Duplicate device identifier found: '{device.Identifier}'."
+                );
         }
 
-        foreach (var device in composedDevices)
+        foreach (var device in composedObjects)
             _devices.Add(device.Identifier, device);
 
         _composed = true;
     }
 
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
+    }
+
     /// <summary>
-    /// Composes the devices managed by this handler.
+    /// Composes the devices managed by this object.
     /// </summary>
-    /// <returns>
-    /// An enumerable sequence containing the devices to register.
-    /// </returns>
+    /// <returns>The devices to register, in enumeration order.</returns>
     /// <remarks>
-    /// Composition occurs once when the handler starts. Devices supplied to
-    /// the constructor are registered before composed devices.
+    /// Composition occurs once when the handler first starts, before input processing.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The handler owns and destroys its devices, but not its window.
+    /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<InputDevice> Compose()
     {
         yield break;
     }
+
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
 
     /// <inheritdoc />
     /// <remarks>This handler destroys its registered devices.</remarks>
@@ -102,5 +151,6 @@ public class InputHandler : Module, IUpdatable
     protected override void OnStart()
     {
         EnsureComposed();
+        EnsureConfigured();
     }
 }

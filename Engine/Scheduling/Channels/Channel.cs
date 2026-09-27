@@ -52,6 +52,9 @@ public class UpdateChannel : Destroyable
 {
     private double _accumulator;
     private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
 
     /// <summary>
     /// Gets the updatable entries contained in this channel.
@@ -110,7 +113,10 @@ public class UpdateChannel : Destroyable
         Priority = priority;
 
         foreach (var entry in entries ?? [])
+        {
+            ArgumentNullException.ThrowIfNull(entry);
             Entries.Add(entry);
+        }
     }
 
     private void EnsureComposed()
@@ -118,10 +124,39 @@ public class UpdateChannel : Destroyable
         if (_composed)
             return;
 
-        foreach (var entry in Compose())
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
+
+        _compositionStarted = true;
+
+        var composedObjects = Compose().ToArray();
+        HashSet<IUpdatable> objects = [];
+
+        foreach (var entry in composedObjects)
+        {
+            ArgumentNullException.ThrowIfNull(entry);
+
+            if (Entries.Contains(entry) || !objects.Add(entry))
+                throw new InvalidOperationException("Duplicate composed object found.");
+        }
+
+        foreach (var entry in composedObjects)
             Entries.Add(entry);
 
         _composed = true;
+    }
+
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
     }
 
     private void PerformUpdate(UpdateContext context)
@@ -133,24 +168,36 @@ public class UpdateChannel : Destroyable
     }
 
     /// <summary>
-    /// Composes the updatable entries contained in this channel.
+    /// Composes the entries managed by this object.
     /// </summary>
-    /// <returns>
-    /// An enumerable sequence containing the entries to register.
-    /// </returns>
+    /// <returns>The entries to register, in enumeration order.</returns>
     /// <remarks>
-    /// The default implementation does not compose any entries.
-    /// Composition occurs once when the channel is prepared by its scheduler.
+    /// Composition occurs once when prepared by the scheduler or before the first update.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The channel references entries without owning or destroying them.
+    /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<IUpdatable> Compose()
     {
         yield break;
     }
 
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
+
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        Entries.Clear();
+        Entries.Destroy();
 
         _accumulator = 0;
 
@@ -190,6 +237,9 @@ public class UpdateChannel : Destroyable
     {
         ThrowIfDestroyed();
 
+        EnsureComposed();
+        EnsureConfigured();
+
         if (UpdateRate <= 0)
         {
             PerformUpdate(new UpdateContext(deltaTime, 0));
@@ -215,5 +265,6 @@ public class UpdateChannel : Destroyable
     {
         ThrowIfDestroyed();
         EnsureComposed();
+        EnsureConfigured();
     }
 }
