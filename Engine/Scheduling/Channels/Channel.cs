@@ -43,7 +43,7 @@ public enum UpdateChannelPriority
 /// Consequently, the effective update rate of a channel cannot exceed the
 /// rate at which its scheduler is running.
 ///
-/// A non-positive <see cref="UpdateRate"/> disables the channel's own rate
+/// A non-positive <see cref="TargetUpdateRate"/> disables the channel's own rate
 /// limit, causing it to update once during every scheduler iteration.
 ///
 /// Destroying a channel clears its entry references but does not destroy the
@@ -54,16 +54,13 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
     private double _accumulator;
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the updatable entries contained in this channel.
     /// </summary>
     public readonly ReactiveSet<IUpdatable> Entries = [];
-
-    /// <inheritdoc />
-    public string Identifier { get; }
 
     /// <summary>
     /// Gets the priority used to order this channel relative to other channels.
@@ -82,7 +79,7 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
     /// The channel can never update more frequently than the scheduler that
     /// drives it.
     /// </remarks>
-    public readonly double UpdateRate;
+    public readonly double TargetUpdateRate;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateChannel"/> class.
@@ -90,7 +87,7 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
     /// <param name="identifier">
     /// The unique identifier of the channel.
     /// </param>
-    /// <param name="updateRate">
+    /// <param name="targetUpdateRate">
     /// The target number of updates per second.
     /// A non-positive value disables the channel's own rate limit.
     /// </param>
@@ -102,13 +99,13 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
     /// </param>
     public UpdateChannel(
         string identifier,
-        double updateRate = 0,
+        double targetUpdateRate = 0,
         UpdateChannelPriority priority = UpdateChannelPriority.Normal,
         IEnumerable<IUpdatable>? entries = null
     )
     {
         Identifier = identifier;
-        UpdateRate = updateRate;
+        TargetUpdateRate = targetUpdateRate;
         Priority = priority;
 
         foreach (var entry in entries ?? [])
@@ -116,6 +113,21 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
             Entries.Add(entry);
         }
     }
+
+    /// <summary>
+    /// Gets the real elapsed time represented by the latest channel update,
+    /// in seconds, or zero before the first update.
+    /// </summary>
+    public double DeltaTime { get; private set; }
+
+    /// <summary>
+    /// Gets the measured number of channel updates per second, or zero before
+    /// the first update.
+    /// </summary>
+    public double UpdateRate { get; private set; }
+
+    /// <inheritdoc />
+    public string Identifier { get; }
 
     private void EnsureComposed()
     {
@@ -157,6 +169,9 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
 
     private void PerformUpdate(UpdateContext context)
     {
+        DeltaTime = context.DeltaTime;
+        UpdateRate = DeltaTime > 0 ? 1.0 / DeltaTime : 0;
+
         foreach (var entry in Entries)
             entry.Update(context);
 
@@ -236,7 +251,7 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
         EnsureComposed();
         EnsureConfigured();
 
-        if (UpdateRate <= 0)
+        if (TargetUpdateRate <= 0)
         {
             PerformUpdate(new UpdateContext(deltaTime, 0));
 
@@ -245,7 +260,7 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
 
         _accumulator += deltaTime;
 
-        var updateInterval = 1.0 / UpdateRate;
+        var updateInterval = 1.0 / TargetUpdateRate;
 
         if (_accumulator < updateInterval)
             return;
@@ -254,7 +269,7 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
 
         _accumulator = 0;
 
-        PerformUpdate(new UpdateContext(elapsedTime, UpdateRate));
+        PerformUpdate(new UpdateContext(elapsedTime, TargetUpdateRate));
     }
 
     internal void Prepare()

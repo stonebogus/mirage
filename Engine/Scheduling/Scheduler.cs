@@ -32,17 +32,17 @@ public class Scheduler : Module
     /// A positive value limits the maximum rate of the scheduler and,
     /// consequently, the maximum rate at which any channel can be updated.
     ///
-    /// A non-positive value disables scheduler frame pacing and allows the
+    /// A non-positive value disables scheduler iteration pacing and allows the
     /// main loop to run as quickly as possible.
     /// </remarks>
-    public readonly int TargetFramerate;
+    public readonly int TargetUpdateRate;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Scheduler"/> class.
     /// </summary>
-    /// <param name="targetFramerate">
+    /// <param name="targetUpdateRate">
     /// The target number of scheduler iterations per second.
-    /// The default is <c>60</c>. A non-positive value disables frame pacing.
+    /// The default is <c>60</c>. A non-positive value disables iteration pacing.
     /// </param>
     /// <param name="channels">
     /// The initial channels, or <see langword="null"/> for none.
@@ -50,10 +50,10 @@ public class Scheduler : Module
     /// <exception cref="InvalidOperationException">
     /// Thrown when two initial channels have the same identifier.
     /// </exception>
-    public Scheduler(int targetFramerate = 60, IEnumerable<UpdateChannel>? channels = null)
+    public Scheduler(int targetUpdateRate = 60, IEnumerable<UpdateChannel>? channels = null)
         : base("Scheduler")
     {
-        TargetFramerate = targetFramerate;
+        TargetUpdateRate = targetUpdateRate;
 
         foreach (var channel in channels ?? [])
         {
@@ -72,11 +72,6 @@ public class Scheduler : Module
     /// iteration, in seconds.
     /// </summary>
     public double DeltaTime { get; private set; }
-
-    /// <summary>
-    /// Gets the currently measured scheduler iteration rate.
-    /// </summary>
-    public double Framerate { get; private set; }
 
     private void EnsureComposed()
     {
@@ -160,12 +155,12 @@ public class Scheduler : Module
     /// registered channel in descending priority order.
     ///
     /// A channel may update at most once during each scheduler iteration.
-    /// Therefore, the scheduler's own target framerate acts as the maximum
-    /// possible update rate for all channels when frame pacing is enabled.
+    /// Therefore, the scheduler's own target update rate acts as the maximum
+    /// possible update rate for all channels when iteration pacing is enabled.
     ///
     /// Channels may independently target a lower update rate.
     ///
-    /// When <see cref="TargetFramerate"/> is non-positive, the scheduler runs
+    /// When <see cref="TargetUpdateRate"/> is non-positive, the scheduler runs
     /// without an explicit rate limit.
     ///
     /// The loop ends when the scheduler is no longer running.
@@ -173,34 +168,32 @@ public class Scheduler : Module
     public void Run()
     {
         var stopwatch = Stopwatch.StartNew();
-        var previousFrameTime = stopwatch.Elapsed.TotalSeconds;
+        var previousIterationTime = stopwatch.Elapsed.TotalSeconds;
 
         while (State.Get() == ModuleState.Running)
         {
-            var frameStartTime = stopwatch.Elapsed.TotalSeconds;
+            var iterationStartTime = stopwatch.Elapsed.TotalSeconds;
 
-            DeltaTime = frameStartTime - previousFrameTime;
-            previousFrameTime = frameStartTime;
-
-            Framerate = DeltaTime > 0 ? 1.0 / DeltaTime : 0;
+            DeltaTime = iterationStartTime - previousIterationTime;
+            previousIterationTime = iterationStartTime;
 
             foreach (var channel in Channels.OrderByDescending(channel => channel.Priority))
             {
                 channel.Update(DeltaTime);
             }
 
-            if (TargetFramerate <= 0)
+            if (TargetUpdateRate <= 0)
                 continue;
 
-            var targetFrameDuration = 1.0 / TargetFramerate;
+            var targetIterationDuration = 1.0 / TargetUpdateRate;
 
-            var elapsedFrameTime = stopwatch.Elapsed.TotalSeconds - frameStartTime;
+            var elapsedIterationTime = stopwatch.Elapsed.TotalSeconds - iterationStartTime;
 
-            var remainingFrameTime = targetFrameDuration - elapsedFrameTime;
+            var remainingIterationTime = targetIterationDuration - elapsedIterationTime;
 
-            if (remainingFrameTime > 0)
+            if (remainingIterationTime > 0)
             {
-                Thread.Sleep(TimeSpan.FromSeconds(remainingFrameTime));
+                Thread.Sleep(TimeSpan.FromSeconds(remainingIterationTime));
             }
         }
     }
