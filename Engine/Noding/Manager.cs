@@ -5,10 +5,18 @@ using Mirage.Common.Primitives;
 
 namespace Mirage.Noding;
 
+internal sealed class NodeContext(ModuleContainer modules)
+{
+    public ModuleContainer Modules { get; } = modules;
+}
+
 /// <summary>
 /// Coordinates node lifecycles between roots.
 /// </summary>
-/// <remarks>The manager owns and destroys every registered root.</remarks>
+/// <remarks>
+/// The manager owns and destroys every registered root. Its declared module
+/// dependencies are exposed to managed nodes through their dependency context.
+/// </remarks>
 public class NodeManager : Module
 {
     private readonly Store<Node> _activeRoot;
@@ -17,6 +25,7 @@ public class NodeManager : Module
     private bool _configured;
     private bool _configurationStarted;
     private bool _restoringRoots;
+    private NodeContext? _nodeContext;
 
     /// <summary>
     /// Gets the currently selected root.
@@ -43,8 +52,15 @@ public class NodeManager : Module
     /// <param name="roots">
     /// Additional roots to register; <see langword="null"/> means no additional roots.
     /// </param>
-    public NodeManager(Node initial, IEnumerable<Node>? roots = null)
-        : base("NodeManager")
+    /// <param name="dependencies">
+    /// The identifiers of the modules that managed nodes may access.
+    /// </param>
+    public NodeManager(
+        Node initial,
+        IEnumerable<Node>? roots = null,
+        IEnumerable<string>? dependencies = null
+    )
+        : base("NodeManager", dependencies)
     {
         _activeRoot = new Store<Node>(initial);
         ActiveRoot = _activeRoot;
@@ -97,6 +113,9 @@ public class NodeManager : Module
         try
         {
             ValidateRoot(entry.Key, entry.Value);
+
+            if (_nodeContext is not null)
+                entry.Value.Inject(_nodeContext);
         }
         catch
         {
@@ -118,7 +137,9 @@ public class NodeManager : Module
     private void OnRootRemoved(KeyValuePair<string, Node> entry)
     {
         if (_restoringRoots || !ReferenceEquals(entry.Value, _activeRoot.Get()))
+        {
             return;
+        }
 
         _restoringRoots = true;
 
@@ -156,6 +177,9 @@ public class NodeManager : Module
             }
 
             ValidateRoot(change.Current.Key, change.Current.Value);
+
+            if (_nodeContext is not null)
+                change.Current.Value.Inject(_nodeContext);
         }
         catch
         {
@@ -259,6 +283,8 @@ public class NodeManager : Module
     /// Composition occurs once when the node manager first starts.
     /// The initial and constructor-provided roots are registered before composed roots.
     /// All composed roots are registered before configuration occurs.
+    /// Registered roots receive the node manager's injected module dependencies
+    /// before they are loaded.
     /// The node manager owns and destroys all registered roots.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
@@ -311,6 +337,11 @@ public class NodeManager : Module
         EnsureComposed();
         EnsureConfigured();
 
+        _nodeContext ??= new NodeContext(InjectedDependencies);
+
+        foreach (var root in Roots.Values)
+            root.Inject(_nodeContext);
+
         var active = _activeRoot.Get();
 
         ValidateLoadableRoot(active);
@@ -359,7 +390,9 @@ public class NodeManager : Module
         ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
 
         if (!Roots.TryGetValue(identifier, out var next))
+        {
             throw new InvalidOperationException($"Root '{identifier}' does not exist.");
+        }
 
         var current = _activeRoot.Get();
 

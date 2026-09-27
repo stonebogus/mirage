@@ -1,3 +1,4 @@
+using Mirage.Common;
 using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Common.Interfaces;
@@ -310,6 +311,10 @@ public class NodeReactiveSet(Node owner) : ReactiveSet<Node>
 ///
 /// Nodes are identified independently by a unique <see cref="Identifier"/> and
 /// a mutable human-readable <see cref="Name"/>.
+///
+/// Nodes managed by a <see cref="NodeManager"/> receive access to the module
+/// dependencies exposed by that manager. The same dependency context is
+/// propagated to subnodes as they enter the hierarchy.
 /// </remarks>
 public class Node : Destroyable, IIdentifiable<Guid>
 {
@@ -317,7 +322,7 @@ public class Node : Destroyable, IIdentifiable<Guid>
     private bool _compositionStarted;
     private bool _configurationStarted;
     private bool _configured;
-
+    private NodeContext? _context;
     private bool _restoringParent;
 
     /// <summary>
@@ -379,9 +384,7 @@ public class Node : Destroyable, IIdentifiable<Guid>
             return;
 
         foreach (var node in options.Subnodes ?? [])
-        {
             Subnodes.Add(node);
-        }
 
         if (options.Parent is not null)
             Parent.Set(options.Parent);
@@ -445,6 +448,7 @@ public class Node : Destroyable, IIdentifiable<Guid>
         {
             if (Subnodes.Contains(node) || !objects.Add(node))
                 throw new InvalidOperationException("Duplicate composed object found.");
+
             node.ThrowIfDestroyed();
             node.ValidateParent(this);
         }
@@ -478,6 +482,9 @@ public class Node : Destroyable, IIdentifiable<Guid>
         try
         {
             ValidateParent(parent);
+
+            if (parent?._context is not null)
+                Inject(parent._context);
         }
         catch
         {
@@ -508,6 +515,7 @@ public class Node : Destroyable, IIdentifiable<Guid>
             case true when !Loaded:
                 Load();
                 break;
+
             case false when Loaded && !Persistent:
                 Unload();
                 break;
@@ -516,12 +524,13 @@ public class Node : Destroyable, IIdentifiable<Guid>
 
     private void OnSubnodeAdded(Node node)
     {
-        if (node.Parent.Get() == this)
-            return;
-
         try
         {
-            node.Parent.Set(this);
+            if (_context is not null)
+                node.Inject(_context);
+
+            if (node.Parent.Get() != this)
+                node.Parent.Set(this);
         }
         catch
         {
@@ -574,6 +583,7 @@ public class Node : Destroyable, IIdentifiable<Guid>
     /// Composition occurs once before the first load, before this node or its subnodes start loading.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
+    /// Composed subnodes inherit this node's injected module context when available.
     /// The node owns and destroys its subnodes.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
@@ -587,6 +597,8 @@ public class Node : Destroyable, IIdentifiable<Guid>
     /// </summary>
     /// <remarks>
     /// All constructor-provided and composed objects are available here.
+    /// Injected module dependencies are available through <see cref="Require{TModule}()"/>
+    /// when the node is managed by a node manager.
     /// This hook is invoked at most once, including across later lifecycle cycles.
     /// If configuration throws, later lifecycle calls reject further initialization
     /// rather than repeating configuration side effects.
@@ -629,6 +641,56 @@ public class Node : Destroyable, IIdentifiable<Guid>
     protected virtual void OnUnload() { }
 
     /// <summary>
+    /// Gets an injected module dependency of the node manager that owns this node.
+    /// </summary>
+    /// <typeparam name="TModule">The type of module to retrieve.</typeparam>
+    /// <returns>The matching injected module.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the node has not been injected or no single dependency
+    /// matches the specified type.
+    /// </exception>
+    protected TModule Require<TModule>()
+        where TModule : Module
+    {
+        ThrowIfDestroyed();
+
+        if (_context is null)
+            throw new InvalidOperationException($"{this} has not been injected.");
+
+        return _context.Modules.Get<TModule>();
+    }
+
+    /// <summary>
+    /// Gets an injected module dependency of the node manager that owns this node.
+    /// </summary>
+    /// <typeparam name="TModule">The expected type of the module.</typeparam>
+    /// <param name="identifier">The identifier of the module to retrieve.</param>
+    /// <returns>The matching injected module.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the node has not been injected, the dependency is unavailable,
+    /// or the dependency is not of the requested type.
+    /// </exception>
+    protected TModule Require<TModule>(string identifier)
+        where TModule : Module
+    {
+        ThrowIfDestroyed();
+
+        if (_context is null)
+            throw new InvalidOperationException($"{this} has not been injected.");
+
+        var module = _context.Modules.Get(identifier);
+
+        if (module is not TModule typedModule)
+        {
+            throw new InvalidOperationException(
+                $"Node '{Path}' requires dependency '{identifier}' to be of type '{typeof(TModule).Name}', but it is '{module.GetType().Name}'."
+            );
+        }
+
+        return typedModule;
+    }
+
+    /// <summary>
     /// Throws an exception if the node is not currently loaded.
     /// </summary>
     /// <exception cref="InvalidOperationException">
@@ -648,6 +710,10 @@ public class Node : Destroyable, IIdentifiable<Guid>
     /// <remarks>
     /// The node must not already be loaded. If it has a parent, that parent
     /// must be loaded first.
+    ///
+    /// Composition and configuration occur before the node enters the loaded state.
+    /// When the node belongs to a node manager, its module dependencies have already
+    /// been injected before configuration occurs.
     ///
     /// <see cref="OnLoad"/> is invoked after this node enters the loaded state
     /// and before its subnodes are loaded. Persistent subnodes that remained
@@ -669,9 +735,11 @@ public class Node : Destroyable, IIdentifiable<Guid>
         var parent = Parent.Get();
 
         if (parent is not null && !parent.Loaded)
+        {
             throw new InvalidOperationException(
                 $"{this} cannot be loaded because its parent is not loaded."
             );
+        }
 
         EnsureComposed();
         EnsureConfigured();
@@ -735,5 +803,27 @@ public class Node : Destroyable, IIdentifiable<Guid>
 
         OnUnload();
         Loaded = false;
+    }
+
+    internal void Inject(NodeContext context)
+    {
+        ThrowIfDestroyed();
+
+        if (_context is not null)
+        {
+            if (ReferenceEquals(_context, context))
+                return;
+
+            throw new InvalidOperationException(
+                $"{this} has already been injected with a different node context."
+            );
+        }
+
+        _context = context;
+
+        EnsureComposed();
+
+        foreach (var node in Subnodes)
+            node.Inject(context);
     }
 }

@@ -5,19 +5,73 @@ using Mirage.Common.Telemetry;
 
 namespace Mirage.Common;
 
-internal sealed class ModuleContainer(IEnumerable<Module> modules)
+/// <summary>
+/// Provides access to a collection of modules.
+/// </summary>
+/// <remarks>
+/// A module container does not own the modules it contains and does not manage
+/// their lifecycle.
+/// </remarks>
+public sealed class ModuleContainer
 {
-    private readonly IReadOnlyList<Module> _modules = [.. modules];
+    private readonly IReadOnlyList<Module> _modules;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ModuleContainer"/> class.
+    /// </summary>
+    /// <param name="modules">The modules exposed by the container.</param>
+    public ModuleContainer(IEnumerable<Module> modules)
+    {
+        _modules = [.. modules];
+    }
+
+    /// <summary>
+    /// Gets the single module matching the specified type.
+    /// </summary>
+    /// <typeparam name="TModule">The type of module to retrieve.</typeparam>
+    /// <returns>The matching module.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when no module or more than one module matches the specified type.
+    /// </exception>
     public TModule Get<TModule>()
         where TModule : Module
     {
-        return _modules.OfType<TModule>().Single();
+        var modules = _modules.OfType<TModule>().Take(2).ToArray();
+
+        return modules.Length switch
+        {
+            1 => modules[0],
+            0 => throw new InvalidOperationException(
+                $"Module '{typeof(TModule).Name}' is not available in this context."
+            ),
+            _ => throw new InvalidOperationException(
+                $"Multiple modules matching type '{typeof(TModule).Name}' are available in this context."
+            ),
+        };
     }
 
+    /// <summary>
+    /// Gets the module with the specified identifier.
+    /// </summary>
+    /// <param name="identifier">The identifier of the module to retrieve.</param>
+    /// <returns>The matching module.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when no module or more than one module has the specified identifier.
+    /// </exception>
     public Module Get(string identifier)
     {
-        return _modules.Single(module => module.Identifier == identifier);
+        var modules = _modules.Where(module => module.Identifier == identifier).Take(2).ToArray();
+
+        return modules.Length switch
+        {
+            1 => modules[0],
+            0 => throw new InvalidOperationException(
+                $"Module '{identifier}' is not available in this context."
+            ),
+            _ => throw new InvalidOperationException(
+                $"Multiple modules with identifier '{identifier}' are available in this context."
+            ),
+        };
     }
 }
 
@@ -74,7 +128,6 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
     : Destroyable,
         IIdentifiable<string>
 {
-    private readonly Dictionary<string, Module> _injectedDependencies = [];
     private readonly Store<ModuleState> _state = new(ModuleState.Idle);
     private bool _injected;
 
@@ -83,8 +136,15 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
     /// </summary>
     public readonly IReadOnlyList<string> Dependencies = [.. dependencies ?? []];
 
-    /// <inheritdoc />
-    public string Identifier { get; } = identifier;
+    /// <summary>
+    /// Gets the modules injected as dependencies of this module.
+    /// </summary>
+    /// <remarks>
+    /// The container contains only dependencies explicitly declared through
+    /// <see cref="Dependencies"/>. It becomes available after the module has
+    /// been injected by its owning game.
+    /// </remarks>
+    protected ModuleContainer InjectedDependencies { get; private set; } = null!;
 
     /// <summary>
     /// Gets the telemetry manager available to the module after injection.
@@ -95,6 +155,9 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
     /// Gets a read-only store for the current lifecycle state of the module.
     /// </summary>
     public IReadOnlyStore<ModuleState> State => _state;
+
+    /// <inheritdoc />
+    public string Identifier { get; } = identifier;
 
     /// <inheritdoc />
     protected override void OnDestroy()
@@ -145,14 +208,25 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
     {
         ThrowIfDestroyed();
 
-        if (!_injectedDependencies.TryGetValue(name, out var module))
+        if (!_injected)
+            throw new InvalidOperationException($"Module '{Identifier}' has not been injected.");
+
+        Module dependency;
+
+        try
+        {
+            dependency = InjectedDependencies.Get(name);
+        }
+        catch (InvalidOperationException)
+        {
             throw new InvalidOperationException(
                 $"Module '{Identifier}' requires dependency '{name}', but it was not injected."
             );
+        }
 
-        if (module is not TModule typedModule)
+        if (dependency is not TModule typedModule)
             throw new InvalidOperationException(
-                $"Module '{Identifier}' requires dependency '{name}' to be of type '{typeof(TModule).Name}', but it is '{module.GetType().Name}'."
+                $"Module '{Identifier}' requires dependency '{name}' to be of type '{typeof(TModule).Name}', but it is '{dependency.GetType().Name}'."
             );
 
         return typedModule;
@@ -169,8 +243,12 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
 
         Telemetry = context.Telemetry;
 
+        List<Module> injectedDependencies = [];
+
         foreach (var dependency in Dependencies)
-            _injectedDependencies.Add(dependency, context.Modules.Get(dependency));
+            injectedDependencies.Add(context.Modules.Get(dependency));
+
+        InjectedDependencies = new ModuleContainer(injectedDependencies);
 
         _injected = true;
 
