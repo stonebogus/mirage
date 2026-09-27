@@ -158,7 +158,9 @@ public class Scheduler : Module
     /// Therefore, the scheduler's own target update rate acts as the maximum
     /// possible update rate for all channels when iteration pacing is enabled.
     ///
-    /// Channels may independently target a lower update rate.
+    /// Each channel uses the lower positive target configured by itself and the
+    /// scheduler, and reports that effective target in its update context.
+    /// Non-positive targets impose no limit.
     ///
     /// When <see cref="TargetUpdateRate"/> is non-positive, the scheduler runs
     /// without an explicit rate limit.
@@ -179,7 +181,7 @@ public class Scheduler : Module
 
             foreach (var channel in Channels.OrderByDescending(channel => channel.Priority))
             {
-                channel.Update(DeltaTime);
+                channel.Update(DeltaTime, TargetUpdateRate);
             }
 
             if (TargetUpdateRate <= 0)
@@ -191,9 +193,16 @@ public class Scheduler : Module
 
             var remainingIterationTime = targetIterationDuration - elapsedIterationTime;
 
-            if (remainingIterationTime > 0)
+            while (remainingIterationTime > 0)
             {
-                Thread.Sleep(TimeSpan.FromSeconds(remainingIterationTime));
+                // Sleep may return before the target interval, especially for sub-millisecond waits.
+                if (remainingIterationTime >= 0.001)
+                    Thread.Sleep(TimeSpan.FromSeconds(remainingIterationTime));
+                else
+                    Thread.SpinWait(1);
+
+                elapsedIterationTime = stopwatch.Elapsed.TotalSeconds - iterationStartTime;
+                remainingIterationTime = targetIterationDuration - elapsedIterationTime;
             }
         }
     }

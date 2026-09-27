@@ -17,8 +17,8 @@ public readonly record struct UpdateContext
     /// The amount of simulated time represented by this update, in seconds.
     /// </param>
     /// <param name="updateRate">
-    /// The target number of updates per second for the channel, or
-    /// <c>0</c> when the channel updates every scheduler iteration.
+    /// The effective target number of updates per second, capped by any positive
+    /// scheduler target, or <c>0</c> when neither imposes a limit.
     /// </param>
     public UpdateContext(double deltaTime, double updateRate)
     {
@@ -33,11 +33,12 @@ public readonly record struct UpdateContext
     public double DeltaTime { get; }
 
     /// <summary>
-    /// Gets the target number of updates per second for the channel.
+    /// Gets the effective target number of updates per second for the channel.
     /// </summary>
     /// <remarks>
-    /// A value of <c>0</c> indicates that the channel updates every scheduler
-    /// iteration instead of targeting a specific update rate.
+    /// The value is the lower positive target configured by the channel and scheduler.
+    /// A value of <c>0</c> means neither imposes a limit. This is a target, not the
+    /// measured update rate; actual updates may be slower.
     /// </remarks>
     public double UpdateRate { get; }
 }

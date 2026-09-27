@@ -40,11 +40,9 @@ public enum UpdateChannelPriority
 /// A channel may impose its own target update rate, but it can never execute
 /// more than once during a single scheduler iteration.
 ///
-/// Consequently, the effective update rate of a channel cannot exceed the
-/// rate at which its scheduler is running.
-///
-/// A non-positive <see cref="TargetUpdateRate"/> disables the channel's own rate
-/// limit, causing it to update once during every scheduler iteration.
+/// The effective target is the lower positive limit configured by the channel
+/// and scheduler. A non-positive limit is unlimited; both must be non-positive
+/// for the channel to run without a rate limit.
 ///
 /// Destroying a channel clears its entry references but does not destroy the
 /// entries themselves.
@@ -73,11 +71,9 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
     /// <remarks>
     /// A positive value limits how frequently this channel updates.
     ///
-    /// A non-positive value disables the channel's own rate limit, causing it
-    /// to update once per scheduler iteration.
-    ///
-    /// The channel can never update more frequently than the scheduler that
-    /// drives it.
+    /// A non-positive value disables only the channel's own rate limit.
+    /// The scheduler's positive target rate also caps this channel, even when
+    /// this value is higher or unlimited. The configured value is preserved.
     /// </remarks>
     public readonly double TargetUpdateRate;
 
@@ -231,8 +227,9 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
     /// seconds.
     /// </param>
     /// <remarks>
-    /// A channel without its own update limit executes once per scheduler
-    /// iteration using the supplied delta time.
+    /// Direct calls use the channel's own target rate. When driven by a scheduler,
+    /// its positive target rate also caps the channel's effective target rate.
+    /// An unlimited effective target executes on every call using the supplied delta time.
     ///
     /// A rate-limited channel accumulates elapsed time until its target
     /// interval has been reached. It then performs one update using the real
@@ -246,12 +243,26 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
     /// </exception>
     public void Update(double deltaTime)
     {
+        Update(deltaTime, 0);
+    }
+
+    internal void Update(double deltaTime, double schedulerTargetUpdateRate)
+    {
         ThrowIfDestroyed();
 
         EnsureComposed();
         EnsureConfigured();
 
-        if (TargetUpdateRate <= 0)
+        var effectiveUpdateRate = TargetUpdateRate;
+        if (schedulerTargetUpdateRate > 0)
+        {
+            effectiveUpdateRate =
+                effectiveUpdateRate > 0
+                    ? System.Math.Min(effectiveUpdateRate, schedulerTargetUpdateRate)
+                    : schedulerTargetUpdateRate;
+        }
+
+        if (effectiveUpdateRate <= 0)
         {
             PerformUpdate(new UpdateContext(deltaTime, 0));
 
@@ -260,7 +271,7 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
 
         _accumulator += deltaTime;
 
-        var updateInterval = 1.0 / TargetUpdateRate;
+        var updateInterval = 1.0 / effectiveUpdateRate;
 
         if (_accumulator < updateInterval)
             return;
@@ -269,7 +280,7 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
 
         _accumulator = 0;
 
-        PerformUpdate(new UpdateContext(elapsedTime, TargetUpdateRate));
+        PerformUpdate(new UpdateContext(elapsedTime, effectiveUpdateRate));
     }
 
     internal void Prepare()
