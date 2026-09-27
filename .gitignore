@@ -1,6 +1,6 @@
-# Related
-Sandbox/Program.cs
-
+# Sandbox
+Sandbox/*
+!Sandbox/Sandbox.csproj
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
