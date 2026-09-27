@@ -14,15 +14,70 @@ namespace Mirage.Windowing;
 /// </summary>
 public class WindowOptions : IIdentifiable<string>
 {
+    private static readonly string[] DefaultTitleMessages =
+    [
+        "Reality is loading…",
+        "Somewhere between pixels and possibility.",
+        "If lost, check the scene tree.",
+        "The window is not the whole world.",
+        "Objects may appear more stable than they are.",
+        "Rendering your imagination.",
+        "This frame took the scenic route.",
+        "No mirage is final.",
+        "Is this window real, or just well rendered?",
+        "The desert is rendering. Please wait.",
+        "A little illusion, a lot of C#.",
+        "Look twice. It may be a node.",
+        "The horizon is outside the client area.",
+        "Reality has entered fullscreen mode.",
+        "The update loop says hello.",
+        "Somewhere, a frame is being skipped.",
+        "It works on this machine.",
+        "The bug is probably in another module.",
+        "Compiling the laws of reality.",
+        "One more feature, then we ship.",
+        "Have you tried restarting the scene?",
+        "The window is open. The TODO list is not.",
+        "There are no bugs, only unexpected features.",
+        "This title was selected at runtime.",
+        "Your pixels are in another window.",
+        "Please wait while the developer finds the semicolon.",
+        "A wild NullReferenceException appeared!",
+        "This frame is brought to you by delta time.",
+        "The scheduler is doing its best.",
+        "Somewhere, C# is compiling.",
+        "Warning: reality may contain experimental features.",
+        "Drawing outside the lines since this frame.",
+        "A new node has entered the scene.",
+        "The scene tree has a nice view from here.",
+        "The pixels are all present and accounted for.",
+        "A window into another coordinate system.",
+        "Presenting one frame at a time.",
+        "The render target knows what you did.",
+        "The viewport is looking back.",
+        "Everything is relative to the parent.",
+        "Your frame has been queued for rendering.",
+        "This isn't the frame you're looking for.",
+        "It's dangerous to render alone.",
+        "A wild window appeared!",
+        "The cake is probably in the assets folder.",
+        "A companion cube was added to the scene.",
+        "One does not simply skip the update loop.",
+        "May your frame time be ever in your favor.",
+        "The cake is a compile-time constant.",
+        "A block of reality has been placed.",
+        "Hallownest would make a very large scene graph.",
+        "The window has no map. Check the scene tree.",
+        "The simulation is starting to feel suspicious.",
+        "There is probably a spoon somewhere.",
+        "The pixels must flow.",
+    ];
+
     /// <summary>
     /// Gets the cursors to register initially. The default is an empty sequence.
     /// </summary>
     /// <remarks>The window stores these references but does not own the cursors.</remarks>
     public IEnumerable<Cursor> Cursors = [];
-
-    /// <inheritdoc />
-    /// <remarks>The default is <c>"window"</c>.</remarks>
-    public string Identifier { get; init; } = "window";
 
     /// <summary>
     /// Gets the initial display mode. The default is <see cref="WindowMode.Normal"/>.
@@ -49,9 +104,13 @@ public class WindowOptions : IIdentifiable<string>
     public Vector2 Size { get; init; } = new(800, 600);
 
     /// <summary>
-    /// Gets the initial title. The default is <c>"Mirage"</c>.
+    /// Gets the initial title of the window.
     /// </summary>
-    public string Title { get; init; } = "Mirage";
+    /// <remarks>
+    /// The default is <c>"Mirage"</c> followed by a randomly selected message.
+    /// </remarks>
+    public string Title { get; init; } =
+        $"Mirage - {DefaultTitleMessages[Random.Shared.Next(DefaultTitleMessages.Length)]}";
 
     /// <summary>
     /// Gets whether vertical synchronization is initially enabled. The default is <see langword="false"/>.
@@ -62,6 +121,10 @@ public class WindowOptions : IIdentifiable<string>
     /// Gets whether the window is initially visible. The default is <see langword="true"/>.
     /// </summary>
     public bool Visible { get; init; } = true;
+
+    /// <inheritdoc />
+    /// <remarks>The default is <c>"window"</c>.</remarks>
+    public string Identifier { get; init; } = "window";
 }
 
 /// <summary>
@@ -128,9 +191,6 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
     /// Gets a read-only store indicating whether the window currently has input focus.
     /// </summary>
     public readonly IReadOnlyStore<bool> Focused;
-
-    /// <inheritdoc />
-    public string Identifier { get; }
 
     /// <summary>
     /// Gets the store that controls and reports the window's display mode.
@@ -227,6 +287,9 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
     /// </summary>
     /// <remarks>The list is replaced on each update and can contain events for other windows.</remarks>
     public IReadOnlyList<SDL.Event> FrameEvents => _frameEvents;
+
+    /// <inheritdoc />
+    public string Identifier { get; }
 
     /// <inheritdoc />
     public void Update(UpdateContext context)
