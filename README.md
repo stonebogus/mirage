@@ -1,9 +1,9 @@
 <p align="center">
   <a href="Assets/Wide/Background/wide.png">
     <img
-      src="Assets/Wide/Background/wide.png"
+      src="Assets/Wide/Transparent/wide.png"
+      width="500"
       alt="Mirage Logo"
-      style="border: 3px solid #30363d; border-radius: 12px;"
     >
   </a>
 </p>
