@@ -166,6 +166,8 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
 {
     private readonly List<SDL.Event> _frameEvents = [];
     private readonly Store<bool> _opened = new(false);
+    private bool _deferVisibilityUntilFirstFrame;
+    private bool _firstFramePresented;
 
     /// <summary>
     /// Gets a value indicating whether an initial position was explicitly configured.
@@ -337,6 +339,40 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
     }
 
     /// <summary>
+    /// Defers showing the native window until its first frame has been presented.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the window is already open.
+    /// </exception>
+    public void DeferVisibilityUntilFirstFrame()
+    {
+        ThrowIfDestroyed();
+
+        if (_opened.Get())
+            throw new InvalidOperationException(
+                "Visibility must be deferred before the window is opened."
+            );
+
+        _deferVisibilityUntilFirstFrame = true;
+    }
+
+    /// <summary>
+    /// Notifies the window that its renderer has presented its first frame.
+    /// </summary>
+    public void NotifyFirstFramePresented()
+    {
+        ThrowIfDestroyed();
+
+        if (!_deferVisibilityUntilFirstFrame || _firstFramePresented)
+            return;
+
+        _firstFramePresented = true;
+
+        if (Visible.Get())
+            OnVisibilityChanged(true);
+    }
+
+    /// <summary>
     /// Opens the window if it is not already open.
     /// </summary>
     /// <exception cref="DestroyedObjectException">
@@ -499,7 +535,8 @@ public partial class Window
 
         Publish(window, Resizable, () => flags.HasFlag(SDL.WindowFlags.Resizable));
 
-        Publish(window, Visible, () => !flags.HasFlag(SDL.WindowFlags.Hidden));
+        if (!_deferVisibilityUntilFirstFrame || _firstFramePresented)
+            Publish(window, Visible, () => !flags.HasFlag(SDL.WindowFlags.Hidden));
 
         Publish(window, _focused, () => flags.HasFlag(SDL.WindowFlags.InputFocus));
 
@@ -682,10 +719,13 @@ public partial class Window
         if (Native != IntPtr.Zero)
             return;
 
+        _firstFramePresented = false;
+
         var requestedMode = Mode.Get();
         var requestedSize = ToNativeSize(Size.Get());
+        var visible = Visible.Get() && !_deferVisibilityUntilFirstFrame;
 
-        var flags = ToSdlFlags(requestedMode, Resizable.Get(), Visible.Get());
+        var flags = ToSdlFlags(requestedMode, Resizable.Get(), visible);
 
         VideoRuntime.Acquire();
 
@@ -864,6 +904,9 @@ public partial class Window
     protected virtual void OnVisibilityChanged(bool visible)
     {
         if (!ShouldApply(Visible, visible))
+            return;
+
+        if (visible && _deferVisibilityUntilFirstFrame && !_firstFramePresented)
             return;
 
         var window = Native;
