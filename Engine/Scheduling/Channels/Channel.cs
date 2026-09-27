@@ -1,3 +1,4 @@
+using Mirage.Common.Collections;
 using Mirage.Common.Lifecycle;
 using Mirage.Scheduling.Interfaces;
 
@@ -55,7 +56,7 @@ public class UpdateChannel : Destroyable
     /// <summary>
     /// Gets the updatable entries contained in this channel.
     /// </summary>
-    public readonly HashSet<IUpdatable> Entries = [];
+    public readonly ReactiveSet<IUpdatable> Entries = [];
 
     /// <summary>
     /// Gets the unique identifier of this channel.
@@ -82,7 +83,7 @@ public class UpdateChannel : Destroyable
     public readonly double UpdateRate;
 
     /// <summary>
-    /// Initializes an update channel.
+    /// Initializes a new instance of a <see cref="UpdateChannel"/>.
     /// </summary>
     /// <param name="identifier">
     /// The unique identifier of the channel.
@@ -112,10 +113,6 @@ public class UpdateChannel : Destroyable
             Entries.Add(entry);
     }
 
-    /// <summary>
-    /// Ensures that entries provided through <see cref="Compose"/> have been
-    /// registered.
-    /// </summary>
     private void EnsureComposed()
     {
         if (_composed)
@@ -127,12 +124,6 @@ public class UpdateChannel : Destroyable
         _composed = true;
     }
 
-    /// <summary>
-    /// Performs one channel update.
-    /// </summary>
-    /// <param name="context">
-    /// The timing information associated with the update.
-    /// </param>
     private void PerformUpdate(UpdateContext context)
     {
         foreach (var entry in Entries)
@@ -149,7 +140,7 @@ public class UpdateChannel : Destroyable
     /// </returns>
     /// <remarks>
     /// The default implementation does not compose any entries.
-    /// Composition occurs once before the channel performs its first update.
+    /// Composition occurs once when the channel is prepared by its scheduler.
     /// </remarks>
     protected virtual IEnumerable<IUpdatable> Compose()
     {
@@ -198,7 +189,6 @@ public class UpdateChannel : Destroyable
     public void Update(double deltaTime)
     {
         ThrowIfDestroyed();
-        EnsureComposed();
 
         if (UpdateRate <= 0)
         {
@@ -219,5 +209,11 @@ public class UpdateChannel : Destroyable
         _accumulator = 0;
 
         PerformUpdate(new UpdateContext(elapsedTime, UpdateRate));
+    }
+
+    internal void Prepare()
+    {
+        ThrowIfDestroyed();
+        EnsureComposed();
     }
 }

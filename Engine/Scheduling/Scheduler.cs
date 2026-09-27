@@ -35,7 +35,7 @@ public class Scheduler : Module
     public readonly int TargetFramerate;
 
     /// <summary>
-    /// Initializes a scheduler.
+    /// Initializes a new instance of a <see cref="Scheduler"/> class.
     /// </summary>
     /// <param name="targetFramerate">
     /// The target number of scheduler iterations per second.
@@ -63,6 +63,12 @@ public class Scheduler : Module
 
             Channels.Add(channel.Identifier, channel);
         }
+
+        Channels.OnAdd.Connect(entry =>
+        {
+            if (State.Get() == ModuleState.Running)
+                entry.Value.Prepare();
+        });
     }
 
     /// <summary>
@@ -117,7 +123,10 @@ public class Scheduler : Module
     protected override void OnStart()
     {
         EnsureComposed();
-
+        foreach (var channel in Channels.Values)
+        {
+            channel.Prepare();
+        }
         base.OnStart();
     }
 
