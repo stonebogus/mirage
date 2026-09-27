@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="Assets/Wide/Background/wide.png">
+  <a href="Assets/Wide.png">
     <img
-      src="Assets/Wide/Transparent/wide.png"
-      width="500"
+      src="Assets/Wide.png"
+      width="600"
       alt="Mirage Logo"
     >
   </a>
