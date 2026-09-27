@@ -13,7 +13,7 @@ namespace Mirage.Scheduling.Channels;
 /// <param name="identifier">The channel identifier. The default is <c>"nodes"</c>.</param>
 /// <param name="updateRate"> The target number of updates per second. A non-positive value updates once per scheduler iteration. </param>
 /// <param name="priority">The update priority. The default is <see cref="UpdateChannelPriority.Normal"/>.</param>
-public sealed class NodeUpdateChannel(
+public class NodeUpdateChannel(
     NodeManager manager,
     string identifier = "nodes",
     double updateRate = 0,

@@ -9,7 +9,7 @@ namespace Mirage.Handling.Devices.Keyboard;
 /// <param name="Key">The physical key that changed state.</param>
 /// <param name="Down"><see langword="true"/> when the key was pressed.</param>
 /// <param name="Repeat"><see langword="true"/> when SDL marked this as a repeated key press.</param>
-public sealed record KeyboardEventPayload(KeyboardKey Key, bool Down, bool Repeat);
+public record KeyboardEventPayload(KeyboardKey Key, bool Down, bool Repeat);
 
 /// <summary>
 /// Initializes a new instance of the <see cref="KeyboardEvent"/> class.

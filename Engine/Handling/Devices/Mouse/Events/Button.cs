@@ -16,7 +16,7 @@ namespace Mirage.Handling.Devices.Mouse.Events;
 /// <param name="Position">
 /// The cursor position within the window when the event occurred.
 /// </param>
-public sealed record MouseButtonEventPayload(
+public record MouseButtonEventPayload(
     MouseButton Button,
     bool Down,
     int Clicks,
@@ -31,5 +31,5 @@ public sealed record MouseButtonEventPayload(
 /// </remarks>
 /// <param name="identifier">The stable action identifier.</param>
 /// <param name="source">The button that activates this action.</param>
-public sealed class MouseButtonEvent(string identifier, MouseButton source)
+public class MouseButtonEvent(string identifier, MouseButton source)
     : InputEvent<MouseButtonEventPayload, MouseButton>(identifier, source);

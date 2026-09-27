@@ -15,7 +15,7 @@ namespace Mirage.Handling.Devices.Mouse.Events;
 /// <param name="Delta">
 /// The movement relative to the previous mouse motion event.
 /// </param>
-public sealed record MouseMoveEventPayload(Vector2 Position, Vector2 Delta);
+public record MouseMoveEventPayload(Vector2 Position, Vector2 Delta);
 
 /// <summary>
 /// Initializes a new instance of the <see cref="MouseMoveEvent"/> class.
@@ -23,5 +23,5 @@ public sealed record MouseMoveEventPayload(Vector2 Position, Vector2 Delta);
 /// <remarks>
 /// Stores the latest mouse movement and notifies listeners when it changes.
 /// </remarks>
-public sealed class MouseMoveEvent()
+public class MouseMoveEvent()
     : Store<MouseMoveEventPayload>(new MouseMoveEventPayload(Vector2.Zero, Vector2.Zero));

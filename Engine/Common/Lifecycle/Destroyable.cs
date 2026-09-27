@@ -21,7 +21,7 @@ public interface IReadOnlyDestroyable
 /// <param name="message">
 /// The message that describes the invalid operation.
 /// </param>
-public sealed class DestroyedObjectException(string message) : InvalidOperationException(message);
+public class DestroyedObjectException(string message) : InvalidOperationException(message);
 
 /// <summary>
 /// Defines an object that has a destroyable lifecycle.

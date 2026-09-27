@@ -21,7 +21,7 @@ public enum RasterImageFormat
 /// file format and from the SDL GPU texture created for rendering.
 /// The image copies and owns its pixel buffer.
 /// </remarks>
-public sealed class Image : Resource
+public class Image : Resource
 {
     private ReadOnlyMemory<byte> _data;
 

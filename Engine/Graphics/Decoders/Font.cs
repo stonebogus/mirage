@@ -6,7 +6,7 @@ namespace Mirage.Graphics.Decoders;
 /// <summary>
 /// Loads supported font files as reusable font data.
 /// </summary>
-public sealed class FontDecoder : Decoder<Font>
+public class FontDecoder : Decoder<Font>
 {
     private static readonly HashSet<string> Extensions = new(StringComparer.OrdinalIgnoreCase)
     {

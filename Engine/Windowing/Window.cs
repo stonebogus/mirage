@@ -12,7 +12,7 @@ namespace Mirage.Windowing;
 /// <summary>
 /// Defines the initial configuration of a <see cref="Window"/>.
 /// </summary>
-public sealed class WindowOptions : IIdentifiable<string>
+public class WindowOptions : IIdentifiable<string>
 {
     /// <summary>
     /// Gets the cursors to register initially. The default is an empty sequence.

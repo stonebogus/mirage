@@ -10,7 +10,7 @@ namespace Mirage.Graphics.Decoders;
 /// <remarks>
 /// The decoder accepts PNG, JPEG, BMP, TGA, PSD, GIF and HDR files.
 /// </remarks>
-public sealed class ImageDecoder : Decoder<Image>
+public class ImageDecoder : Decoder<Image>
 {
     private static readonly HashSet<string> Extensions = new(StringComparer.OrdinalIgnoreCase)
     {

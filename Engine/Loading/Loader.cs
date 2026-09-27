@@ -16,7 +16,7 @@ namespace Mirage.Loading;
 /// <param name="Path">
 /// The absolute path of the resource.
 /// </param>
-public sealed record LoadContext(string Identifier, string Path) : IIdentifiable<string>
+public record LoadContext(string Identifier, string Path) : IIdentifiable<string>
 {
     /// <inheritdoc />
     public string Identifier { get; init; } = Identifier;

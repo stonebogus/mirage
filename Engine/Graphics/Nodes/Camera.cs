@@ -8,7 +8,7 @@ namespace Mirage.Graphics.Nodes;
 /// <summary>
 /// Provides optional values used to initialize a <see cref="Camera"/>.
 /// </summary>
-public sealed class CameraNodeOptions : SpatialNodeOptions
+public class CameraNodeOptions : SpatialNodeOptions
 {
     /// <summary>
     /// Gets the initial zoom factor. The default is <c>1</c>, which means no zoom.

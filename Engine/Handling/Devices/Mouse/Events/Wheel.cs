@@ -15,9 +15,9 @@ namespace Mirage.Handling.Devices.Mouse.Events;
 /// <param name="Position">
 /// The cursor position within the window when scrolling occurred.
 /// </param>
-public sealed record MouseWheelEventPayload(Vector2 Delta, Vector2 Position);
+public record MouseWheelEventPayload(Vector2 Delta, Vector2 Position);
 
 /// <summary>
 /// Notifies listeners when the mouse wheel moves.
 /// </summary>
-public sealed class MouseWheelEvent : Signal<MouseWheelEventPayload>;
+public class MouseWheelEvent : Signal<MouseWheelEventPayload>;

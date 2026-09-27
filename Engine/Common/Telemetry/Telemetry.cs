@@ -10,7 +10,7 @@ namespace Mirage.Common.Telemetry;
 /// and dispatching messages across multiple prioritized output ports.
 /// </summary>
 /// <remarks>Telemetry owns and destroys its registered ports.</remarks>
-public sealed class Telemetry : Destroyable
+public class Telemetry : Destroyable
 {
     private readonly Signal<Message> _onSend = new();
 

@@ -13,7 +13,7 @@ namespace Mirage.Graphics.Resources;
 /// the corresponding SDL texture.
 /// </remarks>
 /// <param name="image">The image containing the texture pixels.</param>
-public sealed class Texture(Image image) : Resource
+public class Texture(Image image) : Resource
 {
     /// <summary>
     /// Gets the texture height, in pixels.

@@ -6,7 +6,7 @@ namespace Mirage.Common.Telemetry.Ports;
 /// Represents a console-based telemetry output port that formats and writes
 /// telemetry messages to standard output using ANSI colors and timestamps.
 /// </summary>
-public sealed class ConsolePort : Destroyable, IPort
+public class ConsolePort : Destroyable, IPort
 {
     private const string AnsiCyan = "\e[36m";
     private const string AnsiGray = "\e[90m";

@@ -6,7 +6,7 @@ namespace Mirage.Common.Events;
 /// Represents an active connection between an event and a callback.
 /// </summary>
 /// <typeparam name="TPayload">The type of the value passed to the callback.</typeparam>
-public sealed class EventConnection<TPayload>
+public class EventConnection<TPayload>
 {
     private Action<EventConnection<TPayload>>? _disconnect;
 

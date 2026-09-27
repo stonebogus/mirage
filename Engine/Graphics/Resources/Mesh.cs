@@ -14,7 +14,7 @@ namespace Mirage.Graphics.Resources;
 /// The mesh copies its vertices, indices, and texture coordinates. It borrows
 /// the texture and does not destroy it.
 /// </remarks>
-public sealed class GraphicMesh : Mesh
+public class GraphicMesh : Mesh
 {
     private ReadOnlyMemory<Vector2> _textureCoordinates;
 

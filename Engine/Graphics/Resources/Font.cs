@@ -44,7 +44,7 @@ public enum FontStyle
 /// The resource owns a copy of the file bytes. The renderer uses these bytes
 /// to open native font instances at the sizes needed for drawing.
 /// </remarks>
-public sealed class Font : Resource
+public class Font : Resource
 {
     private ReadOnlyMemory<byte> _data;
 

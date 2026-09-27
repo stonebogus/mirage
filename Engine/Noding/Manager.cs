@@ -9,7 +9,7 @@ namespace Mirage.Noding;
 /// Coordinates node lifecycles between roots.
 /// </summary>
 /// <remarks>The manager owns and destroys every registered root.</remarks>
-public sealed class NodeManager : Module
+public class NodeManager : Module
 {
     private readonly Store<Node> _activeRoot;
     private bool _restoringRoots;

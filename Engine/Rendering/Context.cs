@@ -13,7 +13,7 @@ namespace Mirage.Rendering;
 /// then forwards drawing operations to the rendering surface. This context
 /// is valid only while its frame is active.
 /// </remarks>
-public sealed class RenderContext : IDrawContext
+public class RenderContext : IDrawContext
 {
     private readonly RenderSurface _surface;
 
