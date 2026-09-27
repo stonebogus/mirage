@@ -18,9 +18,9 @@ public class Mouse : InputDevice
     private bool _configurationStarted;
 
     /// <summary>
-    /// Gets the registered button actions by identifier.
+    /// Gets the identifiable set of registered button actions.
     /// </summary>
-    public readonly ReactiveDictionary<string, MouseButtonEvent> Events = [];
+    public readonly IdentifiableSet<string, MouseButtonEvent> Events = [];
 
     /// <summary>
     /// Stores the latest mouse movement and notifies listeners of changes.
@@ -41,12 +41,15 @@ public class Mouse : InputDevice
     /// Initializes a new instance of the <see cref="Mouse"/> class.
     /// </summary>
     /// <param name="events">The button actions to register.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the initial events contain duplicate identifiers.
+    /// </exception>
     public Mouse(params MouseButtonEvent[] events)
         : base("Mouse")
     {
         foreach (var @event in events)
         {
-            Events.Add(@event.Identifier, @event);
+            Events.Add(@event);
         }
 
         Position = _position;
@@ -62,19 +65,7 @@ public class Mouse : InputDevice
 
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<string> identifiers = [];
-
-        foreach (var @event in composedObjects)
-        {
-            if (Events.ContainsKey(@event.Identifier) || !identifiers.Add(@event.Identifier))
-                throw new InvalidOperationException(
-                    $"Duplicate event identifier found: '{@event.Identifier}'."
-                );
-        }
-
-        foreach (var @event in composedObjects)
-            Events.Add(@event.Identifier, @event);
+        Events.Add(Compose().ToArray());
 
         _composed = true;
     }
@@ -150,7 +141,7 @@ public class Mouse : InputDevice
             position
         );
 
-        foreach (var action in Events.Values)
+        foreach (var action in Events)
         {
             if (action.Source.Get() == button.Value)
                 action.Fire(payload);
@@ -180,7 +171,7 @@ public class Mouse : InputDevice
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        foreach (var action in Events.Values)
+        foreach (var action in Events)
             action.Destroy();
 
         Events.Destroy();

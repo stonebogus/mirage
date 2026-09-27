@@ -37,9 +37,9 @@ public class Renderer : Module, IUpdatable
     public readonly Store<Color> ClearColor;
 
     /// <summary>
-    /// Gets the rendering layers.
+    /// Gets the identifiable set of rendering layers.
     /// </summary>
-    public readonly ReactiveDictionary<string, DrawLayer> Layers = [];
+    public readonly IdentifiableSet<string, DrawLayer> Layers = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Renderer"/> class.
@@ -48,6 +48,9 @@ public class Renderer : Module, IUpdatable
     /// <param name="clearColor">The frame clear color, or <see langword="null"/> for <see cref="Color.Black"/>.</param>
     /// <param name="layers">The initial layers, or <see langword="null"/> for no layers.</param>
     /// <param name="camera">The initial camera, or <see langword="null"/> for screen coordinates.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the initial layers contain duplicate identifiers.
+    /// </exception>
     public Renderer(
         Window window,
         Color? clearColor = null,
@@ -63,7 +66,7 @@ public class Renderer : Module, IUpdatable
 
         foreach (var layer in layers ?? [])
         {
-            Layers.Add(layer.Identifier, layer);
+            Layers.Add(layer);
         }
     }
 
@@ -80,19 +83,7 @@ public class Renderer : Module, IUpdatable
 
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<string> identifiers = [];
-
-        foreach (var layer in composedObjects)
-        {
-            if (Layers.ContainsKey(layer.Identifier) || !identifiers.Add(layer.Identifier))
-                throw new InvalidOperationException(
-                    $"Duplicate layer identifier found: '{layer.Identifier}'."
-                );
-        }
-
-        foreach (var layer in composedObjects)
-            Layers.Add(layer.Identifier, layer);
+        Layers.Add(Compose().ToArray());
 
         _composed = true;
     }
@@ -142,7 +133,7 @@ public class Renderer : Module, IUpdatable
     {
         base.OnDestroy();
 
-        foreach (var (_, layer) in Layers.ToArray())
+        foreach (var layer in Layers.ToArray())
             layer.Destroy();
 
         Layers.Destroy();
@@ -178,7 +169,7 @@ public class Renderer : Module, IUpdatable
 
         try
         {
-            foreach (var (_, layer) in Layers.OrderBy(pair => pair.Value.Priority))
+            foreach (var layer in Layers.OrderBy(layer => layer.Priority))
                 layer.Draw(context);
         }
         catch

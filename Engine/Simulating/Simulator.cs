@@ -20,7 +20,10 @@ public class Simulator : Module, IUpdatable
     private bool _configurationStarted;
     private bool _updating;
 
-    public readonly ReactiveDictionary<string, SimulationSpace> Spaces = [];
+    /// <summary>
+    /// Gets the identifiable set of borrowed simulation spaces.
+    /// </summary>
+    public readonly IdentifiableSet<string, SimulationSpace> Spaces = [];
 
     public readonly int SubstepCount;
 
@@ -32,6 +35,9 @@ public class Simulator : Module, IUpdatable
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="substepCount"/> is not positive.
     /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the initial spaces contain duplicate identifiers.
+    /// </exception>
     public Simulator(IEnumerable<SimulationSpace>? spaces = null, int substepCount = 4)
         : base("Simulator")
     {
@@ -42,19 +48,19 @@ public class Simulator : Module, IUpdatable
 
         foreach (var space in spaces ?? [])
         {
-            Spaces.Add(space.Identifier, space);
+            Spaces.Add(space);
         }
 
-        Spaces.OnAdd.Connect(entry =>
+        Spaces.OnAdd.Connect(space =>
         {
             if (State.Get() == ModuleState.Running)
-                QueueOrRegister(entry.Value, add: true);
+                QueueOrRegister(space, add: true);
         });
 
-        Spaces.OnRemove.Connect(entry =>
+        Spaces.OnRemove.Connect(space =>
         {
             if (State.Get() == ModuleState.Running)
-                QueueOrRegister(entry.Value, add: false);
+                QueueOrRegister(space, add: false);
         });
     }
 
@@ -106,19 +112,7 @@ public class Simulator : Module, IUpdatable
 
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<string> identifiers = [];
-
-        foreach (var space in composedObjects)
-        {
-            if (Spaces.ContainsKey(space.Identifier) || !identifiers.Add(space.Identifier))
-                throw new InvalidOperationException(
-                    $"Duplicate simulation space identifier found: '{space.Identifier}'."
-                );
-        }
-
-        foreach (var space in composedObjects)
-            Spaces.Add(space.Identifier, space);
+        Spaces.Add(Compose().ToArray());
 
         _composed = true;
     }
@@ -220,7 +214,7 @@ public class Simulator : Module, IUpdatable
 
         try
         {
-            foreach (var space in Spaces.Values)
+            foreach (var space in Spaces)
                 Register(space);
         }
         catch

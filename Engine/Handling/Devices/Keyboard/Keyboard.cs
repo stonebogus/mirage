@@ -14,23 +14,24 @@ public class Keyboard : InputDevice
     private bool _configurationStarted;
 
     /// <summary>
-    /// Gets the keyboard actions registered by identifier.
+    /// Gets the identifiable set of registered keyboard actions.
     /// </summary>
-    public readonly ReactiveDictionary<
-        string,
-        InputEvent<KeyboardEventPayload, KeyboardKey>
-    > Events = [];
+    public readonly IdentifiableSet<string, InputEvent<KeyboardEventPayload, KeyboardKey>> Events =
+    [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Keyboard"/> class.
     /// </summary>
     /// <param name="events">The actions to register initially.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the initial events contain duplicate identifiers.
+    /// </exception>
     public Keyboard(params InputEvent<KeyboardEventPayload, KeyboardKey>[] events)
         : base("Keyboard")
     {
         foreach (var @event in events)
         {
-            Events.Add(@event.Identifier, @event);
+            Events.Add(@event);
         }
     }
 
@@ -44,19 +45,7 @@ public class Keyboard : InputDevice
 
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<string> identifiers = [];
-
-        foreach (var @event in composedObjects)
-        {
-            if (Events.ContainsKey(@event.Identifier) || !identifiers.Add(@event.Identifier))
-                throw new InvalidOperationException(
-                    $"Duplicate event identifier found: '{@event.Identifier}'."
-                );
-        }
-
-        foreach (var @event in composedObjects)
-            Events.Add(@event.Identifier, @event);
+        Events.Add(Compose().ToArray());
 
         _composed = true;
     }
@@ -104,7 +93,7 @@ public class Keyboard : InputDevice
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        foreach (var action in Events.Values)
+        foreach (var action in Events)
             action.Destroy();
 
         Events.Destroy();
@@ -147,7 +136,7 @@ public class Keyboard : InputDevice
                 sdlEvent.Key.Repeat
             );
 
-            foreach (var action in Events.Values)
+            foreach (var action in Events)
             {
                 if (action.Source.Get() == key)
                     action.Fire(payload);

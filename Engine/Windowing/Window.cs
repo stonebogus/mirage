@@ -120,9 +120,9 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
     public readonly Store<Cursor?> Cursor;
 
     /// <summary>
-    /// Gets the registered cursors, indexed by identifier.
+    /// Gets the identifiable set of registered cursors.
     /// </summary>
-    public readonly ReactiveDictionary<string, Cursor> Cursors = [];
+    public readonly IdentifiableSet<string, Cursor> Cursors = [];
 
     /// <summary>
     /// Gets a read-only store indicating whether the window currently has input focus.
@@ -201,9 +201,9 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
 
         foreach (var cursor in options.Cursors)
         {
-            Cursors.Add(cursor.Identifier, cursor);
+            Cursors.Add(cursor);
         }
-        Cursor = new Store<Cursor?>(Cursors.Values.FirstOrDefault());
+        Cursor = new Store<Cursor?>(Cursors.FirstOrDefault());
 
         Mode = new Store<WindowMode>(options.Mode);
         Position = new Store<Vector2>(options.Position ?? new Vector2());

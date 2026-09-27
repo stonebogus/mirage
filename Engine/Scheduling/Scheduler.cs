@@ -21,9 +21,9 @@ public class Scheduler : Module
     private bool _configurationStarted;
 
     /// <summary>
-    /// Gets the channels managed by the scheduler.
+    /// Gets the identifiable set of channels managed by the scheduler.
     /// </summary>
-    public readonly ReactiveDictionary<string, UpdateChannel> Channels = [];
+    public readonly IdentifiableSet<string, UpdateChannel> Channels = [];
 
     /// <summary>
     /// Gets the target number of scheduler iterations per second.
@@ -57,20 +57,13 @@ public class Scheduler : Module
 
         foreach (var channel in channels ?? [])
         {
-            if (Channels.ContainsKey(channel.Identifier))
-            {
-                throw new InvalidOperationException(
-                    $"Duplicate channel identifier found: '{channel.Identifier}'"
-                );
-            }
-
-            Channels.Add(channel.Identifier, channel);
+            Channels.Add(channel);
         }
 
-        Channels.OnAdd.Connect(entry =>
+        Channels.OnAdd.Connect(channel =>
         {
             if (State.Get() == ModuleState.Running)
-                entry.Value.Prepare();
+                channel.Prepare();
         });
     }
 
@@ -95,19 +88,7 @@ public class Scheduler : Module
 
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<string> identifiers = [];
-
-        foreach (var channel in composedObjects)
-        {
-            if (Channels.ContainsKey(channel.Identifier) || !identifiers.Add(channel.Identifier))
-                throw new InvalidOperationException(
-                    $"Duplicate channel identifier found: '{channel.Identifier}'."
-                );
-        }
-
-        foreach (var channel in composedObjects)
-            Channels.Add(channel.Identifier, channel);
+        Channels.Add(Compose().ToArray());
 
         _composed = true;
     }
@@ -157,7 +138,7 @@ public class Scheduler : Module
     {
         EnsureComposed();
         EnsureConfigured();
-        foreach (var channel in Channels.Values)
+        foreach (var channel in Channels)
         {
             channel.Prepare();
         }
@@ -203,9 +184,9 @@ public class Scheduler : Module
 
             Framerate = DeltaTime > 0 ? 1.0 / DeltaTime : 0;
 
-            foreach (var channel in Channels.OrderByDescending(entry => entry.Value.Priority))
+            foreach (var channel in Channels.OrderByDescending(channel => channel.Priority))
             {
-                channel.Value.Update(DeltaTime);
+                channel.Update(DeltaTime);
             }
 
             if (TargetFramerate <= 0)

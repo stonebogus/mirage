@@ -12,16 +12,16 @@ namespace Mirage.Handling;
 /// </summary>
 public class InputHandler : Module, IUpdatable
 {
-    private readonly ReactiveDictionary<string, InputDevice> _devices = [];
+    private readonly IdentifiableSet<string, InputDevice> _devices = [];
     private bool _composed;
     private bool _compositionStarted;
     private bool _configured;
     private bool _configurationStarted;
 
     /// <summary>
-    /// Gets the devices owned by this handler, indexed by identifier.
+    /// Gets the read-only identifiable set of devices owned by this handler.
     /// </summary>
-    public readonly IReadOnlyReactiveDictionary<string, InputDevice> Devices;
+    public readonly IReadOnlyIdentifiableSet<string, InputDevice> Devices;
 
     /// <summary>
     /// Gets the window whose frame events are processed by this handler.
@@ -34,13 +34,16 @@ public class InputHandler : Module, IUpdatable
     /// <param name="index">The index used to distinguish the module identifier.</param>
     /// <param name="window">The window supplying input events.</param>
     /// <param name="devices">The devices to register initially, or <see langword="null"/>.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the initial devices contain duplicate identifiers.
+    /// </exception>
     public InputHandler(int index, Window window, IEnumerable<InputDevice>? devices = null)
         : base($"InputHandler-{index}")
     {
         Window = window;
         foreach (var device in devices ?? [])
         {
-            _devices.Add(device.Identifier, device);
+            _devices.Add(device);
         }
         Devices = _devices;
     }
@@ -59,7 +62,7 @@ public class InputHandler : Module, IUpdatable
             );
 
         var context = new InputContext(Window, Window.FrameEvents);
-        foreach (var device in _devices.Values)
+        foreach (var device in _devices)
         {
             device.Process(context);
         }
@@ -75,19 +78,7 @@ public class InputHandler : Module, IUpdatable
 
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<string> identifiers = [];
-
-        foreach (var device in composedObjects)
-        {
-            if (_devices.ContainsKey(device.Identifier) || !identifiers.Add(device.Identifier))
-                throw new InvalidOperationException(
-                    $"Duplicate device identifier found: '{device.Identifier}'."
-                );
-        }
-
-        foreach (var device in composedObjects)
-            _devices.Add(device.Identifier, device);
+        _devices.Add(Compose().ToArray());
 
         _composed = true;
     }
@@ -138,7 +129,7 @@ public class InputHandler : Module, IUpdatable
     {
         base.OnDestroy();
 
-        foreach (var device in _devices.Values)
+        foreach (var device in _devices)
             device.Destroy();
 
         _devices.Destroy();
