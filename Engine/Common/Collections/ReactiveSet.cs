@@ -148,10 +148,6 @@ public class ReactiveSet<TItem> : Destroyable, IReadOnlyReactiveSet<TItem>
         return _items.GetEnumerator();
     }
 
-    /// <summary>
-    /// Returns an enumerator that iterates through the items in the reactive set.
-    /// </summary>
-    /// <returns>An enumerator for the reactive set.</returns>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();

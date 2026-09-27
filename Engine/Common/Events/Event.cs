@@ -10,16 +10,6 @@ public sealed class EventConnection<TPayload>
 {
     private Action<EventConnection<TPayload>>? _disconnect;
 
-    /// <summary>
-    /// Initializes a new connection between an event and a callback.
-    /// </summary>
-    /// <param name="callback">The callback associated with the connection.</param>
-    /// <param name="persistent">
-    /// Whether the connection survives standard clearing operations.
-    /// </param>
-    /// <param name="disconnect">
-    /// The operation used to remove the connection from its event.
-    /// </param>
     internal EventConnection(
         Action<TPayload> callback,
         bool persistent,
@@ -63,9 +53,6 @@ public sealed class EventConnection<TPayload>
         disconnect(this);
     }
 
-    /// <summary>
-    /// Marks the connection as disconnected without notifying its event.
-    /// </summary>
     internal void Detach()
     {
         _disconnect = null;

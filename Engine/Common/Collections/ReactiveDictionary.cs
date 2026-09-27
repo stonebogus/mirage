@@ -194,10 +194,6 @@ public class ReactiveDictionary<TKey, TValue>
         return _items.GetEnumerator();
     }
 
-    /// <summary>
-    /// Returns an enumerator that iterates through the entries in the reactive dictionary.
-    /// </summary>
-    /// <returns>An enumerator for the reactive dictionary.</returns>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();

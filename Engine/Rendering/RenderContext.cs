@@ -17,17 +17,6 @@ public sealed class RenderContext : IDrawContext
 {
     private readonly RenderSurface _surface;
 
-    /// <summary>
-    /// Initializes a context for the active rendering frame.
-    /// </summary>
-    /// <param name="surface">The surface receiving drawing operations.</param>
-    /// <param name="deltaTime">
-    /// The elapsed time since the previous frame, in seconds.
-    /// </param>
-    /// <param name="camera">
-    /// The active camera, or <see langword="null"/> to use screen coordinates.
-    /// </param>
-    /// <param name="viewportSize">The size of the rendering viewport.</param>
     internal RenderContext(
         RenderSurface surface,
         double deltaTime,

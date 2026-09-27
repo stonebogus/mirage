@@ -4,48 +4,26 @@ using Mirage.Common.Telemetry;
 
 namespace Mirage.Common;
 
-/// <summary>
-/// Provides access to a collection of modules registered in a game.
-/// </summary>
 internal sealed class ModuleContainer(IEnumerable<Module> modules)
 {
     private readonly IReadOnlyList<Module> _modules = [.. modules];
 
-    /// <summary>
-    /// Gets a module by its concrete type.
-    /// </summary>
-    /// <typeparam name="TModule">The type of the module to retrieve.</typeparam>
-    /// <returns>The module matching the specified type.</returns>
     public TModule Get<TModule>()
         where TModule : Module
     {
         return _modules.OfType<TModule>().Single();
     }
 
-    /// <summary>
-    /// Gets a module by its identifier.
-    /// </summary>
-    /// <param name="identifier">The identifier of the module to retrieve.</param>
-    /// <returns>The module with the specified identifier.</returns>
     public Module Get(string identifier)
     {
         return _modules.Single(module => module.Identifier == identifier);
     }
 }
 
-/// <summary>
-/// Provides the dependencies and shared context required to initialize a module.
-/// </summary>
 internal sealed class ModuleContext
 {
-    /// <summary>
-    /// Gets the collection of modules available for dependency resolution.
-    /// </summary>
     public required ModuleContainer Modules { get; init; }
 
-    /// <summary>
-    /// Gets the telemetry manager available to the module.
-    /// </summary>
     public required Telemetry.Telemetry Telemetry { get; init; }
 }
 
@@ -187,15 +165,6 @@ public abstract class Module : Destroyable
         return typedModule;
     }
 
-    /// <summary>
-    /// Injects the shared game context and resolves the module's dependencies.
-    /// </summary>
-    /// <param name="context">
-    /// The context containing telemetry and registered modules.
-    /// </param>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when the module has already been injected.
-    /// </exception>
     internal void Inject(ModuleContext context)
     {
         ThrowIfDestroyed();
@@ -215,15 +184,6 @@ public abstract class Module : Destroyable
         Telemetry.Send($"Module '{Identifier}' has been injected.", Identifier, MessageKind.Debug);
     }
 
-    /// <summary>
-    /// Starts the module and transitions it to the running state.
-    /// </summary>
-    /// <exception cref="DestroyedObjectException">
-    /// Thrown when the module has already been destroyed.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when the module has not been injected or is not idle.
-    /// </exception>
     internal void Start()
     {
         ThrowIfDestroyed();
@@ -260,15 +220,6 @@ public abstract class Module : Destroyable
         }
     }
 
-    /// <summary>
-    /// Stops the module and transitions it to the idle state.
-    /// </summary>
-    /// <exception cref="DestroyedObjectException">
-    /// Thrown when the module has already been destroyed.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when the module has not been injected or is not running.
-    /// </exception>
     internal void Stop()
     {
         ThrowIfDestroyed();

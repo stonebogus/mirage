@@ -8,9 +8,6 @@ using SDL3;
 
 namespace Mirage.Rendering;
 
-/// <summary>
-/// Owns the native renderer and textures for a window.
-/// </summary>
 internal sealed class RenderSurface(Window window)
 {
     private const int RenderScale = 2;
@@ -276,9 +273,6 @@ internal sealed class RenderSurface(Window window)
             throw new ArgumentOutOfRangeException(nameof(style));
     }
 
-    /// <summary>
-    /// Abandons the active frame without presenting it.
-    /// </summary>
     public void AbortFrame()
     {
         if (!_frameActive)
@@ -290,17 +284,6 @@ internal sealed class RenderSurface(Window window)
         SDL.SetRenderTarget(_native, nint.Zero);
     }
 
-    /// <summary>
-    /// Clears the window and creates a context for a new frame.
-    /// </summary>
-    /// <param name="deltaTime">
-    /// The elapsed time since the previous frame, in seconds.
-    /// </param>
-    /// <param name="clearColor">The color used to clear the frame.</param>
-    /// <param name="camera">
-    /// The active camera, or <see langword="null"/> to use screen coordinates.
-    /// </param>
-    /// <returns>The context used to draw the frame.</returns>
     public RenderContext BeginFrame(double deltaTime, Color clearColor, ICamera? camera)
     {
         EnsureStarted();
@@ -336,9 +319,6 @@ internal sealed class RenderSurface(Window window)
         return new RenderContext(this, deltaTime, camera, viewportSize);
     }
 
-    /// <summary>
-    /// Reduces and presents the active frame to the window.
-    /// </summary>
     public void EndFrame()
     {
         EnsureFrame();
@@ -365,9 +345,6 @@ internal sealed class RenderSurface(Window window)
             throw Error("Presenting the frame");
     }
 
-    /// <summary>
-    /// Creates the native renderer for the open window.
-    /// </summary>
     public void Start()
     {
         if (_native != nint.Zero)
@@ -408,9 +385,6 @@ internal sealed class RenderSurface(Window window)
         }
     }
 
-    /// <summary>
-    /// Releases native textures and stops the native renderer.
-    /// </summary>
     public void Stop()
     {
         if (_native == nint.Zero)
@@ -443,9 +417,6 @@ internal sealed class RenderSurface(Window window)
         _native = nint.Zero;
     }
 
-    /// <summary>
-    /// Fills a triangle using screen coordinates.
-    /// </summary>
     internal void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
     {
         EnsureFrame();
@@ -461,9 +432,6 @@ internal sealed class RenderSurface(Window window)
             throw Error("Filling a triangle");
     }
 
-    /// <summary>
-    /// Fills a circle using screen coordinates.
-    /// </summary>
     internal void FillCircle(Vector2 center, float radius, Color color)
     {
         EnsureFrame();
@@ -505,10 +473,6 @@ internal sealed class RenderSurface(Window window)
             throw Error("Filling a circle");
     }
 
-    /// <summary>
-    /// Enables or disables vertical synchronization.
-    /// </summary>
-    /// <param name="enabled">Whether vertical synchronization is enabled.</param>
     internal void ApplyVSync(bool enabled)
     {
         if (_native == nint.Zero)
@@ -518,9 +482,6 @@ internal sealed class RenderSurface(Window window)
             throw Error("Changing VSync");
     }
 
-    /// <summary>
-    /// Draws a line with a specified thickness using screen coordinates.
-    /// </summary>
     internal void DrawLine(Vector2 start, Vector2 end, Color color, float thickness)
     {
         EnsureFrame();
@@ -559,9 +520,6 @@ internal sealed class RenderSurface(Window window)
             throw Error("Drawing a line");
     }
 
-    /// <summary>
-    /// Draws a texture across four corners in screen coordinates.
-    /// </summary>
     internal void DrawTexture(
         Texture texture,
         Vector2 topLeft,
@@ -634,9 +592,6 @@ internal sealed class RenderSurface(Window window)
         }
     }
 
-    /// <summary>
-    /// Measures text before camera scaling or drawing transformations.
-    /// </summary>
     internal Vector2 MeasureText(Font font, string text, float size, FontStyle style)
     {
         EnsureFrame();
@@ -655,9 +610,6 @@ internal sealed class RenderSurface(Window window)
         return new Vector2(width, height);
     }
 
-    /// <summary>
-    /// Draws text across four corners in screen coordinates.
-    /// </summary>
     internal void DrawText(
         Font font,
         string text,
@@ -722,9 +674,6 @@ internal sealed class RenderSurface(Window window)
         }
     }
 
-    /// <summary>
-    /// Fills a rectangle using screen coordinates.
-    /// </summary>
     internal void FillRectangle(Vector2 position, Vector2 size, Color color)
     {
         EnsureFrame();

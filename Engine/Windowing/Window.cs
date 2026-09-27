@@ -823,9 +823,6 @@ public partial class Window
     }
 }
 
-/// <summary>
-/// Manages shared ownership of SDL's video subsystem.
-/// </summary>
 internal static class VideoRuntime
 {
     private static readonly Lock Gate = new();
