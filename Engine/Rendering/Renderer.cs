@@ -62,7 +62,7 @@ public class Renderer : Module, IUpdatable
         _window = window;
         _window.DeferVisibilityUntilFirstFrame();
         _surface = new RenderSurface(window);
-        ClearColor = new Store<Color>(clearColor ?? Color.White);
+        ClearColor = new Store<Color>(clearColor ?? Color.Black);
         Camera = new Store<ICamera?>(camera);
 
         foreach (var layer in layers ?? [])
