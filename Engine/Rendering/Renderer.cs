@@ -60,6 +60,7 @@ public class Renderer : Module, IUpdatable
         : base("Renderer")
     {
         _window = window;
+        _window.DeferVisibilityUntilFirstFrame();
         _surface = new RenderSurface(window);
         ClearColor = new Store<Color>(clearColor ?? Color.Black);
         Camera = new Store<ICamera?>(camera);

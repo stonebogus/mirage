@@ -343,6 +343,8 @@ internal sealed class RenderSurface(Window window)
 
         if (!SDL.RenderPresent(_native))
             throw Error("Presenting the frame");
+
+        window.NotifyFirstFramePresented();
     }
 
     public void Start()
