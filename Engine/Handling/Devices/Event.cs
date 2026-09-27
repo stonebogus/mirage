@@ -14,7 +14,8 @@ namespace Mirage.Handling.Devices;
 /// <param name="identifier">The stable registration identifier.</param>
 /// <param name="source">The source that activates this action.</param>
 public abstract class InputEvent<TPayload, TSource>(string identifier, TSource source)
-    : Signal<TPayload>, IIdentifiable<string>
+    : Signal<TPayload>,
+        IIdentifiable<string>
 {
     /// <inheritdoc />
     public string Identifier { get; } = identifier;

@@ -12,7 +12,29 @@ namespace Mirage.Noding;
 public class NodeManager : Module
 {
     private readonly Store<Node> _activeRoot;
+    private bool _composed;
+    private bool _compositionStarted;
+    private bool _configured;
+    private bool _configurationStarted;
     private bool _restoringRoots;
+
+    /// <summary>
+    /// Gets the currently selected root.
+    /// </summary>
+    /// <remarks>
+    /// The selected root is only loaded while the node manager is running.
+    /// Changes made by <see cref="Switch(string)"/> are published through this store.
+    /// </remarks>
+    public IReadOnlyStore<Node> ActiveRoot { get; }
+
+    /// <summary>
+    /// Gets the roots registered in the node manager, indexed by stable identifiers.
+    /// </summary>
+    /// <remarks>
+    /// A root identifier is initially obtained from its name but does not
+    /// automatically change if the node is renamed.
+    /// </remarks>
+    public ReactiveDictionary<string, Node> Roots { get; } = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NodeManager"/> class.
@@ -32,29 +54,40 @@ public class NodeManager : Module
         Roots.OnUpdate.Connect(OnRootUpdated);
         Roots.OnClear.Connect(OnRootsClearing);
 
+        Roots.Add(initial.Name.Get(), initial);
+
         foreach (var root in roots ?? [])
             Roots.Add(root.Name.Get(), root);
-
-        Roots.Add(initial.Name.Get(), initial);
     }
 
-    /// <summary>
-    /// Gets the currently selected root.
-    /// </summary>
-    /// <remarks>
-    /// The selected root is only loaded while the graph module is running.
-    /// Changes made by <see cref="Switch(string)"/> are published through this store.
-    /// </remarks>
-    public IReadOnlyStore<Node> ActiveRoot { get; }
+    private void EnsureComposed()
+    {
+        if (_composed)
+            return;
 
-    /// <summary>
-    /// Gets the roots registered in the graph, indexed by stable identifiers.
-    /// </summary>
-    /// <remarks>
-    /// A root identifier is initially obtained from its name but does not
-    /// automatically change if the node is renamed.
-    /// </remarks>
-    public ReactiveDictionary<string, Node> Roots { get; } = [];
+        if (_compositionStarted)
+            throw new InvalidOperationException("Composition has already started or failed.");
+
+        _compositionStarted = true;
+
+        foreach (var root in Compose())
+            Roots.Add(root.Name.Get(), root);
+
+        _composed = true;
+    }
+
+    private void EnsureConfigured()
+    {
+        if (_configured)
+            return;
+
+        if (_configurationStarted)
+            throw new InvalidOperationException("Configuration has already started or failed.");
+
+        _configurationStarted = true;
+        Configure();
+        _configured = true;
+    }
 
     private void OnRootAdded(KeyValuePair<string, Node> entry)
     {
@@ -147,7 +180,7 @@ public class NodeManager : Module
             return;
 
         throw new InvalidOperationException(
-            "Cannot clear graph roots while an active root is registered."
+            "Cannot clear node manager roots while an active root is registered."
         );
     }
 
@@ -161,6 +194,7 @@ public class NodeManager : Module
         {
             next.Load();
             _activeRoot.Set(next);
+
             Telemetry.Send(
                 $"NodeManager switched active root from '{current.Name.Get()}' to '{next.Name.Get()}'.",
                 Identifier
@@ -217,6 +251,33 @@ public class NodeManager : Module
         }
     }
 
+    /// <summary>
+    /// Composes the additional roots managed by this node manager.
+    /// </summary>
+    /// <returns>The roots to register, in enumeration order.</returns>
+    /// <remarks>
+    /// Composition occurs once when the node manager first starts.
+    /// The initial and constructor-provided roots are registered before composed roots.
+    /// All composed roots are registered before configuration occurs.
+    /// The node manager owns and destroys all registered roots.
+    /// If composition fails, later lifecycle calls reject further initialization.
+    /// </remarks>
+    protected virtual IEnumerable<Node> Compose()
+    {
+        yield break;
+    }
+
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup.
+    /// </summary>
+    /// <remarks>
+    /// The initial, constructor-provided, and composed roots are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
+
     /// <inheritdoc />
     protected override void OnDestroy()
     {
@@ -247,6 +308,9 @@ public class NodeManager : Module
     /// <inheritdoc />
     protected override void OnStart()
     {
+        EnsureComposed();
+        EnsureConfigured();
+
         var active = _activeRoot.Get();
 
         ValidateLoadableRoot(active);
@@ -271,8 +335,8 @@ public class NodeManager : Module
     /// </summary>
     /// <param name="identifier">The identifier of the root to select.</param>
     /// <remarks>
-    /// When the graph is idle, the root is selected without being loaded.
-    /// When the graph is running, the current root is unloaded and the selected
+    /// When the node manager is idle, the root is selected without being loaded.
+    /// When the node manager is running, the current root is unloaded and the selected
     /// root is loaded immediately.
     /// </remarks>
     /// <exception cref="Mirage.Common.Lifecycle.DestroyedObjectException">
@@ -284,10 +348,10 @@ public class NodeManager : Module
     /// </exception>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the requested root does not exist, cannot be loaded, or the
-    /// graph is currently starting or stopping.
+    /// node manager is currently starting or stopping.
     /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when the graph has an unrecognized module state.
+    /// Thrown when the node manager has an unrecognized module state.
     /// </exception>
     public void Switch(string identifier)
     {
@@ -295,9 +359,7 @@ public class NodeManager : Module
         ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
 
         if (!Roots.TryGetValue(identifier, out var next))
-        {
             throw new InvalidOperationException($"Root '{identifier}' does not exist.");
-        }
 
         var current = _activeRoot.Get();
 
@@ -320,7 +382,7 @@ public class NodeManager : Module
             case ModuleState.Starting:
             case ModuleState.Stopping:
                 throw new InvalidOperationException(
-                    $"Cannot switch roots while graph is in state '{state}'."
+                    $"Cannot switch roots while node manager is in state '{state}'."
                 );
 
             default:

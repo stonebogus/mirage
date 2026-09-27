@@ -71,7 +71,8 @@ public enum ModuleState
 /// The identifiers of the modules required by this module.
 /// </param>
 public abstract class Module(string identifier, IEnumerable<string>? dependencies = null)
-    : Destroyable, IIdentifiable<string>
+    : Destroyable,
+        IIdentifiable<string>
 {
     private readonly Dictionary<string, Module> _injectedDependencies = [];
     private readonly Store<ModuleState> _state = new(ModuleState.Idle);

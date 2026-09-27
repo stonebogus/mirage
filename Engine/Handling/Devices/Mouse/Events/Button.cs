@@ -16,12 +16,7 @@ namespace Mirage.Handling.Devices.Mouse.Events;
 /// <param name="Position">
 /// The cursor position within the window when the event occurred.
 /// </param>
-public record MouseButtonEventPayload(
-    MouseButton Button,
-    bool Down,
-    int Clicks,
-    Vector2 Position
-);
+public record MouseButtonEventPayload(MouseButton Button, bool Down, int Clicks, Vector2 Position);
 
 /// <summary>
 /// Initializes a new instance of the <see cref="MouseButtonEvent"/> class.

@@ -315,13 +315,10 @@ public class Node : Destroyable, IIdentifiable<Guid>
 {
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     private bool _restoringParent;
-
-    /// <inheritdoc />
-    public Guid Identifier { get; } = Guid.NewGuid();
 
     /// <summary>
     /// Gets the mutable name of the node.
@@ -427,6 +424,9 @@ public class Node : Destroyable, IIdentifiable<Guid>
             return parent is null ? Name.Get() : $"{parent.Path}/{Name.Get()}";
         }
     }
+
+    /// <inheritdoc />
+    public Guid Identifier { get; } = Guid.NewGuid();
 
     private void EnsureComposed()
     {
