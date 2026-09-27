@@ -10,291 +10,211 @@
 
 ---
 
-Mirage is an experimental 2D game engine for C# and .NET, built around small, modular, and composable systems.
+Mirage is an experimental 2D game engine for C# and .NET.
 
-It provides the foundations for building complete 2D games while keeping the relationship between the game and the engine explicit. Instead of hiding everything behind a large framework, Mirage is composed from focused systems that can work together without becoming one.
+It is built around small systems that can be composed together while keeping their responsibilities separate. Mirage is currently developed alongside games at Stone Bogus and evolves as those projects need it.
 
 > [!WARNING]
-> Mirage is experimental software and is under active development. APIs, behavior, architecture, and project structure may change as the engine evolves.
+> Mirage is under active development. APIs and project structure may change.
 
 ## Features
 
-- Hierarchical **node system** for structuring games and scenes
-- 2D **spatial transforms** and cameras
-- Layer-based **rendering**
-- Primitives, textures, and arbitrary meshes
-- Event-driven **keyboard and mouse input**
+- Hierarchical node system
+- 2D spatial nodes and cameras
+- Layer-based rendering
+- Shapes, textures, text, and meshes
+- Keyboard and mouse input
+- 2D physics and simulation spaces
 - Resource loading and decoding
-- Ordered update scheduling
-- Window and application lifecycle management
-- Reactive state and event primitives
+- Update scheduling
+- Window management
+- Reactive events and state
 - Modular game composition
 
-## A Small Example
+## Example
 
-A Mirage game is composed from modules.
+A Mirage game is assembled from modules.
 
 ```csharp
 internal sealed class MyGame : Game
 {
-    public readonly Window MainWindow;
-    public readonly WindowManager WindowManager;
-    public readonly NodeManager NodeManager;
-    public readonly Renderer Renderer;
-    public readonly Scheduler Scheduler;
+    public readonly MyWindowManager Windows;
+    public readonly MyNodeManager Nodes;
+    public readonly MyInputHandler Input;
+    public readonly MySimulator Simulator;
+    public readonly MyRenderer Renderer;
+    public readonly MyScheduler Scheduler;
 
     public MyGame()
     {
-        MainWindow = new Window(
-            new WindowOptions
-            {
-                Identifier = "Primary",
-                Title = "My Game",
-                Size = new Vector2(1280, 720),
-                Resizable = true,
-                VSync = true,
-            }
+        Windows = new MyWindowManager();
+        Nodes = new MyNodeManager();
+        Simulator = new MySimulator();
+
+        Renderer = new MyRenderer(
+            Windows.Main,
+            Nodes,
+            Nodes.Main.Camera
         );
 
-        WindowManager = new WindowManager(
-            windows: [MainWindow]
+        Input = new MyInputHandler(Windows.Main);
+
+        Scheduler = new MyScheduler(
+            Windows,
+            Input,
+            Nodes,
+            Simulator,
+            Renderer
         );
-
-        var camera = new Camera();
-
-        NodeManager = new NodeManager(
-            new Node(
-                "Root",
-                new NodeOptions
-                {
-                    Subnodes = [camera],
-                }
-            )
-        );
-
-        Renderer = new Renderer(
-            window: MainWindow,
-            camera: camera
-        );
-
-        Scheduler = new Scheduler();
     }
 
     protected override IEnumerable<Module> Compose()
     {
-        yield return WindowManager;
-        yield return NodeManager;
+        yield return Windows;
+        yield return Nodes;
+        yield return Input;
+        yield return Simulator;
         yield return Renderer;
         yield return Scheduler;
     }
 }
 ```
 
-The engine takes care of the lifecycle of the composed modules while the game decides how those systems are connected.
-
-Composition follows `Construct → Compose → Configure → Start/use`. Constructors establish
-required dependencies and initial values. Override `Compose()` to declare managed objects,
-and `Configure()` to connect events or configure relationships after all composed objects
-have been registered. Constructor-provided objects are registered first, followed by composed
-objects in enumeration order.
-
-`Game.Configure()` runs before module dependency resolution, injection, and startup;
-`Require<TModule>()` can access composed modules there. `Game.OnStart()` remains runtime
-startup behavior after all modules have started. Each child system configures at its own
-startup or first-use boundary; configuring a parent does not eagerly initialize its children.
-
-Composition and configuration are each attempted at most once. Stop/start and load/unload
-cycles reuse the configured structure. If either structural phase throws, later lifecycle
-calls reject initialization instead of repeating partial event connections or other side
-effects. Destroy the failed object and create a new instance. Objects registered before a
-failure retain the containing type's normal ownership rules; objects rejected before
-registration remain the caller's responsibility.
-
-The configuration phase applies to games, schedulers, update channels, renderers, draw layers,
-window managers, input handlers, keyboards, mice, loaders, nodes, simulators, and simulation
-spaces. Lazy systems stay lazy: draw layers configure on their first draw, input devices on
-first processing, and loaders on startup or first load. Update channels configure when
-prepared by their scheduler or before a direct first update; simulation spaces configure when
-prepared by their simulator. Ownership is documented on each composition hook.
-
+The game owns these modules and coordinates their lifecycle. Individual modules remain responsible for their own part of the engine.
 
 ## Nodes
 
-Nodes are the structural foundation of Mirage.
-
-They form hierarchical trees that can represent objects, scenes, cameras, or any other part of a game.
-
-```csharp
-var root = new Node(
-    "World",
-    new NodeOptions
-    {
-        Subnodes =
-        [
-            new Node("Player"),
-            new Node("Enemies"),
-            new Node("Environment"),
-        ],
-    }
-);
-```
-
-Specialized nodes can extend this structure with additional behavior. Spatial nodes introduce position, rotation, scale, and hierarchical transforms for objects that exist in the 2D world.
+Nodes represent the structure of a game.
 
 ```text
-World
+Main
 ├── Camera
 ├── Player
-├── Enemies
+├── World
 │   ├── Enemy
 │   └── Enemy
-└── Environment
+└── UI
 ```
 
-The node tree provides structure without requiring every engine system to become part of the node hierarchy.
-
-## Rendering
-
-Mirage provides a 2D rendering system built around cameras and ordered drawing layers.
-
-The graphics system supports common primitives alongside textures and arbitrary meshes, allowing simple shapes and custom geometry to participate in the same rendering pipeline.
+Nodes can compose other nodes and can be added or moved while the game is running.
 
 ```csharp
-context.DrawLine(
-    new Vector2(-100, 0),
-    new Vector2(100, 0),
-    Color.White,
-    thickness: 8f
-);
-
-context.FillCircle(
-    Vector2.Zero,
-    48f,
-    Color.White
-);
-```
-
-Rendering remains separate from the node system. Layers decide what should be rendered, while cameras determine how the world is viewed.
-
-## Input
-
-Input is represented through devices and events.
-
-Keyboard and mouse input can be connected directly to game behavior without requiring input polling to become part of the rest of the engine architecture.
-
-```csharp
-var jump = new KeyboardEvent(
-    "Jump",
-    KeyboardKey.Space
-);
-
-jump.Connect(payload =>
+internal sealed class MyRoot : Node
 {
-    if (payload.Down)
-        Jump();
-});
+    public readonly Camera Camera = new();
+    public readonly Player Player = new();
+
+    public MyRoot()
+        : base("Main") { }
+
+    protected override IEnumerable<Node> Compose()
+    {
+        yield return Camera;
+        yield return Player;
+    }
+}
 ```
 
-Multiple devices can be handled together through an input handler associated with a window.
+A `NodeManager` can expose selected module dependencies to its nodes. This allows game nodes to access systems they depend on without passing those systems through every constructor.
 
-## Scheduling
+```csharp
+internal sealed class Player() : SpatialNode("Player")
+{
+    private MyInputHandler Input =>
+        Require<MyInputHandler>();
 
-Mirage uses update channels to coordinate continuously running systems.
+    protected override void Configure()
+    {
+        Input.Keyboard.MoveLeft.Connect(OnMoveLeft);
+        Input.Keyboard.MoveRight.Connect(OnMoveRight);
+    }
+}
+```
 
-Channels can contain game logic, node updates, rendering, or other systems that need to participate in the main loop.
+Dependencies available to nodes are explicitly selected by their `NodeManager`.
+
+## Composition & Configuration
+
+Mirage uses composition to declare owned objects and configuration to connect them after they have been composed.
+
+`Compose()` defines the objects that belong to a system:
+
+```csharp
+protected override IEnumerable<InputDevice> Compose()
+{
+    yield return Keyboard;
+    yield return Mouse;
+}
+```
+
+`Configure()` can then connect behavior or establish relationships once those objects are available:
+
+```csharp
+protected override void Configure()
+{
+    Keyboard.Jump.Connect(OnJump);
+}
+```
+
+Together, they follow a simple lifecycle:
 
 ```text
-Scheduler
-│
-├── Main
-│   └── Game / Node updates
-│
-└── Render
-    └── Renderer
+Construct → Compose → Configure → Start / Use
 ```
 
-Channels are ordered independently, keeping scheduling separate from the systems being scheduled.
+This pattern is used throughout Mirage where it makes sense, including games, nodes, input devices, rendering layers, scheduling channels, windows, and simulation spaces.
 
-## Loading
+`Configure()` can then connect behavior after composition has taken place.
 
-Game resources are loaded through a common resource loader.
+The general lifecycle is:
 
-Decoders transform files into resources understood by Mirage.
-
-```csharp
-var loader = new Loader(
-    root: "Assets",
-    decoders: [new ImageDecoder()]
-);
-
-var image = loader.Load<Image>("player.png");
-var texture = new Texture(image);
+```text
+Construct → Compose → Configure → Start / Use
 ```
 
-This keeps file access and resource decoding separate from graphics and game logic.
+The same pattern is used across the engine where it makes sense, including games, nodes, input devices, rendering layers, scheduling channels, windows, and simulation spaces.
 
 ## Architecture
 
-Mirage is divided into focused systems with clearly defined responsibilities.
+Mirage is split into focused projects:
 
 ```text
-                         Game
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-     Noding           Scheduling        Windowing
-        │                 │                 │
-     Spatial           Updates           Handling
-        │
-    Rendering
-        │
-     Graphics
-
-              Loading ─── Resources
+Common
+Graphics
+Handling
+Loading
+Math
+Noding
+Physics
+Rendering
+Scheduling
+Simulating
+Spatial
+Windowing
 ```
 
-At the center is `Game`, which owns the application lifecycle and composes the modules that make up a game.
+They cover different parts of the engine without requiring everything to belong to one large framework.
 
-The major concepts are intentionally independent:
-
-- **Noding** organizes hierarchical game state.
-- **Spatial** brings nodes into the 2D world.
-- **Graphics** provides graphics resources and primitives.
-- **Rendering** turns game state into an image.
-- **Handling** represents user input.
-- **Scheduling** coordinates updates.
-- **Loading** creates resources from external assets.
-- **Windowing** manages native game windows.
-- **Common** provides shared lifecycle, events, collections, resources, and other foundational primitives.
-
-The goal is not to make every system interchangeable or abstract every implementation detail. Mirage instead tries to keep each responsibility small, understandable, and composable.
+For example, the node hierarchy describes the game world, while rendering, input, physics, scheduling, and windowing remain separate systems.
 
 ## Philosophy
 
-Mirage is intentionally focused.
+Mirage is a focused 2D engine.
 
-It is a **2D engine**, rather than a generalized engine where every concept must accommodate both 2D and 3D.
+It prefers small systems, explicit ownership, composition, and existing .NET types where they already solve a problem well.
 
-It prefers existing .NET types when they already represent a concept well, and introduces engine-specific abstractions when they provide meaningful behavior.
-
-It favors composition over large inheritance hierarchies, explicit ownership over hidden global state, and small systems over monolithic managers.
-
-Most importantly, Mirage is being built alongside real games. Its architecture is expected to evolve as those games expose what the engine actually needs.
+The engine does not try to abstract every implementation detail or support every kind of game. Its architecture grows alongside the games being built with it.
 
 ## Development
 
 Active development takes place on the `develop` branch.
 
-To work with the latest development version:
-
 ```bash
 git checkout develop
 ```
 
-The default branch may not contain the latest changes.
-
 > [!NOTE]
-> Mirage is not considered stable yet. Documentation may occasionally lag behind development, and examples written against the current API may require changes in future versions.
+> Mirage is not stable yet. Documentation and examples may change as the engine develops.
 
 ## License
 
