@@ -299,14 +299,3 @@ The default branch may not contain the latest changes.
 ## License
 
 Mirage is licensed under the [MIT License](LICENSE).
-## Composition regression tests
-
-The repository includes a dependency-free executable regression suite. Run it with:
-
-```sh
-dotnet build Mirage.slnx -m:1
-dotnet test Tests/Composition/Mirage.Composition.Tests.csproj -m:1
-```
-
-The suite uses SDL's dummy video driver and software renderer, so no display is needed.
-It can also be run directly with `dotnet run --project Tests/Composition --no-build`.
