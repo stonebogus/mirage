@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using Mirage.Common.Collections;
 using Mirage.Common.Events;
@@ -224,6 +225,11 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
     /// <summary>
     /// Gets the store that controls and reports the title of the window.
     /// </summary>
+    /// <remarks>
+    /// Store changes are immediate. While open, native title changes are coalesced
+    /// during window updates, at most once every 250 milliseconds of real elapsed time.
+    /// Creation uses the current title immediately.
+    /// </remarks>
     public readonly Store<string> Title;
 
     /// <summary>
@@ -304,7 +310,7 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        if (_opened.Get())
+        if (Native != IntPtr.Zero)
             OnClose();
 
         _focused.Destroy();
@@ -329,13 +335,16 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
     {
         ThrowIfDestroyed();
 
-        if (!_opened.Get())
+        if (Native == IntPtr.Zero)
             return;
 
         OnClose();
 
+        var generation = _nativeGeneration;
         _focused.Set(false);
-        _opened.Set(false);
+
+        if (!Destroyed && _nativeGeneration == generation)
+            _opened.Set(false);
     }
 
     /// <summary>
@@ -387,7 +396,8 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
 
         OnOpen();
 
-        _opened.Set(true);
+        if (!Destroyed && Native != IntPtr.Zero)
+            _opened.Set(true);
     }
 }
 
@@ -402,6 +412,25 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
 /// </remarks>
 public partial class Window
 {
+    private static readonly TimeSpan NativeRefreshInterval = TimeSpan.FromMilliseconds(250);
+    private static readonly Dictionary<uint, Window> NativeWindows = [];
+
+    [Flags]
+    private enum NativeState
+    {
+        None = 0,
+        Flags = 1,
+        Position = 2,
+        Size = 4,
+        All = Flags | Position | Size,
+    }
+
+    private NativeState _dirtyState;
+    private uint _windowId;
+    private long _nativeGeneration;
+    private long _lastTitleUpdate;
+    private long _lastNativePoll;
+    private bool _titlePending;
     private object? _publishingStore;
     private object? _publishingValue;
 
@@ -449,21 +478,51 @@ public partial class Window
     {
         var type = (SDL.EventType)@event.Type;
 
+        var dirty = type switch
+        {
+            SDL.EventType.WindowMoved => NativeState.Position,
+            SDL.EventType.WindowResized or SDL.EventType.WindowPixelSizeChanged => NativeState.Size,
+            SDL.EventType.WindowShown
+            or SDL.EventType.WindowHidden
+            or SDL.EventType.WindowFocusGained
+            or SDL.EventType.WindowFocusLost
+            or SDL.EventType.WindowMinimized
+            or SDL.EventType.WindowMaximized
+            or SDL.EventType.WindowRestored
+            or SDL.EventType.WindowEnterFullscreen
+            or SDL.EventType.WindowLeaveFullscreen => NativeState.Flags,
+            _ => NativeState.None,
+        };
+
+        // SDL's queue is shared: another Window may consume our state events.
+        if (
+            dirty != NativeState.None
+            && NativeWindows.TryGetValue(@event.Window.WindowID, out var target)
+        )
+            target._dirtyState |= dirty;
+
         if (
             type != SDL.EventType.Quit
             && (type != SDL.EventType.WindowCloseRequested || !BelongsToWindow(@event, windowId))
         )
             return true;
+
         Close();
         return false;
     }
 
-    private void Publish<TValue>(IntPtr window, Store<TValue> store, Func<TValue> read)
+    private bool IsCurrentWindow(IntPtr window, long generation)
     {
-        if (Native != window || Destroyed)
-            return;
+        return window != IntPtr.Zero
+            && Native == window
+            && _nativeGeneration == generation
+            && !Destroyed;
+    }
 
-        var value = read();
+    private void Publish<TValue>(IntPtr window, long generation, Store<TValue> store, TValue value)
+    {
+        if (!IsCurrentWindow(window, generation))
+            return;
 
         if (EqualityComparer<TValue>.Default.Equals(store.Get(), value))
             return;
@@ -496,51 +555,69 @@ public partial class Window
         );
     }
 
-    private void SynchronizeState(IntPtr window)
+    private void SynchronizeState(IntPtr window, long generation, bool poll)
     {
-        var flags = SDL.GetWindowFlags(window);
-
-        Publish(window, Mode, () => FromSdlFlags(flags));
-
-        if (Native != window)
+        if (!IsCurrentWindow(window, generation))
             return;
 
-        Publish(
-            window,
-            Position,
-            () =>
+        var dirty = _dirtyState;
+        _dirtyState = NativeState.None;
+
+        if ((dirty & NativeState.Flags) != 0 || poll)
+        {
+            var flags = SDL.GetWindowFlags(window);
+
+            if ((dirty & NativeState.Flags) != 0)
             {
-                Ensure(
-                    SDL.GetWindowPosition(window, out var x, out var y),
-                    "Getting window position"
-                );
+                Publish(window, generation, Mode, FromSdlFlags(flags));
 
-                return new Vector2(x, y);
+                if (!_deferVisibilityUntilFirstFrame || _firstFramePresented)
+                    Publish(window, generation, Visible, !flags.HasFlag(SDL.WindowFlags.Hidden));
+
+                Publish(window, generation, _focused, flags.HasFlag(SDL.WindowFlags.InputFocus));
             }
-        );
 
-        Publish(
-            window,
-            Size,
-            () =>
-            {
-                Ensure(
-                    SDL.GetWindowSize(window, out var width, out var height),
-                    "Getting window size"
-                );
+            Publish(window, generation, Resizable, flags.HasFlag(SDL.WindowFlags.Resizable));
+        }
 
-                return new Vector2(width, height);
-            }
-        );
+        if (!IsCurrentWindow(window, generation))
+            return;
 
-        Publish(window, Resizable, () => flags.HasFlag(SDL.WindowFlags.Resizable));
+        if ((dirty & NativeState.Position) != 0)
+        {
+            Ensure(SDL.GetWindowPosition(window, out var x, out var y), "Getting window position");
+            Publish(window, generation, Position, new Vector2(x, y));
+        }
 
-        if (!_deferVisibilityUntilFirstFrame || _firstFramePresented)
-            Publish(window, Visible, () => !flags.HasFlag(SDL.WindowFlags.Hidden));
+        if (!IsCurrentWindow(window, generation))
+            return;
 
-        Publish(window, _focused, () => flags.HasFlag(SDL.WindowFlags.InputFocus));
+        if ((dirty & NativeState.Size) != 0)
+        {
+            Ensure(SDL.GetWindowSize(window, out var width, out var height), "Getting window size");
+            Publish(window, generation, Size, new Vector2(width, height));
+        }
 
-        Publish(window, Title, () => SDL.GetWindowTitle(window));
+        // SDL has no title or resizability event. Never overwrite a pending title request.
+        if (poll && IsCurrentWindow(window, generation) && !_titlePending)
+            Publish(window, generation, Title, SDL.GetWindowTitle(window));
+    }
+
+    private void FlushTitle(IntPtr window, long now)
+    {
+        if (
+            !_titlePending
+            || Stopwatch.GetElapsedTime(_lastTitleUpdate, now) < NativeRefreshInterval
+        )
+            return;
+
+        var title = Title.Get();
+
+        if (SDL.GetWindowTitle(window) != title)
+            Ensure(SDL.SetWindowTitle(window, title), "Changing window title");
+
+        _titlePending = false;
+        _lastTitleUpdate = Stopwatch.GetTimestamp();
     }
 
     private static (int X, int Y) ToNativePosition(Vector2 position)
@@ -616,7 +693,12 @@ public partial class Window
         if (window == IntPtr.Zero)
             return;
 
+        NativeWindows.Remove(_windowId);
         Native = IntPtr.Zero;
+        _windowId = 0;
+        _nativeGeneration++;
+        _titlePending = false;
+        _dirtyState = NativeState.None;
 
         SDL.DestroyWindow(window);
         VideoRuntime.Release();
@@ -635,6 +717,8 @@ public partial class Window
 
         if (window == IntPtr.Zero)
             return;
+
+        _dirtyState |= NativeState.Flags;
 
         var flags = SDL.GetWindowFlags(window);
 
@@ -695,6 +779,8 @@ public partial class Window
         if (window == IntPtr.Zero)
             return;
 
+        _dirtyState |= NativeState.Position;
+
         var flags = SDL.GetWindowFlags(window);
 
         if (flags.HasFlag(SDL.WindowFlags.Fullscreen))
@@ -744,9 +830,16 @@ public partial class Window
         }
 
         Native = window;
+        var generation = ++_nativeGeneration;
+        _titlePending = false;
+        _dirtyState = NativeState.All;
+        _lastTitleUpdate = _lastNativePoll = Stopwatch.GetTimestamp();
 
         try
         {
+            _windowId = SDL.GetWindowID(window);
+            NativeWindows.Add(_windowId, this);
+
             if (HasInitialPosition && requestedMode == WindowMode.Normal)
             {
                 var position = ToNativePosition(Position.Get());
@@ -757,21 +850,21 @@ public partial class Window
                 );
             }
 
-            SynchronizeState(window);
+            SynchronizeState(window, generation, true);
         }
         catch
         {
-            Native = IntPtr.Zero;
-
-            SDL.DestroyWindow(window);
-            VideoRuntime.Release();
+            if (IsCurrentWindow(window, generation))
+                OnClose();
 
             throw;
         }
     }
 
     /// <summary>
-    /// Processes pending window events and synchronizes window state.
+    /// Pumps SDL events, synchronizes changed native state, and flushes pending title changes.
+    /// Title and resizability are also polled every 250 milliseconds because SDL has no
+    /// dedicated change events for them.
     /// </summary>
     protected virtual void OnProcess()
     {
@@ -781,18 +874,28 @@ public partial class Window
         if (window == IntPtr.Zero)
             return;
 
-        var windowId = SDL.GetWindowID(window);
+        var windowId = _windowId;
+        var generation = _nativeGeneration;
 
         while (SDL.PollEvent(out var @event))
         {
             _frameEvents.Add(@event);
 
-            if (!ProcessEvent(@event, windowId))
+            if (!ProcessEvent(@event, windowId) || !IsCurrentWindow(window, generation))
                 break;
         }
 
-        if (Native == window && !Destroyed)
-            SynchronizeState(window);
+        if (!IsCurrentWindow(window, generation))
+            return;
+
+        var now = Stopwatch.GetTimestamp();
+        FlushTitle(window, now);
+
+        var poll = Stopwatch.GetElapsedTime(_lastNativePoll, now) >= NativeRefreshInterval;
+        if (poll)
+            _lastNativePoll = now;
+
+        SynchronizeState(window, generation, poll);
     }
 
     /// <summary>
@@ -808,6 +911,8 @@ public partial class Window
 
         if (window == IntPtr.Zero)
             return;
+
+        _dirtyState |= NativeState.Flags;
 
         var flags = SDL.GetWindowFlags(window);
         var current = flags.HasFlag(SDL.WindowFlags.Resizable);
@@ -833,6 +938,8 @@ public partial class Window
         if (window == IntPtr.Zero)
             return;
 
+        _dirtyState |= NativeState.Size;
+
         var flags = SDL.GetWindowFlags(window);
 
         if (flags.HasFlag(SDL.WindowFlags.Fullscreen))
@@ -852,23 +959,16 @@ public partial class Window
     }
 
     /// <summary>
-    /// Applies the requested title to the native window.
+    /// Coalesces the requested title for a subsequent window update.
     /// </summary>
     /// <param name="title">The requested window title.</param>
+    /// <remarks>Native changes occur at most once every 250 milliseconds while open.</remarks>
     protected virtual void OnTitleChanged(string title)
     {
-        if (!ShouldApply(Title, title))
+        if (!ShouldApply(Title, title) || Native == IntPtr.Zero)
             return;
 
-        var window = Native;
-
-        if (window == IntPtr.Zero)
-            return;
-
-        if (SDL.GetWindowTitle(window) == title)
-            return;
-
-        Ensure(SDL.SetWindowTitle(window, title), "Changing window title");
+        _titlePending = true;
     }
 
     /// <summary>
@@ -913,6 +1013,8 @@ public partial class Window
 
         if (window == IntPtr.Zero)
             return;
+
+        _dirtyState |= NativeState.Flags;
 
         var flags = SDL.GetWindowFlags(window);
         var current = !flags.HasFlag(SDL.WindowFlags.Hidden);
