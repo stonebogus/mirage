@@ -1,5 +1,6 @@
 using Mirage.Common;
 using Mirage.Common.Collections;
+using Mirage.Common.Interfaces;
 
 namespace Mirage.Loading;
 
@@ -15,7 +16,11 @@ namespace Mirage.Loading;
 /// <param name="Path">
 /// The absolute path of the resource.
 /// </param>
-public sealed record LoadContext(string Identifier, string Path);
+public sealed record LoadContext(string Identifier, string Path) : IIdentifiable<string>
+{
+    /// <inheritdoc />
+    public string Identifier { get; init; } = Identifier;
+}
 
 /// <summary>
 /// Loads, caches and unloads resources.

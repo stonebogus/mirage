@@ -1,4 +1,5 @@
 using Mirage.Common.Events;
+using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Common.Telemetry;
 
@@ -70,7 +71,7 @@ public enum ModuleState
 /// The identifiers of the modules required by this module.
 /// </param>
 public abstract class Module(string identifier, IEnumerable<string>? dependencies = null)
-    : Destroyable
+    : Destroyable, IIdentifiable<string>
 {
     private readonly Dictionary<string, Module> _injectedDependencies = [];
     private readonly Store<ModuleState> _state = new(ModuleState.Idle);
@@ -81,10 +82,8 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
     /// </summary>
     public readonly IReadOnlyList<string> Dependencies = [.. dependencies ?? []];
 
-    /// <summary>
-    /// Gets the unique module identifier.
-    /// </summary>
-    public readonly string Identifier = identifier;
+    /// <inheritdoc />
+    public string Identifier { get; } = identifier;
 
     /// <summary>
     /// Gets the telemetry manager available to the module after injection.

@@ -1,4 +1,5 @@
 using Mirage.Common.Collections;
+using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 
 namespace Mirage.Handling.Devices;
@@ -10,11 +11,9 @@ namespace Mirage.Handling.Devices;
 /// Provides a lifecycle and processing hook for a window input source.
 /// </remarks>
 /// <param name="identifier">The stable identifier of this device.</param>
-public abstract class InputDevice(string identifier) : Destroyable
+public abstract class InputDevice(string identifier) : Destroyable, IIdentifiable<string>
 {
-    /// <summary>
-    /// Gets the stable identifier used to register this device.
-    /// </summary>
+    /// <inheritdoc />
     public string Identifier { get; } = identifier;
 
     /// <summary>

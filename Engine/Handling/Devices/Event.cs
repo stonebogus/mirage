@@ -1,4 +1,5 @@
 using Mirage.Common.Events;
+using Mirage.Common.Interfaces;
 
 namespace Mirage.Handling.Devices;
 
@@ -13,12 +14,10 @@ namespace Mirage.Handling.Devices;
 /// <param name="identifier">The stable registration identifier.</param>
 /// <param name="source">The source that activates this action.</param>
 public abstract class InputEvent<TPayload, TSource>(string identifier, TSource source)
-    : Signal<TPayload>
+    : Signal<TPayload>, IIdentifiable<string>
 {
-    /// <summary>
-    /// Gets the stable identifier used to register this action.
-    /// </summary>
-    public readonly string Identifier = identifier;
+    /// <inheritdoc />
+    public string Identifier { get; } = identifier;
 
     /// <summary>
     /// Gets the reactive source associated with this action.

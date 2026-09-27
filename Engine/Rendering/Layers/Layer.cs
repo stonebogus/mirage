@@ -1,3 +1,4 @@
+using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Graphics.Interfaces;
 
@@ -24,7 +25,7 @@ public enum DrawLayerPriority
 /// <summary>
 /// Groups drawable objects and draws them in a single layer.
 /// </summary>
-public class DrawLayer : Destroyable
+public class DrawLayer : Destroyable, IIdentifiable<string>
 {
     private bool _composed;
     private bool _compositionStarted;
@@ -37,10 +38,8 @@ public class DrawLayer : Destroyable
     /// <remarks>The layer references its entries without owning or destroying them.</remarks>
     public readonly List<IDrawable> Entries = [];
 
-    /// <summary>
-    /// Gets the unique identifier of this layer.
-    /// </summary>
-    public readonly string Identifier;
+    /// <inheritdoc />
+    public string Identifier { get; }
 
     /// <summary>
     /// Gets the priority that determines when this layer is drawn.

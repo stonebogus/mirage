@@ -1,6 +1,7 @@
 using System.Numerics;
 using Mirage.Common.Collections;
 using Mirage.Common.Events;
+using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
@@ -11,7 +12,7 @@ namespace Mirage.Windowing;
 /// <summary>
 /// Defines the initial configuration of a <see cref="Window"/>.
 /// </summary>
-public sealed class WindowOptions
+public sealed class WindowOptions : IIdentifiable<string>
 {
     /// <summary>
     /// Gets the cursors to register initially. The default is an empty sequence.
@@ -19,9 +20,8 @@ public sealed class WindowOptions
     /// <remarks>The window stores these references but does not own the cursors.</remarks>
     public IEnumerable<Cursor> Cursors = [];
 
-    /// <summary>
-    /// Gets the window identifier. The default is <c>"window"</c>.
-    /// </summary>
+    /// <inheritdoc />
+    /// <remarks>The default is <c>"window"</c>.</remarks>
     public string Identifier { get; init; } = "window";
 
     /// <summary>
@@ -99,7 +99,7 @@ public enum WindowMode
 /// are read-only because their values are controlled by SDL3.
 /// Registered cursors are references; the window does not own or destroy them.
 /// </remarks>
-public partial class Window : Destroyable, IUpdatable
+public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
 {
     private readonly List<SDL.Event> _frameEvents = [];
     private readonly Store<bool> _opened = new(false);
@@ -129,10 +129,8 @@ public partial class Window : Destroyable, IUpdatable
     /// </summary>
     public readonly IReadOnlyStore<bool> Focused;
 
-    /// <summary>
-    /// Gets the identifier of the window.
-    /// </summary>
-    public readonly string Identifier;
+    /// <inheritdoc />
+    public string Identifier { get; }
 
     /// <summary>
     /// Gets the store that controls and reports the window's display mode.

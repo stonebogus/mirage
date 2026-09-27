@@ -1,12 +1,13 @@
 using System.Numerics;
 using Mirage.Common.Collections;
 using Mirage.Common.Events;
+using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Physics.Interfaces;
 
 namespace Mirage.Simulating;
 
-public class SimulationSpace : Destroyable
+public class SimulationSpace : Destroyable, IIdentifiable<string>
 {
     private bool _composed;
     private bool _compositionStarted;
@@ -18,10 +19,8 @@ public class SimulationSpace : Destroyable
     /// </summary>
     public readonly Store<Vector2> Gravity;
 
-    /// <summary>
-    ///  Gets the unique identifier of this space.
-    /// </summary>
-    public readonly string Identifier;
+    /// <inheritdoc />
+    public string Identifier { get; }
 
     /// <summary>
     /// Gets the objects participating in the simulation space.

@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Mirage.Common.Events;
+using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Graphics.Resources;
 using SDL3;
@@ -46,7 +47,7 @@ public sealed class CursorOptions
 /// destroy cursors on the main thread while SDL's video subsystem is initialized.
 /// The cursor owns its native SDL handle but does not own its <see cref="Image"/>.
 /// </remarks>
-public sealed class Cursor : Destroyable
+public sealed class Cursor : Destroyable, IIdentifiable<string>
 {
     private IntPtr _native;
 
@@ -124,9 +125,7 @@ public sealed class Cursor : Destroyable
         });
     }
 
-    /// <summary>
-    /// Gets this cursor's identifier.
-    /// </summary>
+    /// <inheritdoc />
     public string Identifier { get; }
 
     /// <summary>

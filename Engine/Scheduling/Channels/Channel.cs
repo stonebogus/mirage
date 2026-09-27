@@ -1,4 +1,5 @@
 using Mirage.Common.Collections;
+using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Scheduling.Interfaces;
 
@@ -48,7 +49,7 @@ public enum UpdateChannelPriority
 /// Destroying a channel clears its entry references but does not destroy the
 /// entries themselves.
 /// </remarks>
-public class UpdateChannel : Destroyable
+public class UpdateChannel : Destroyable, IIdentifiable<string>
 {
     private double _accumulator;
     private bool _composed;
@@ -61,10 +62,8 @@ public class UpdateChannel : Destroyable
     /// </summary>
     public readonly ReactiveSet<IUpdatable> Entries = [];
 
-    /// <summary>
-    /// Gets the unique identifier of this channel.
-    /// </summary>
-    public readonly string Identifier;
+    /// <inheritdoc />
+    public string Identifier { get; }
 
     /// <summary>
     /// Gets the priority used to order this channel relative to other channels.

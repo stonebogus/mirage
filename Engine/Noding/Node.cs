@@ -1,5 +1,6 @@
 using Mirage.Common.Collections;
 using Mirage.Common.Events;
+using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 
 namespace Mirage.Noding;
@@ -310,7 +311,7 @@ public class NodeReactiveSet(Node owner) : ReactiveSet<Node>
 /// Nodes are identified independently by a unique <see cref="Identifier"/> and
 /// a mutable human-readable <see cref="Name"/>.
 /// </remarks>
-public class Node : Destroyable
+public class Node : Destroyable, IIdentifiable<Guid>
 {
     private bool _composed;
     private bool _compositionStarted;
@@ -319,10 +320,8 @@ public class Node : Destroyable
 
     private bool _restoringParent;
 
-    /// <summary>
-    /// Gets the unique identifier of the node.
-    /// </summary>
-    public readonly Guid Identifier = Guid.NewGuid();
+    /// <inheritdoc />
+    public Guid Identifier { get; } = Guid.NewGuid();
 
     /// <summary>
     /// Gets the mutable name of the node.
