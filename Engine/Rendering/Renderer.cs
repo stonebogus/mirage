@@ -22,8 +22,8 @@ public class Renderer : Module, IUpdatable
     private readonly Window _window;
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the camera used to draw world coordinates, or <see langword="null"/>
@@ -62,7 +62,7 @@ public class Renderer : Module, IUpdatable
         _window = window;
         _window.DeferVisibilityUntilFirstFrame();
         _surface = new RenderSurface(window);
-        ClearColor = new Store<Color>(clearColor ?? Color.Black);
+        ClearColor = new Store<Color>(clearColor ?? Color.White);
         Camera = new Store<ICamera?>(camera);
 
         foreach (var layer in layers ?? [])
