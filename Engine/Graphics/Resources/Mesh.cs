@@ -31,11 +31,6 @@ public sealed class GraphicMesh : Mesh
     /// The triangle indices to copy, or <see langword="null"/> to use the
     /// vertices sequentially in groups of three.
     /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="vertices"/>,
-    /// <paramref name="texture"/>, or
-    /// <paramref name="textureCoordinates"/> is <see langword="null"/>.
-    /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when the texture coordinate count differs from the vertex count
     /// or a texture coordinate contains a nonfinite value.
@@ -48,9 +43,6 @@ public sealed class GraphicMesh : Mesh
     )
         : base(vertices, indices)
     {
-        ArgumentNullException.ThrowIfNull(texture);
-        ArgumentNullException.ThrowIfNull(textureCoordinates);
-
         var coordinates = textureCoordinates.ToArray();
 
         if (coordinates.Length != Vertices.Length)

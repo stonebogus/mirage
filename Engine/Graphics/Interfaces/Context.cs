@@ -82,9 +82,6 @@ public interface IDrawContext
     /// The transformation from mesh-local coordinates to world coordinates.
     /// When no camera is active, the result uses screen coordinates.
     /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="mesh"/> is <see langword="null"/>.
-    /// </exception>
     /// <exception cref="ObjectDisposedException">
     /// Thrown when the graphic mesh or one of its referenced resources has been destroyed.
     /// </exception>

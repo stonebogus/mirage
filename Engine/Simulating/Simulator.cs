@@ -34,7 +34,6 @@ public class Simulator : Module, IUpdatable
 
         foreach (var space in spaces ?? [])
         {
-            ArgumentNullException.ThrowIfNull(space);
             Spaces.Add(space.Identifier, space);
         }
 
@@ -104,8 +103,6 @@ public class Simulator : Module, IUpdatable
 
         foreach (var space in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(space);
-
             if (Spaces.ContainsKey(space.Identifier) || !identifiers.Add(space.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate simulation space identifier found: '{space.Identifier}'."

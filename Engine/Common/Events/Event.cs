@@ -26,9 +26,6 @@ public sealed class EventConnection<TPayload>
         Action<EventConnection<TPayload>> disconnect
     )
     {
-        ArgumentNullException.ThrowIfNull(callback);
-        ArgumentNullException.ThrowIfNull(disconnect);
-
         Callback = callback;
         Persistent = persistent;
         _disconnect = disconnect;
@@ -91,9 +88,6 @@ public interface IReadOnlyEvent<TPayload> : IReadOnlyDestroyable
     /// <returns>
     /// An <see cref="EventConnection{TPayload}"/> representing the subscription.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="callback"/> is <see langword="null"/>.
-    /// </exception>
     EventConnection<TPayload> Connect(Action<TPayload> callback, bool persistent = false);
 }
 
@@ -156,9 +150,6 @@ public abstract class Event<TPayload> : Destroyable, IEvent<TPayload>
     /// <returns>
     /// An <see cref="EventConnection{TPayload}"/> representing the subscription.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="callback"/> is <see langword="null"/>.
-    /// </exception>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when the event has already been destroyed.
     /// </exception>

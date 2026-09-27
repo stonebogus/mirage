@@ -40,7 +40,6 @@ public class InputHandler : Module, IUpdatable
         Window = window;
         foreach (var device in devices ?? [])
         {
-            ArgumentNullException.ThrowIfNull(device);
             _devices.Add(device.Identifier, device);
         }
         Devices = _devices;
@@ -81,8 +80,6 @@ public class InputHandler : Module, IUpdatable
 
         foreach (var device in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(device);
-
             if (_devices.ContainsKey(device.Identifier) || !identifiers.Add(device.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate device identifier found: '{device.Identifier}'."

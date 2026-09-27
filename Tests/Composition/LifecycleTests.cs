@@ -1,15 +1,11 @@
 using Mirage.Common;
 using Mirage.Common.Lifecycle;
 using Mirage.Handling;
-using Mirage.Handling.Devices.Keyboard;
-using Mirage.Handling.Devices.Mouse;
 using Mirage.Loading;
 using Mirage.Noding;
-using Mirage.Rendering;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Channels;
 using Mirage.Scheduling.Interfaces;
-using Mirage.Simulating;
 using Mirage.Windowing;
 
 internal static class LifecycleTests
@@ -21,34 +17,8 @@ internal static class LifecycleTests
         ChannelPreparationAndPacing();
         NodeLoadingFailure();
         RegistrationFailure();
-        ConstructorValidation();
         RuntimeGuards();
-        return 7;
-    }
-
-    private static void ConstructorValidation()
-    {
-        var window = new Window();
-        try
-        {
-            Check.Throws(() => new TestGame([null!]));
-            Check.Throws(() => new Scheduler(channels: [null!]));
-            Check.Throws(() => new UpdateChannel("null", entries: [null!]));
-            Check.Throws(() => new DrawLayer("null", entries: [null!]));
-            Check.Throws(() => new Renderer(window, layers: [null!]));
-            Check.Throws(() => new WindowManager([null!]));
-            Check.Throws(() => new InputHandler(0, window, [null!]));
-            Check.Throws(() => new Keyboard([null!]));
-            Check.Throws(() => new Mouse([null!]));
-            Check.Throws(() => new Loader(".", [null!]));
-            Check.Throws(() => new Node("null", new NodeOptions { Subnodes = [null!] }));
-            Check.Throws(() => new Simulator([null!]));
-            Check.Throws(() => new SimulationSpace("null", [null!]));
-        }
-        finally
-        {
-            window.Destroy();
-        }
+        return 6;
     }
 
     private static void RuntimeGuards()

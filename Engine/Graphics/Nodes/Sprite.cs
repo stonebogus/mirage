@@ -58,9 +58,6 @@ public class Sprite : SpatialNode, IDrawable
     /// <param name="name">The node name.</param>
     /// <param name="texture">The initial texture.</param>
     /// <param name="options">The initial sprite and spatial values, or <see langword="null"/> for defaults.</param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="texture"/> is <see langword="null"/>.
-    /// </exception>
     public Sprite(string name, Texture texture, SpriteOptions? options = null)
         : base(name, options)
     {

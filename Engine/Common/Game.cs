@@ -73,8 +73,6 @@ public abstract class Game : Destroyable
 
         foreach (var module in modules ?? [])
         {
-            ArgumentNullException.ThrowIfNull(module);
-
             if (!_modules.TryAdd(module.Identifier, module))
             {
                 throw new InvalidOperationException(
@@ -112,8 +110,6 @@ public abstract class Game : Destroyable
 
         foreach (var module in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(module);
-
             if (_modules.ContainsKey(module.Identifier) || !identifiers.Add(module.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate module identifier found: '{module.Identifier}'."

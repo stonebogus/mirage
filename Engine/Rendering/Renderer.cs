@@ -63,7 +63,6 @@ public class Renderer : Module, IUpdatable
 
         foreach (var layer in layers ?? [])
         {
-            ArgumentNullException.ThrowIfNull(layer);
             Layers.Add(layer.Identifier, layer);
         }
     }
@@ -86,8 +85,6 @@ public class Renderer : Module, IUpdatable
 
         foreach (var layer in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(layer);
-
             if (Layers.ContainsKey(layer.Identifier) || !identifiers.Add(layer.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate layer identifier found: '{layer.Identifier}'."

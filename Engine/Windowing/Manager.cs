@@ -38,8 +38,6 @@ public class WindowManager : Module, IUpdatable
     {
         foreach (var window in windows ?? [])
         {
-            ArgumentNullException.ThrowIfNull(window);
-
             if (!_windows.TryAdd(window.Identifier, window))
                 throw new InvalidOperationException(
                     $"Duplicate window identifier found: '{window.Identifier}'."
@@ -81,8 +79,6 @@ public class WindowManager : Module, IUpdatable
 
         foreach (var window in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(window);
-
             if (_windows.ContainsKey(window.Identifier) || !identifiers.Add(window.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate window identifier found: '{window.Identifier}'."

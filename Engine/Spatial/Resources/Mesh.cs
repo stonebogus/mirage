@@ -23,17 +23,12 @@ public class Mesh : Resource
     /// The triangle indices to copy, or <see langword="null"/> to use the
     /// vertices sequentially in groups of three.
     /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="vertices"/> is <see langword="null"/>.
-    /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when there are no complete triangles, a vertex is not finite,
     /// or an index refers to a vertex outside the mesh.
     /// </exception>
     public Mesh(IEnumerable<Vector2> vertices, IEnumerable<int>? indices = null)
     {
-        ArgumentNullException.ThrowIfNull(vertices);
-
         var vertexArray = vertices.ToArray();
         var indexArray = indices?.ToArray() ?? Enumerable.Range(0, vertexArray.Length).ToArray();
 

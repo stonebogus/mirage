@@ -114,7 +114,6 @@ public class UpdateChannel : Destroyable
 
         foreach (var entry in entries ?? [])
         {
-            ArgumentNullException.ThrowIfNull(entry);
             Entries.Add(entry);
         }
     }
@@ -134,8 +133,6 @@ public class UpdateChannel : Destroyable
 
         foreach (var entry in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(entry);
-
             if (Entries.Contains(entry) || !objects.Add(entry))
                 throw new InvalidOperationException("Duplicate composed object found.");
         }

@@ -49,7 +49,6 @@ public class SimulationSpace : Destroyable
         Identifier = identifier;
         foreach (var simulatable in simulatables ?? [])
         {
-            ArgumentNullException.ThrowIfNull(simulatable);
             Simulatables.Add(simulatable);
         }
         Gravity = new Store<Vector2>(gravity ?? new Vector2(0f, 9.81f));
@@ -70,8 +69,6 @@ public class SimulationSpace : Destroyable
 
         foreach (var simulatable in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(simulatable);
-
             if (Simulatables.Contains(simulatable) || !objects.Add(simulatable))
                 throw new InvalidOperationException("Duplicate composed object found.");
         }

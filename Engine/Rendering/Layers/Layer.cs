@@ -70,7 +70,6 @@ public class DrawLayer : Destroyable
 
         foreach (var entry in entries ?? [])
         {
-            ArgumentNullException.ThrowIfNull(entry);
             Entries.Add(entry);
         }
     }
@@ -86,11 +85,6 @@ public class DrawLayer : Destroyable
         _compositionStarted = true;
 
         var composedObjects = Compose().ToArray();
-
-        foreach (var entry in composedObjects)
-        {
-            ArgumentNullException.ThrowIfNull(entry);
-        }
 
         foreach (var entry in composedObjects)
             Entries.Add(entry);

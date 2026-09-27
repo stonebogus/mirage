@@ -57,7 +57,6 @@ public class Scheduler : Module
 
         foreach (var channel in channels ?? [])
         {
-            ArgumentNullException.ThrowIfNull(channel);
             if (Channels.ContainsKey(channel.Identifier))
             {
                 throw new InvalidOperationException(
@@ -101,8 +100,6 @@ public class Scheduler : Module
 
         foreach (var channel in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(channel);
-
             if (Channels.ContainsKey(channel.Identifier) || !identifiers.Add(channel.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate channel identifier found: '{channel.Identifier}'."

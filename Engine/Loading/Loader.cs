@@ -56,7 +56,6 @@ public class Loader : Module
         Decoders = [];
         foreach (var decoder in decoders ?? [])
         {
-            ArgumentNullException.ThrowIfNull(decoder);
             Decoders.Add(decoder);
         }
     }
@@ -76,8 +75,6 @@ public class Loader : Module
 
         foreach (var decoder in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(decoder);
-
             if (Decoders.Contains(decoder) || !objects.Add(decoder))
                 throw new InvalidOperationException("Duplicate composed object found.");
         }

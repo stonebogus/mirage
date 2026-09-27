@@ -55,9 +55,6 @@ public readonly record struct Color
     /// A hexadecimal color in <c>#RGB</c>, <c>#RGBA</c>,
     /// <c>#RRGGBB</c>, or <c>#RRGGBBAA</c> format.
     /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="hexadecimal"/> is <see langword="null"/>.
-    /// </exception>
     /// <exception cref="FormatException">
     /// Thrown when <paramref name="hexadecimal"/> is not a valid color.
     /// </exception>
@@ -293,9 +290,6 @@ public readonly record struct Color
     /// <c>#RRGGBB</c>, or <c>#RRGGBBAA</c> format.
     /// </param>
     /// <returns>The parsed color.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="hexadecimal"/> is <see langword="null"/>.
-    /// </exception>
     /// <exception cref="FormatException">
     /// Thrown when <paramref name="hexadecimal"/> is not a valid color.
     /// </exception>
@@ -327,16 +321,11 @@ public readonly record struct Color
     /// <c>#RRGGBB</c>, or <c>#RRGGBBAA</c> format.
     /// </param>
     /// <returns>The parsed color.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="value"/> is <see langword="null"/>.
-    /// </exception>
     /// <exception cref="FormatException">
     /// Thrown when <paramref name="value"/> is not a valid color.
     /// </exception>
     public static Color Parse(string value)
     {
-        ArgumentNullException.ThrowIfNull(value);
-
         return !TryParse(value, out var color)
             ? throw new FormatException($"'{value}' is not a valid hexadecimal color.")
             : color;

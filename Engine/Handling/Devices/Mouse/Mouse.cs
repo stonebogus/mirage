@@ -46,7 +46,6 @@ public class Mouse : InputDevice
     {
         foreach (var @event in events)
         {
-            ArgumentNullException.ThrowIfNull(@event);
             Events.Add(@event.Identifier, @event);
         }
 
@@ -68,8 +67,6 @@ public class Mouse : InputDevice
 
         foreach (var @event in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(@event);
-
             if (Events.ContainsKey(@event.Identifier) || !identifiers.Add(@event.Identifier))
                 throw new InvalidOperationException(
                     $"Duplicate event identifier found: '{@event.Identifier}'."

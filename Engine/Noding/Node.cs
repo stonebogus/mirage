@@ -381,7 +381,6 @@ public class Node : Destroyable
 
         foreach (var node in options.Subnodes ?? [])
         {
-            ArgumentNullException.ThrowIfNull(node);
             Subnodes.Add(node);
         }
 
@@ -442,8 +441,6 @@ public class Node : Destroyable
 
         foreach (var node in composedObjects)
         {
-            ArgumentNullException.ThrowIfNull(node);
-
             if (Subnodes.Contains(node) || !objects.Add(node))
                 throw new InvalidOperationException("Duplicate composed object found.");
             node.ThrowIfDestroyed();

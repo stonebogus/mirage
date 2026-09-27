@@ -24,8 +24,6 @@ public sealed class NodeManager : Module
     public NodeManager(Node initial, IEnumerable<Node>? roots = null)
         : base("NodeManager")
     {
-        ArgumentNullException.ThrowIfNull(initial);
-
         _activeRoot = new Store<Node>(initial);
         ActiveRoot = _activeRoot;
 
