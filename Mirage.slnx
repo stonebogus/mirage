@@ -13,5 +13,6 @@
     <Project Path="Engine/Scheduling/Mirage.Scheduling.csproj" />
     <Project Path="Engine/Physics/Mirage.Physics.csproj" />
     <Project Path="Engine/Simulating/Mirage.Simulating.csproj" />
+    <Project Path="Engine/Logging/Mirage.Logging.csproj" />
   </Folder>
 </Solution>
