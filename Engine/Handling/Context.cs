@@ -8,6 +8,7 @@ namespace Mirage.Handling;
 /// </summary>
 /// <remarks>
 /// Carries the window and SDL events available to input devices for one update.
+/// The window is borrowed; the context does not manage its lifetime.
 /// </remarks>
 /// <param name="window">The window receiving the events.</param>
 /// <param name="events">The events captured for the current frame.</param>

@@ -101,6 +101,10 @@ public interface IReadOnlyIdentifiableSet<TIdentifier, TItem> : IEnumerable<TIte
 /// <typeparam name="TItem">
 /// The type of items stored in the set.
 /// </typeparam>
+/// <remarks>
+/// Items are borrowed. Removing, clearing, or destroying the set does not destroy them.
+/// Destruction disconnects events and clears references without firing mutation events.
+/// </remarks>
 public class IdentifiableSet<TIdentifier, TItem>
     : Destroyable,
         IReadOnlyIdentifiableSet<TIdentifier, TItem>
@@ -273,11 +277,12 @@ public class IdentifiableSet<TIdentifier, TItem>
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        Clear();
-
         _onAdd.Destroy();
         _onRemove.Destroy();
         _onClear.Destroy();
+        _items.Clear();
+
+        base.OnDestroy();
     }
 
     /// <summary>

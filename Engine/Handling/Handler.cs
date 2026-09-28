@@ -11,6 +11,8 @@ namespace Mirage.Handling;
 /// <summary>
 /// Registers input devices and updates them with events from one window.
 /// </summary>
+/// <remarks>Constructor-provided and composed devices belong to the handler.
+/// The window is borrowed and is never destroyed by the handler.</remarks>
 public class InputHandler : Module, IUpdatable
 {
     private readonly IdentifiableSet<string, InputDevice> _devices = [];
@@ -92,7 +94,20 @@ public class InputHandler : Module, IUpdatable
         Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
-        _devices.Add(Compose().ToArray());
+        foreach (var device in Compose())
+        {
+            try
+            {
+                _devices.Add(device);
+            }
+            catch
+            {
+                if (!_devices.Contains(device) && !device.Destroyed)
+                    device.Destroy();
+
+                throw;
+            }
+        }
 
         _composed = true;
         Logger.Log("Composition completed.", LogMessageKind.Debug);
@@ -146,7 +161,7 @@ public class InputHandler : Module, IUpdatable
     {
         base.OnDestroy();
 
-        foreach (var device in _devices)
+        foreach (var device in _devices.ToArray())
         {
             device.Destroy();
             if (InjectedDependencies is not null)

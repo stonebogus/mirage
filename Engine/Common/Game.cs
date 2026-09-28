@@ -35,7 +35,8 @@ public enum GameState
 /// <remarks>
 /// A game manages its modules by resolving their dependencies, injecting their
 /// shared context, and starting and stopping them in dependency order.
-/// It owns and destroys its registered modules.
+/// It owns and destroys its registered modules. Passing modules to the constructor or
+/// returning them from composition transfers ownership; do not register them in another game.
 /// </remarks>
 public abstract class Game : Destroyable
 {
@@ -93,19 +94,18 @@ public abstract class Game : Destroyable
 
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<string> identifiers = [];
-
-        foreach (var module in composedObjects)
+        foreach (var module in Compose())
         {
-            if (_modules.ContainsKey(module.Identifier) || !identifiers.Add(module.Identifier))
+            if (!_modules.TryAdd(module.Identifier, module))
+            {
+                if (!ReferenceEquals(_modules[module.Identifier], module) && !module.Destroyed)
+                    module.Destroy();
+
                 throw new InvalidOperationException(
                     $"Duplicate module identifier found: '{module.Identifier}'."
                 );
+            }
         }
-
-        foreach (var module in composedObjects)
-            _modules.Add(module.Identifier, module);
 
         _composed = true;
     }
@@ -238,6 +238,8 @@ public abstract class Game : Destroyable
         _modules.Clear();
 
         _state.Destroy();
+
+        base.OnDestroy();
     }
 
     /// <summary>
@@ -315,6 +317,7 @@ public abstract class Game : Destroyable
             EnsureConfigured();
 
             var sortedModules = ResolveModuleOrder();
+            _moduleOrder = sortedModules;
 
             if (!_injected)
             {
@@ -332,7 +335,6 @@ public abstract class Game : Destroyable
                 startedModules.Add(module);
             }
 
-            _moduleOrder = sortedModules;
             _state.Set(GameState.Running);
 
             OnStart();

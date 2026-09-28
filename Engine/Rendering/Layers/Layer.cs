@@ -112,7 +112,9 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
     /// Composition occurs once before the first draw.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
-    /// The layer references entries without owning or destroying them.
+    /// The layer borrows entries, including those returned here, because drawable scene objects
+    /// have independent owners and may be drawn by multiple layers. Return objects owned elsewhere;
+    /// composition does not transfer their lifetime to this processing collection.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<IDrawable> Compose()
@@ -136,6 +138,8 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
     protected override void OnDestroy()
     {
         Entries.Clear();
+
+        base.OnDestroy();
     }
 
     /// <summary>

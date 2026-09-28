@@ -185,5 +185,7 @@ public abstract class Event<TPayload> : Destroyable, IEvent<TPayload>
             connection.Detach();
 
         Connections.Clear();
+
+        base.OnDestroy();
     }
 }

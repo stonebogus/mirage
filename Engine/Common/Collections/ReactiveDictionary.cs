@@ -78,6 +78,10 @@ public interface IReadOnlyReactiveDictionary<TKey, TValue> : IEnumerable<KeyValu
 /// <summary>
 /// Represents a mutable collection of key-value pairs, providing reactive events.
 /// </summary>
+/// <remarks>
+/// Values are borrowed. Removing, replacing, clearing, or destroying the dictionary does not
+/// destroy them. Destruction disconnects events and clears references without mutation events.
+/// </remarks>
 /// <typeparam name="TKey">The type of keys stored in the reactive dictionary.</typeparam>
 /// <typeparam name="TValue">The type of values stored in the reactive dictionary.</typeparam>
 public class ReactiveDictionary<TKey, TValue>
@@ -261,12 +265,13 @@ public class ReactiveDictionary<TKey, TValue>
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        Clear();
-
         _onAdd.Destroy();
         _onRemove.Destroy();
         _onUpdate.Destroy();
         _onClear.Destroy();
+        _items.Clear();
+
+        base.OnDestroy();
     }
 
     /// <summary>

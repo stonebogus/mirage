@@ -37,7 +37,8 @@ public interface IStore<TValue> : IReadOnlyStore<TValue>, IEvent<TValue>
 /// </summary>
 /// <remarks>
 /// Represents a reactive state container that holds a value and notifies listeners
-/// when the value changes.
+/// when the value changes. The current and previous values are borrowed; changing or
+/// destroying the store never destroys them.
 /// </remarks>
 /// <typeparam name="TValue">The type of value stored in the container.</typeparam>
 /// <example>

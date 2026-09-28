@@ -82,5 +82,7 @@ public class Font : Resource
     protected override void OnDestroy()
     {
         _data = ReadOnlyMemory<byte>.Empty;
+
+        base.OnDestroy();
     }
 }

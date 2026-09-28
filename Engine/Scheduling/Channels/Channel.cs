@@ -58,6 +58,7 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
     /// <summary>
     /// Gets the updatable entries contained in this channel.
     /// </summary>
+    /// <remarks>Entries are borrowed. Registration, removal, and clearing do not transfer ownership.</remarks>
     public readonly ReactiveSet<IUpdatable> Entries = [];
 
     /// <summary>
@@ -182,7 +183,9 @@ public class UpdateChannel : Destroyable, IIdentifiable<string>
     /// Composition occurs once when prepared by the scheduler or before the first update.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
-    /// The channel references entries without owning or destroying them.
+    /// The channel borrows entries, including those returned here, because modules and nodes
+    /// have independent owners. Return objects owned elsewhere; composition does not transfer
+    /// their lifetime to this processing collection.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<IUpdatable> Compose()

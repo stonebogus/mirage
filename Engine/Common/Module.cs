@@ -131,7 +131,8 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
     /// <remarks>
     /// The container contains only dependencies explicitly declared through
     /// <see cref="Dependencies"/>. It becomes available after the module has
-    /// been injected by its owning game.
+    /// been injected by its owning game. Injected dependencies are borrowed and must not
+    /// be destroyed by this module.
     /// </remarks>
     protected ModuleContainer InjectedDependencies { get; private set; } = null!;
 
@@ -152,6 +153,8 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
             );
 
         _state.Destroy();
+
+        base.OnDestroy();
     }
 
     /// <summary>
@@ -175,7 +178,7 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
     /// </summary>
     /// <typeparam name="TModule">The expected type of the dependency.</typeparam>
     /// <param name="name">The identifier of the dependency.</param>
-    /// <returns>The injected dependency.</returns>
+    /// <returns>The borrowed injected dependency. Its lifetime belongs to the game.</returns>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the module has not been injected, the dependency was not
     /// registered, or the dependency is not of the requested type.

@@ -15,7 +15,8 @@ namespace Mirage.Rendering;
 /// Draws rendering layers to a window.
 /// </summary>
 /// <remarks>
-/// The renderer owns and destroys its layers. It uses but does not own the window or camera.
+/// The renderer owns and destroys its layers, stores, and rendering surface.
+/// The window and camera are borrowed and are never destroyed by the renderer.
 /// </remarks>
 public class Renderer : Module, IUpdatable
 {
@@ -41,6 +42,11 @@ public class Renderer : Module, IUpdatable
     /// <summary>
     /// Gets the identifiable set of rendering layers.
     /// </summary>
+    /// <remarks>
+    /// The renderer owns and destroys its registered layers.
+    /// Registration transfers ownership to this owner. Removing or clearing entries returns
+    /// ownership to the caller without destroying them. Do not register an object owned elsewhere.
+    /// </remarks>
     public readonly IdentifiableSet<string, DrawLayer> Layers = [];
 
     /// <summary>
@@ -87,7 +93,20 @@ public class Renderer : Module, IUpdatable
         Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
-        Layers.Add(Compose().ToArray());
+        foreach (var layer in Compose())
+        {
+            try
+            {
+                Layers.Add(layer);
+            }
+            catch
+            {
+                if (!Layers.Contains(layer) && !layer.Destroyed)
+                    layer.Destroy();
+
+                throw;
+            }
+        }
 
         _composed = true;
         Logger.Log("Composition completed.", LogMessageKind.Debug);
@@ -149,7 +168,7 @@ public class Renderer : Module, IUpdatable
 
         Layers.Destroy();
         ClearColor.Destroy();
-        _surface.Stop();
+        _surface.Destroy();
         Camera.Destroy();
         if (InjectedDependencies is not null)
             Logger.Log("Module resources destroyed.");

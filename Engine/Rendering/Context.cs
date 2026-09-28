@@ -11,7 +11,8 @@ namespace Mirage.Rendering;
 /// <remarks>
 /// Converts world coordinates to screen coordinates when a camera is active,
 /// then forwards drawing operations to the rendering surface. This context
-/// is valid only while its frame is active.
+/// is valid only while its frame is active. The surface, camera, and supplied drawing
+/// resources are borrowed and remain the responsibility of their owners.
 /// </remarks>
 public class RenderContext : IDrawContext
 {

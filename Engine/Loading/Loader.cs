@@ -26,7 +26,10 @@ public record LoadContext(string Identifier, string Path) : IIdentifiable<string
 /// <summary>
 /// Loads, caches and unloads resources.
 /// </summary>
-/// <remarks>The loader owns successfully loaded resources and destroys them when it is destroyed.</remarks>
+/// <remarks>
+/// The loader owns and destroys its registered decoders and successfully loaded resources.
+/// Loaded resources are borrowed by callers and must not be destroyed by them.
+/// </remarks>
 public class Loader : Module
 {
     private readonly Dictionary<ResourceKey, Resource> _resources = [];
@@ -39,6 +42,11 @@ public class Loader : Module
     /// <summary>
     /// Gets the registered resource decoders.
     /// </summary>
+    /// <remarks>
+    /// The loader owns and destroys its registered decoders.
+    /// Registration transfers ownership to this owner. Removing or clearing entries returns
+    /// ownership to the caller without destroying them. Do not register an object owned elsewhere.
+    /// </remarks>
     public readonly ReactiveSet<Decoder> Decoders;
 
     /// <summary>
@@ -82,17 +90,20 @@ public class Loader : Module
             Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<Decoder> objects = [];
-
-        foreach (var decoder in composedObjects)
+        foreach (var decoder in Compose())
         {
-            if (Decoders.Contains(decoder) || !objects.Add(decoder))
-                throw new InvalidOperationException("Duplicate composed object found.");
-        }
+            try
+            {
+                Decoders.Add(decoder);
+            }
+            catch
+            {
+                if (!Decoders.Contains(decoder) && !decoder.Destroyed)
+                    decoder.Destroy();
 
-        foreach (var decoder in composedObjects)
-            Decoders.Add(decoder);
+                throw;
+            }
+        }
 
         _composed = true;
         if (InjectedDependencies is not null)
@@ -153,7 +164,7 @@ public class Loader : Module
     /// Composition occurs once when the loader first starts or first loads a resource.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
-    /// The loader references decoders without owning or destroying them.
+    /// The loader owns and destroys its registered decoders.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<Decoder> Compose()
@@ -188,6 +199,9 @@ public class Loader : Module
         }
 
         _resources.Clear();
+
+        foreach (var decoder in Decoders.ToArray())
+            decoder.Destroy();
 
         Decoders.Destroy();
         if (InjectedDependencies is not null)

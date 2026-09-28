@@ -8,6 +8,7 @@ namespace Mirage.Physics.Colliders;
 /// </summary>
 /// <remarks>
 /// Represents reusable collision geometry with physical surface properties.
+/// The physical material is borrowed and is not destroyed with the collider.
 /// </remarks>
 /// <param name="material">
 /// The physical material applied to the collider.

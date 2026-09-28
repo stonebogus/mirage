@@ -49,7 +49,11 @@ public interface IReadOnlyReactiveSet<TItem> : IEnumerable<TItem>
 /// Represents a mutable collection of unique items, providing reactive events
 /// and an optional capacity limit with automatic truncation.
 /// </summary>
-/// <remarks>When the limit is reached, adding an item removes the oldest item first.</remarks>
+/// <remarks>
+/// When the limit is reached, adding an item removes the oldest item first.
+/// Items are borrowed. Removing, clearing, or destroying the collection does not destroy them.
+/// Destruction disconnects its events and clears references without firing mutation events.
+/// </remarks>
 /// <typeparam name="TItem">The type of items stored in the reactive set.</typeparam>
 public class ReactiveSet<TItem> : Destroyable, IReadOnlyReactiveSet<TItem>
 {
@@ -180,11 +184,12 @@ public class ReactiveSet<TItem> : Destroyable, IReadOnlyReactiveSet<TItem>
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        Clear();
-
         _onAdd.Destroy();
         _onRemove.Destroy();
         _onClear.Destroy();
+        _items.Clear();
+
+        base.OnDestroy();
     }
 
     /// <summary>

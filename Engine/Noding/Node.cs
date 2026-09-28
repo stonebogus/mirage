@@ -314,7 +314,9 @@ public class NodeReactiveSet(Node owner) : ReactiveSet<Node>
 ///
 /// Nodes managed by a <see cref="NodeManager"/> receive access to the module
 /// dependencies exposed by that manager. The same dependency context is
-/// propagated to subnodes as they enter the hierarchy.
+/// propagated to subnodes as they enter the hierarchy. These dependencies are borrowed.
+/// A parent owns its subnodes. Detaching returns ownership to the caller; reparenting
+/// transfers it to the new parent. A registered manager root must be removed before reparenting.
 /// </remarks>
 public class Node : Destroyable, IIdentifiable<Guid>
 {
@@ -324,6 +326,8 @@ public class Node : Destroyable, IIdentifiable<Guid>
     private bool _configured;
     private NodeContext? _context;
     private bool _restoringParent;
+
+    internal NodeManager? RootOwner { get; set; }
 
     /// <summary>
     /// Gets the mutable name of the node.
@@ -352,6 +356,8 @@ public class Node : Destroyable, IIdentifiable<Guid>
     /// <summary>
     /// Gets the collection of nodes directly contained by this node.
     /// </summary>
+    /// <remarks>Adding transfers ownership to this node. Removing or clearing detaches
+    /// nodes without destroying them and returns ownership to the caller.</remarks>
     public readonly NodeReactiveSet Subnodes;
 
     /// <summary>
@@ -441,20 +447,20 @@ public class Node : Destroyable, IIdentifiable<Guid>
 
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<Node> objects = [];
-
-        foreach (var node in composedObjects)
+        foreach (var node in Compose())
         {
-            if (Subnodes.Contains(node) || !objects.Add(node))
-                throw new InvalidOperationException("Duplicate composed object found.");
+            try
+            {
+                Subnodes.Add(node);
+            }
+            catch
+            {
+                if (node.Parent.Get() is null && node.RootOwner is null && !node.Destroyed)
+                    node.Destroy();
 
-            node.ThrowIfDestroyed();
-            node.ValidateParent(this);
+                throw;
+            }
         }
-
-        foreach (var node in composedObjects)
-            Subnodes.Add(node);
 
         _composed = true;
     }
@@ -526,6 +532,7 @@ public class Node : Destroyable, IIdentifiable<Guid>
     {
         try
         {
+            node.ThrowIfDestroyed();
             if (_context is not null)
                 node.Inject(_context);
 
@@ -551,6 +558,13 @@ public class Node : Destroyable, IIdentifiable<Guid>
     {
         if (parent is null)
             return;
+
+        parent.ThrowIfDestroyed();
+
+        if (RootOwner is not null)
+            throw new InvalidOperationException(
+                "A registered root must be removed from its manager before parenting."
+            );
 
         if (ReferenceEquals(parent, this))
             throw new InvalidOperationException($"{this} cannot be its own parent.");
@@ -612,14 +626,15 @@ public class Node : Destroyable, IIdentifiable<Guid>
             Unload();
 
         Parent.Set(null);
-        Name.Destroy();
-
         foreach (var node in Subnodes.ToArray())
             node.Destroy();
 
+        Name.Destroy();
         Subnodes.Destroy();
         Tags.Destroy();
         Parent.Destroy();
+
+        base.OnDestroy();
     }
 
     /// <summary>
@@ -644,7 +659,7 @@ public class Node : Destroyable, IIdentifiable<Guid>
     /// Gets an injected module dependency of the node manager that owns this node.
     /// </summary>
     /// <typeparam name="TModule">The type of module to retrieve.</typeparam>
-    /// <returns>The matching injected module.</returns>
+    /// <returns>The borrowed injected module, which is owned by the game.</returns>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the node has not been injected or no single dependency
     /// matches the specified type.
@@ -665,7 +680,7 @@ public class Node : Destroyable, IIdentifiable<Guid>
     /// </summary>
     /// <typeparam name="TModule">The expected type of the module.</typeparam>
     /// <param name="identifier">The identifier of the module to retrieve.</param>
-    /// <returns>The matching injected module.</returns>
+    /// <returns>The borrowed injected module, which is owned by the game.</returns>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the node has not been injected, the dependency is unavailable,
     /// or the dependency is not of the requested type.

@@ -1,5 +1,8 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Mirage.Common.Events;
+using Mirage.Common.Lifecycle;
+using Mirage.Common.Primitives;
 using Mirage.Graphics.Interfaces;
 using Mirage.Graphics.Primitives;
 using Mirage.Graphics.Resources;
@@ -8,12 +11,13 @@ using SDL3;
 
 namespace Mirage.Rendering;
 
-internal sealed class RenderSurface(Window window)
+internal sealed class RenderSurface(Window window) : Destroyable
 {
     private const int RenderScale = 2;
 
     private readonly Dictionary<Texture, nint> _textures = [];
 
+    private EventConnection<Unit>? _windowClosing;
     private bool _frameActive;
 
     private nint _frameTexture;
@@ -349,6 +353,7 @@ internal sealed class RenderSurface(Window window)
 
     public void Start()
     {
+        ThrowIfDestroyed();
         if (_native != nint.Zero)
             return;
 
@@ -372,6 +377,7 @@ internal sealed class RenderSurface(Window window)
                 throw Error("Initializing SDL3_ttf");
 
             _textInitialized = true;
+            _windowClosing = window.OnClosing.Connect(_ => Stop());
         }
         catch
         {
@@ -387,8 +393,16 @@ internal sealed class RenderSurface(Window window)
         }
     }
 
+    protected override void OnDestroy()
+    {
+        Stop();
+        base.OnDestroy();
+    }
+
     public void Stop()
     {
+        _windowClosing?.Disconnect();
+        _windowClosing = null;
         if (_native == nint.Zero)
             return;
 

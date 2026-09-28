@@ -20,6 +20,11 @@ public class Mouse : InputDevice
     /// <summary>
     /// Gets the identifiable set of registered button actions.
     /// </summary>
+    /// <remarks>
+    /// The mouse owns and destroys its registered events.
+    /// Registration transfers ownership to this owner. Removing or clearing entries returns
+    /// ownership to the caller without destroying them. Do not register an object owned elsewhere.
+    /// </remarks>
     public readonly IdentifiableSet<string, MouseButtonEvent> Events = [];
 
     /// <summary>
@@ -65,7 +70,20 @@ public class Mouse : InputDevice
 
         _compositionStarted = true;
 
-        Events.Add(Compose().ToArray());
+        foreach (var action in Compose())
+        {
+            try
+            {
+                Events.Add(action);
+            }
+            catch
+            {
+                if (!Events.Contains(action) && !action.Destroyed)
+                    action.Destroy();
+
+                throw;
+            }
+        }
 
         _composed = true;
     }
@@ -171,13 +189,15 @@ public class Mouse : InputDevice
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        foreach (var action in Events)
+        foreach (var action in Events.ToArray())
             action.Destroy();
 
         Events.Destroy();
         OnMove.Destroy();
         OnWheel.Destroy();
         _position.Destroy();
+
+        base.OnDestroy();
     }
 
     /// <inheritdoc />

@@ -19,6 +19,8 @@ public interface ISimulatable
     /// <summary>
     /// Gets the physical body associated with the simulated object.
     /// </summary>
+    /// <remarks>The simulation system borrows both the store and its body.
+    /// Their lifetime is managed by the implementing object and the body's resource owner.</remarks>
     Store<PhysicsBody> Body { get; }
 
     /// <summary>

@@ -118,5 +118,7 @@ public class Mesh : Resource
     {
         _vertices = ReadOnlyMemory<Vector2>.Empty;
         _indices = ReadOnlyMemory<int>.Empty;
+
+        base.OnDestroy();
     }
 }

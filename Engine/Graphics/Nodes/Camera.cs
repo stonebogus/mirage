@@ -57,6 +57,8 @@ public class Camera : SpatialNode, ICamera
     /// <inheritdoc />
     protected override void OnDestroy()
     {
+        base.OnDestroy();
+
         Zoom.Destroy();
     }
 }

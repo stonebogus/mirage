@@ -23,7 +23,7 @@ public abstract class Decoder : Destroyable
     /// The stream containing the encoded resource.
     /// </param>
     /// <returns>
-    /// The decoded resource.
+    /// A new resource whose ownership is transferred to the caller. The input stream is borrowed.
     /// </returns>
     protected abstract Resource OnDecode(LoadContext context, Stream stream);
 
@@ -37,7 +37,7 @@ public abstract class Decoder : Destroyable
     /// The stream containing the encoded resource.
     /// </param>
     /// <returns>
-    /// The decoded resource.
+    /// A new resource whose ownership is transferred to the caller. The input stream is borrowed.
     /// </returns>
     public virtual Resource Decode(LoadContext context, Stream stream)
     {

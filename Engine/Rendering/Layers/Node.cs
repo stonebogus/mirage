@@ -8,6 +8,7 @@ namespace Mirage.Rendering.Layers;
 /// </summary>
 /// <remarks>
 /// Draws loaded drawable nodes from the active root.
+/// The node manager and its nodes are borrowed and are never destroyed by this object.
 /// </remarks>
 /// <param name="manager">The node manager providing the active root.</param>
 /// <param name="identifier">The layer identifier. The default is <c>"nodes"</c>.</param>

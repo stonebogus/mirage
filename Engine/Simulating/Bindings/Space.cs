@@ -1,13 +1,17 @@
 using Box2D.NET;
+using Mirage.Common.Events;
+using Mirage.Common.Lifecycle;
 using Mirage.Physics.Interfaces;
 using static Box2D.NET.B2Types;
 using static Box2D.NET.B2Worlds;
 
 namespace Mirage.Simulating.Bindings;
 
-internal class SpaceBinding
+internal class SpaceBinding : Destroyable
 {
     private readonly Dictionary<ISimulatable, BodyBinding> _bodies = [];
+    private readonly EventConnection<ISimulatable> _onAdd;
+    private readonly EventConnection<ISimulatable> _onRemove;
 
     public SpaceBinding(SimulationSpace space)
     {
@@ -20,8 +24,23 @@ internal class SpaceBinding
 
         World = b2CreateWorld(definition);
 
-        foreach (var simulatable in space.Simulatables)
-            Add(simulatable);
+        try
+        {
+            foreach (var simulatable in space.Simulatables)
+                Add(simulatable);
+        }
+        catch
+        {
+            foreach (var binding in _bodies.Values)
+                binding.Destroy();
+
+            _bodies.Clear();
+            b2DestroyWorld(World);
+            throw;
+        }
+
+        _onAdd = space.Simulatables.OnAdd.Connect(Add);
+        _onRemove = space.Simulatables.OnRemove.Connect(Remove);
     }
 
     public SimulationSpace Space { get; }
@@ -30,21 +49,38 @@ internal class SpaceBinding
 
     public void Add(ISimulatable simulatable)
     {
+        ThrowIfDestroyed();
         if (_bodies.ContainsKey(simulatable))
             return;
 
-        _bodies.Add(simulatable, new BodyBinding(World, simulatable));
+        var binding = new BodyBinding(World, simulatable);
+        try
+        {
+            _bodies.Add(simulatable, binding);
+        }
+        catch
+        {
+            binding.Destroy();
+            throw;
+        }
     }
 
-    public void Destroy()
+    protected override void OnDestroy()
     {
-        _bodies.Clear();
+        _onAdd.Disconnect();
+        _onRemove.Disconnect();
 
+        foreach (var binding in _bodies.Values)
+            binding.Destroy();
+
+        _bodies.Clear();
         b2DestroyWorld(World);
+        base.OnDestroy();
     }
 
     public void Remove(ISimulatable simulatable)
     {
+        ThrowIfDestroyed();
         if (!_bodies.Remove(simulatable, out var binding))
             return;
 
@@ -53,9 +89,13 @@ internal class SpaceBinding
 
     public void Step(float deltaTime, int substepCount)
     {
+        ThrowIfDestroyed();
         b2World_Step(World, deltaTime, substepCount);
 
-        foreach (var binding in _bodies.Values)
-            binding.Synchronize();
+        foreach (var binding in _bodies.Values.ToArray())
+        {
+            if (!binding.Destroyed)
+                binding.Synchronize();
+        }
     }
 }

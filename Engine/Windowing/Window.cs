@@ -4,6 +4,7 @@ using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
+using Mirage.Common.Primitives;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using SDL3;
@@ -161,12 +162,15 @@ public enum WindowMode
 /// Writable stores describe requested window state and are also updated when the
 /// underlying SDL3 window changes. <see cref="Focused"/> and <see cref="Opened"/>
 /// are read-only because their values are controlled by SDL3.
-/// Registered cursors are references; the window does not own or destroy them.
+/// Registered cursors are borrowed and may be shared between windows. Their caller owns
+/// and destroys them after all windows have stopped using them. The window owns its stores
+/// and cursor collection, but not the selected or registered cursor objects.
 /// </remarks>
 public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
 {
     private readonly List<SDL.Event> _frameEvents = [];
     private readonly Store<bool> _opened = new(false);
+    private readonly Signal<Unit> _closing = new();
     private bool _deferVisibilityUntilFirstFrame;
     private bool _firstFramePresented;
 
@@ -184,6 +188,10 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
     /// Gets the cursor value selected for this window, or <see langword="null"/> when none is selected.
     /// </summary>
     public readonly Store<Cursor?> Cursor;
+
+    /// <summary>Gets the event fired before the native window is closed.</summary>
+    /// <remarks>Borrowers release window-bound native resources here while the handle is valid.</remarks>
+    public IReadOnlyEvent<Unit> OnClosing => _closing;
 
     /// <summary>
     /// Gets the identifiable set of registered cursors.
@@ -315,6 +323,7 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
 
         _focused.Destroy();
         _opened.Destroy();
+        _closing.Destroy();
 
         Mode.Destroy();
         Position.Destroy();
@@ -323,6 +332,11 @@ public partial class Window : Destroyable, IUpdatable, IIdentifiable<string>
         Title.Destroy();
         VSync.Destroy();
         Visible.Destroy();
+        Cursor.Destroy();
+        Cursors.Destroy();
+        _frameEvents.Clear();
+
+        base.OnDestroy();
     }
 
     /// <summary>
@@ -693,7 +707,9 @@ public partial class Window
         if (window == IntPtr.Zero)
             return;
 
+        _closing.Fire(Unit.Value);
         NativeWindows.Remove(_windowId);
+
         Native = IntPtr.Zero;
         _windowId = 0;
         _nativeGeneration++;

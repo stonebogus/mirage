@@ -52,6 +52,7 @@ public class PhysicsBody : Resource
     /// <summary>
     /// Gets the colliders that define the body's collision geometry.
     /// </summary>
+    /// <remarks>Colliders are shared resources owned elsewhere; registration does not transfer ownership.</remarks>
     public readonly ReactiveSet<Collider> Colliders = [];
 
     /// <summary>
@@ -115,5 +116,7 @@ public class PhysicsBody : Resource
         LinearVelocity.Destroy();
         Type.Destroy();
         Colliders.Destroy();
+
+        base.OnDestroy();
     }
 }

@@ -1,5 +1,6 @@
 using System.Numerics;
 using Box2D.NET;
+using Mirage.Common.Lifecycle;
 using Mirage.Physics.Colliders;
 using Mirage.Physics.Interfaces;
 using Mirage.Physics.Resources;
@@ -11,7 +12,7 @@ using static Box2D.NET.B2Types;
 
 namespace Mirage.Simulating.Bindings;
 
-internal class BodyBinding
+internal class BodyBinding : Destroyable
 {
     private readonly ISimulatable _simulatable;
 
@@ -39,8 +40,16 @@ internal class BodyBinding
 
         Body = b2CreateBody(world, definition);
 
-        foreach (var collider in body.Colliders)
-            CreateShape(collider);
+        try
+        {
+            foreach (var collider in body.Colliders)
+                CreateShape(collider);
+        }
+        catch
+        {
+            b2DestroyBody(Body);
+            throw;
+        }
     }
 
     public B2BodyId Body { get; }
@@ -90,13 +99,15 @@ internal class BodyBinding
         }
     }
 
-    public void Destroy()
+    protected override void OnDestroy()
     {
         b2DestroyBody(Body);
+        base.OnDestroy();
     }
 
     public void Synchronize()
     {
+        ThrowIfDestroyed();
         var position = b2Body_GetPosition(Body);
         var rotation = b2Body_GetRotation(Body);
         var linearVelocity = b2Body_GetLinearVelocity(Body);

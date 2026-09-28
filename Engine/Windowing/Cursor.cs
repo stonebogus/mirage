@@ -45,7 +45,8 @@ public class CursorOptions
 /// <remarks>
 /// SDL cursor selection and visibility are global. Create, apply, change, and
 /// destroy cursors on the main thread while SDL's video subsystem is initialized.
-/// The cursor owns its native SDL handle but does not own its <see cref="Image"/>.
+/// The cursor owns its native SDL handle and an SDL video subsystem lease, but does not
+/// own its <see cref="Image"/>. It can be shared between windows and outlive their native handles.
 /// </remarks>
 public class Cursor : Destroyable, IIdentifiable<string>
 {
@@ -99,7 +100,16 @@ public class Cursor : Destroyable, IIdentifiable<string>
         ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
         options ??= new CursorOptions();
 
-        _native = CreateNative(options.Icon, options.SystemIcon, options.Hotspot);
+        VideoRuntime.Acquire();
+        try
+        {
+            _native = CreateNative(options.Icon, options.SystemIcon, options.Hotspot);
+        }
+        catch
+        {
+            VideoRuntime.Release();
+            throw;
+        }
 
         Identifier = identifier;
         Icon = new Store<Image?>(options.Icon);
@@ -278,6 +288,7 @@ public class Cursor : Destroyable, IIdentifiable<string>
         SystemIcon.Destroy();
         Hotspot.Destroy();
         Visible.Destroy();
+        VideoRuntime.Release();
 
         base.OnDestroy();
     }

@@ -12,7 +12,9 @@ namespace Mirage.Windowing;
 /// <remarks>
 /// Window event processing is driven by the scheduler through
 /// <see cref="IUpdatable.Update(UpdateContext)"/>; individual windows do not own an update loop.
-/// The manager owns and destroys its registered windows.
+/// The manager owns and destroys its constructor-provided and composed windows.
+/// References exposed through Windows are borrowed; do not destroy them or register them
+/// with another owning manager.
 /// </remarks>
 public class WindowManager : Module, IUpdatable
 {
@@ -77,19 +79,18 @@ public class WindowManager : Module, IUpdatable
         Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
-        var composedObjects = Compose().ToArray();
-        HashSet<string> identifiers = [];
-
-        foreach (var window in composedObjects)
+        foreach (var window in Compose())
         {
-            if (_windows.ContainsKey(window.Identifier) || !identifiers.Add(window.Identifier))
+            if (!_windows.TryAdd(window.Identifier, window))
+            {
+                if (!ReferenceEquals(_windows[window.Identifier], window) && !window.Destroyed)
+                    window.Destroy();
+
                 throw new InvalidOperationException(
                     $"Duplicate window identifier found: '{window.Identifier}'."
                 );
+            }
         }
-
-        foreach (var window in composedObjects)
-            _windows.Add(window.Identifier, window);
 
         _composed = true;
         Logger.Log("Composition completed.", LogMessageKind.Debug);
@@ -118,7 +119,9 @@ public class WindowManager : Module, IUpdatable
     /// Composition occurs once when the manager first starts, before windows are opened.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
-    /// The manager owns and destroys its registered windows.
+    /// The manager owns and destroys its constructor-provided and composed windows.
+    /// References exposed through Windows are borrowed; do not destroy them or register them
+    /// with another owning manager.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<Window> Compose()
@@ -142,7 +145,7 @@ public class WindowManager : Module, IUpdatable
     {
         base.OnDestroy();
 
-        foreach (var window in _windows.Values)
+        foreach (var window in _windows.Values.ToArray())
         {
             window.Destroy();
             if (InjectedDependencies is not null)

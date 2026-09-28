@@ -90,10 +90,10 @@ public class Sprite : SpatialNode, IDrawable
     /// <inheritdoc />
     protected override void OnDestroy()
     {
+        base.OnDestroy();
+
         Pivot.Destroy();
         Size.Destroy();
         Texture.Destroy();
-
-        base.OnDestroy();
     }
 }

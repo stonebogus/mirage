@@ -54,10 +54,22 @@ public class NodeManager : Module
         Roots.OnUpdate.Connect(OnRootUpdated);
         Roots.OnClear.Connect(OnRootsClearing);
 
-        Roots.Add(initial.Name.Get(), initial);
+        try
+        {
+            Roots.Add(initial.Name.Get(), initial);
 
-        foreach (var root in roots ?? [])
-            Roots.Add(root.Name.Get(), root);
+            foreach (var root in roots ?? [])
+                Roots.Add(root.Name.Get(), root);
+        }
+        catch
+        {
+            foreach (var root in Roots.Values)
+                root.RootOwner = null;
+
+            Roots.Destroy();
+            _activeRoot.Destroy();
+            throw;
+        }
     }
 
     /// <summary>
@@ -75,6 +87,9 @@ public class NodeManager : Module
     /// <remarks>
     /// A root identifier is initially obtained from its name but does not
     /// automatically change if the node is renamed.
+    /// Registration transfers ownership to this manager. Removing or replacing
+    /// an inactive root returns ownership of the old root to the caller without destroying it.
+    /// A root cannot simultaneously belong to another manager or parent.
     /// </remarks>
     public ReactiveDictionary<string, Node> Roots { get; } = [];
 
@@ -90,7 +105,19 @@ public class NodeManager : Module
         _compositionStarted = true;
 
         foreach (var root in Compose())
-            Roots.Add(root.Name.Get(), root);
+        {
+            try
+            {
+                Roots.Add(root.Name.Get(), root);
+            }
+            catch
+            {
+                if (root.RootOwner is null && root.Parent.Get() is null && !root.Destroyed)
+                    root.Destroy();
+
+                throw;
+            }
+        }
 
         _composed = true;
         Logger.Log("Composition completed.", LogMessageKind.Debug);
@@ -125,6 +152,8 @@ public class NodeManager : Module
                 entry.Value.Inject(_nodeContext);
                 Logger.Log($"Registered root '{entry.Key}'.", LogMessageKind.Debug);
             }
+
+            entry.Value.RootOwner = this;
         }
         catch
         {
@@ -145,8 +174,12 @@ public class NodeManager : Module
 
     private void OnRootRemoved(KeyValuePair<string, Node> entry)
     {
-        if (_restoringRoots || !ReferenceEquals(entry.Value, _activeRoot.Get()))
+        if (_restoringRoots)
+            return;
+
+        if (!ReferenceEquals(entry.Value, _activeRoot.Get()))
         {
+            entry.Value.RootOwner = null;
             return;
         }
 
@@ -192,6 +225,9 @@ public class NodeManager : Module
                 change.Current.Value.Inject(_nodeContext);
                 Logger.Log($"Replaced root '{change.Current.Key}'.", LogMessageKind.Debug);
             }
+
+            change.Previous.Value.RootOwner = null;
+            change.Current.Value.RootOwner = this;
         }
         catch
         {
@@ -262,6 +298,14 @@ public class NodeManager : Module
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
 
+        if (root.Destroyed)
+            throw new InvalidOperationException("A destroyed node cannot be registered as a root.");
+
+        if (root.RootOwner is not null && !ReferenceEquals(root.RootOwner, this))
+            throw new InvalidOperationException(
+                "The root is already owned by another node manager."
+            );
+
         if (root.Parent.Get() is not null)
         {
             throw new InvalidOperationException(
@@ -322,14 +366,17 @@ public class NodeManager : Module
     /// <inheritdoc />
     protected override void OnDestroy()
     {
+        base.OnDestroy();
+
         var active = _activeRoot.Get();
 
         if (active.Loaded)
             active.Unload();
 
-        foreach (var root in Roots)
+        foreach (var root in Roots.ToArray())
         {
             root.Value.Destroy();
+            root.Value.RootOwner = null;
             if (InjectedDependencies is not null)
                 Logger.Log($"Destroyed root '{root.Key}'.", LogMessageKind.Debug);
         }
@@ -346,8 +393,6 @@ public class NodeManager : Module
         }
 
         _activeRoot.Destroy();
-
-        base.OnDestroy();
         if (InjectedDependencies is not null)
             Logger.Log("Module resources destroyed.");
     }

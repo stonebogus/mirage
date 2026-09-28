@@ -52,6 +52,10 @@ public interface IDestroyable
 /// <remarks>
 /// This base class manages the destroyed state and provides a lifecycle hook
 /// that derived types can override to release resources or perform cleanup.
+/// Each object has one logical owner, which is responsible for calling Destroy.
+/// References and injected dependencies are borrowed unless an API explicitly transfers ownership.
+/// Composition transfers ownership to the composer unless its API explicitly documents borrowing.
+/// Owners destroy their owned objects, never borrowed references.
 /// </remarks>
 public abstract class Destroyable : IDestroyable
 {
@@ -61,6 +65,7 @@ public abstract class Destroyable : IDestroyable
     /// <remarks>
     /// <see cref="OnDestroy"/> is invoked before the object is marked as destroyed.
     /// If <see cref="OnDestroy"/> throws an exception, the object remains undestroyed.
+    /// Destroy owned objects through their owner; do not destroy them while still registered elsewhere.
     /// </remarks>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when this object has already been destroyed.

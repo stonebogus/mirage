@@ -7,6 +7,11 @@ using Mirage.Physics.Interfaces;
 
 namespace Mirage.Simulating;
 
+/// <summary>Groups borrowed objects for physical simulation.</summary>
+/// <remarks>
+/// The space owns its gravity store and collection, but not the simulatables or their bodies.
+/// Their owners must keep them alive while registered and remove them before destroying them.
+/// </remarks>
 public class SimulationSpace : Destroyable, IIdentifiable<string>
 {
     private bool _composed;
@@ -25,6 +30,7 @@ public class SimulationSpace : Destroyable, IIdentifiable<string>
     /// <summary>
     /// Gets the objects participating in the simulation space.
     /// </summary>
+    /// <remarks>Registration, removal, and clearing never transfer ownership of simulatables.</remarks>
     public readonly ReactiveSet<ISimulatable> Simulatables = [];
 
     /// <summary>
@@ -99,7 +105,9 @@ public class SimulationSpace : Destroyable, IIdentifiable<string>
     /// Composition occurs once when first prepared by the simulator, before simulation bindings are created.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
-    /// The space references simulatables without owning or destroying them.
+    /// The space borrows simulatables, including those returned here, because scene objects
+    /// have independent owners. Return objects owned elsewhere; composition does not transfer
+    /// their lifetime to this processing collection.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<ISimulatable> Compose()
@@ -123,6 +131,8 @@ public class SimulationSpace : Destroyable, IIdentifiable<string>
     {
         Gravity.Destroy();
         Simulatables.Destroy();
+
+        base.OnDestroy();
     }
 
     internal void Prepare()

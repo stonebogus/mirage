@@ -13,6 +13,7 @@ namespace Mirage.Scheduling;
 /// The scheduler defines the maximum rate at which the main update loop runs.
 /// Each registered <see cref="UpdateChannel"/> may optionally impose a lower
 /// update rate on its own entries.
+/// The scheduler owns and destroys its registered channels; their update entries are borrowed.
 /// </remarks>
 public class Scheduler : Module
 {
@@ -25,6 +26,11 @@ public class Scheduler : Module
     /// <summary>
     /// Gets the identifiable set of channels managed by the scheduler.
     /// </summary>
+    /// <remarks>
+    /// The scheduler owns and destroys its registered channels.
+    /// Registration transfers ownership to this owner. Removing or clearing entries returns
+    /// ownership to the caller without destroying them. Do not register an object owned elsewhere.
+    /// </remarks>
     public readonly IdentifiableSet<string, UpdateChannel> Channels = [];
 
     /// <summary>
@@ -89,7 +95,20 @@ public class Scheduler : Module
         Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
-        Channels.Add([.. Compose()]);
+        foreach (var channel in Compose())
+        {
+            try
+            {
+                Channels.Add(channel);
+            }
+            catch
+            {
+                if (!Channels.Contains(channel) && !channel.Destroyed)
+                    channel.Destroy();
+
+                throw;
+            }
+        }
 
         _composed = true;
         Logger.Log("Composition completed.", LogMessageKind.Debug);
@@ -118,7 +137,7 @@ public class Scheduler : Module
     /// Composition occurs once when the scheduler first starts, before channels are prepared.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
-    /// The scheduler references channels without owning or destroying them.
+    /// The scheduler owns and destroys its registered channels.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<UpdateChannel> Compose()
@@ -141,6 +160,9 @@ public class Scheduler : Module
     protected override void OnDestroy()
     {
         base.OnDestroy();
+        foreach (var channel in Channels.ToArray())
+            channel.Destroy();
+
         Channels.Destroy();
         if (InjectedDependencies is not null)
             Logger.Log("Module resources destroyed.");

@@ -10,7 +10,7 @@ namespace Mirage.Graphics.Resources;
 /// Represents an image used as a texture for drawing.
 /// </para>
 /// The image contains the pixels in memory. The renderer creates and owns
-/// the corresponding SDL texture.
+/// the corresponding SDL texture. The image is borrowed and is not destroyed with the texture.
 /// </remarks>
 /// <param name="image">The image containing the texture pixels.</param>
 public class Texture(Image image) : Resource

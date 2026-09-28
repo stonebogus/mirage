@@ -8,6 +8,7 @@ namespace Mirage.Logging;
 /// <summary>
 /// Manages logging and dispatches log messages across registered outputs.
 /// </summary>
+/// <remarks>The logger owns and destroys its registered outputs.</remarks>
 public class Logger : Module
 {
     private bool _composed;
@@ -18,6 +19,11 @@ public class Logger : Module
     /// <summary>
     /// Gets the outputs registered with the logger.
     /// </summary>
+    /// <remarks>
+    /// The logger owns and destroys its registered outputs.
+    /// Registration transfers ownership to this owner. Removing or clearing entries returns
+    /// ownership to the caller without destroying them. Do not register an object owned elsewhere.
+    /// </remarks>
     public readonly ReactiveSet<LogOutput> Outputs = [];
 
     /// <summary>
@@ -45,7 +51,20 @@ public class Logger : Module
 
         _compositionStarted = true;
 
-        Outputs.Add([.. Compose()]);
+        foreach (var output in Compose())
+        {
+            try
+            {
+                Outputs.Add(output);
+            }
+            catch
+            {
+                if (!Outputs.Contains(output) && !output.Destroyed)
+                    output.Destroy();
+
+                throw;
+            }
+        }
 
         _composed = true;
     }
@@ -71,7 +90,7 @@ public class Logger : Module
     /// Composition occurs once when the logger first starts.
     /// Constructor-provided outputs are registered before composed outputs.
     /// All composed outputs are registered before configuration occurs.
-    /// The logger references outputs without owning or destroying them.
+    /// The logger owns and destroys its registered outputs.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<LogOutput> Compose()
@@ -93,13 +112,13 @@ public class Logger : Module
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        foreach (var output in Outputs)
+        base.OnDestroy();
+
+        foreach (var output in Outputs.ToArray())
         {
             output.Destroy();
         }
         Outputs.Destroy();
-
-        base.OnDestroy();
     }
 
     /// <summary>

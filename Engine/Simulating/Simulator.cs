@@ -7,6 +7,8 @@ using Mirage.Simulating.Bindings;
 
 namespace Mirage.Simulating;
 
+/// <summary>Manages simulation spaces and their native physics bindings.</summary>
+/// <remarks>The simulator owns and destroys its registered spaces and bindings.</remarks>
 public class Simulator : Module, IUpdatable
 {
     private readonly Dictionary<SimulationSpace, SpaceBinding> _bindings = new(
@@ -23,8 +25,13 @@ public class Simulator : Module, IUpdatable
     private bool _updating;
 
     /// <summary>
-    /// Gets the identifiable set of borrowed simulation spaces.
+    /// Gets the identifiable set of owned simulation spaces.
     /// </summary>
+    /// <remarks>
+    /// The simulator owns and destroys its registered spaces.
+    /// Registration transfers ownership to this owner. Removing or clearing entries returns
+    /// ownership to the caller without destroying them. Do not register an object owned elsewhere.
+    /// </remarks>
     public readonly IdentifiableSet<string, SimulationSpace> Spaces = [];
 
     public readonly int SubstepCount;
@@ -122,7 +129,20 @@ public class Simulator : Module, IUpdatable
         Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
-        Spaces.Add(Compose().ToArray());
+        foreach (var space in Compose())
+        {
+            try
+            {
+                Spaces.Add(space);
+            }
+            catch
+            {
+                if (!Spaces.Contains(space) && !space.Destroyed)
+                    space.Destroy();
+
+                throw;
+            }
+        }
 
         _composed = true;
         Logger.Log("Composition completed.", LogMessageKind.Debug);
@@ -200,7 +220,7 @@ public class Simulator : Module, IUpdatable
     /// Composition occurs once when the simulator first starts, before simulation bindings are created.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
-    /// The simulator references spaces without owning or destroying them.
+    /// The simulator owns and destroys its registered spaces. Spaces borrow their simulatables.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<SimulationSpace> Compose()
@@ -224,6 +244,9 @@ public class Simulator : Module, IUpdatable
         base.OnDestroy();
 
         DestroyBindings();
+        foreach (var space in Spaces.ToArray())
+            space.Destroy();
+
         Spaces.Destroy();
         if (InjectedDependencies is not null)
             Logger.Log("Module resources destroyed.");
