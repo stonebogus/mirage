@@ -6,11 +6,6 @@ using Mirage.Logging;
 
 namespace Mirage.Noding;
 
-internal sealed class NodeContext(ModuleContainer modules)
-{
-    public ModuleContainer Modules { get; } = modules;
-}
-
 /// <summary>
 /// Coordinates node lifecycles between roots.
 /// </summary>

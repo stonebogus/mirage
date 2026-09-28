@@ -3,8 +3,14 @@ using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
+using Mirage.Logging;
 
 namespace Mirage.Noding;
+
+internal sealed class NodeContext(ModuleContainer modules)
+{
+    public ModuleContainer Modules { get; } = modules;
+}
 
 /// <summary>
 /// Provides optional values used to initialize a <see cref="Node"/>.
@@ -396,6 +402,11 @@ public class Node : Destroyable, IIdentifiable<Guid>
         foreach (var tag in options.Tags ?? [])
             Tags.Add(tag);
     }
+
+    /// <summary>
+    /// Gets a logger whose source identifies this node.
+    /// </summary>
+    protected SourcedLogger Logger => Require<Logger>("Logger").From(ToString());
 
     /// <summary>
     /// Gets a direct subnode by its name.
