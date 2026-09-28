@@ -1,6 +1,7 @@
 using Mirage.Common;
 using Mirage.Common.Collections;
 using Mirage.Common.Interfaces;
+using Mirage.Logging;
 
 namespace Mirage.Loading;
 
@@ -29,6 +30,7 @@ public record LoadContext(string Identifier, string Path) : IIdentifiable<string
 public class Loader : Module
 {
     private readonly Dictionary<ResourceKey, Resource> _resources = [];
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configured;
@@ -57,7 +59,7 @@ public class Loader : Module
     /// Thrown when <paramref name="root"/> is empty or whitespace.
     /// </exception>
     public Loader(string root, IEnumerable<Decoder>? decoders = null)
-        : base("Loader")
+        : base("Loader", ["Logger"])
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
         Root = Path.GetFullPath(root);
@@ -76,6 +78,8 @@ public class Loader : Module
         if (_compositionStarted)
             throw new InvalidOperationException("Composition has already started or failed.");
 
+        if (InjectedDependencies is not null)
+            Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
         var composedObjects = Compose().ToArray();
@@ -91,6 +95,8 @@ public class Loader : Module
             Decoders.Add(decoder);
 
         _composed = true;
+        if (InjectedDependencies is not null)
+            Logger.Log("Composition completed.", LogMessageKind.Debug);
     }
 
     private void EnsureConfigured()
@@ -101,9 +107,13 @@ public class Loader : Module
         if (_configurationStarted)
             throw new InvalidOperationException("Configuration has already started or failed.");
 
+        if (InjectedDependencies is not null)
+            Logger.Log("Configuring module.", LogMessageKind.Debug);
         _configurationStarted = true;
         Configure();
         _configured = true;
+        if (InjectedDependencies is not null)
+            Logger.Log("Configuration completed.", LogMessageKind.Debug);
     }
 
     private string ResolvePath(string path)
@@ -170,18 +180,34 @@ public class Loader : Module
         foreach (var resource in _resources.Values.Where(resource => !resource.Destroyed))
         {
             resource.Destroy();
+            if (InjectedDependencies is not null)
+                Logger.Log(
+                    $"Destroyed cached {resource.GetType().Name} resource.",
+                    LogMessageKind.Debug
+                );
         }
 
         _resources.Clear();
 
         Decoders.Destroy();
+        if (InjectedDependencies is not null)
+            Logger.Log("Module resources destroyed.");
+    }
+
+    /// <inheritdoc />
+    protected override void OnStop()
+    {
+        Logger.Log("Module stopped.");
+        base.OnStop();
     }
 
     /// <inheritdoc />
     protected override void OnStart()
     {
+        Logger.Log("Starting module.");
         EnsureComposed();
         EnsureConfigured();
+        Logger.Log("Module started.");
     }
 
     /// <summary>
@@ -224,6 +250,11 @@ public class Loader : Module
         EnsureComposed();
         EnsureConfigured();
 
+        if (InjectedDependencies is not null)
+            Logger.Log(
+                $"Loading resource '{path}' as {typeof(TResource).Name}.",
+                LogMessageKind.Debug
+            );
         var absolutePath = ResolvePath(path);
 
         var identifier = Path.GetRelativePath(Root, absolutePath);
@@ -235,9 +266,16 @@ public class Loader : Module
             if (cached.Destroyed)
             {
                 _resources.Remove(key);
+                if (InjectedDependencies is not null)
+                    Logger.Log(
+                        $"Evicted destroyed resource '{identifier}' from cache.",
+                        LogMessageKind.Debug
+                    );
             }
             else
             {
+                if (InjectedDependencies is not null)
+                    Logger.Log($"Using cached resource '{identifier}'.", LogMessageKind.Debug);
                 return (TResource)cached;
             }
         }
@@ -277,7 +315,20 @@ public class Loader : Module
 
         var context = new LoadContext(identifier, absolutePath);
 
-        var decoded = candidates[0].Decode(context, stream);
+        Resource decoded;
+        try
+        {
+            decoded = candidates[0].Decode(context, stream);
+        }
+        catch (Exception exception)
+        {
+            if (InjectedDependencies is not null)
+                Logger.Log(
+                    $"Failed to decode resource '{identifier}': {exception.Message}",
+                    LogMessageKind.Warn
+                );
+            throw;
+        }
 
         if (decoded is not TResource resource)
         {
@@ -291,6 +342,8 @@ public class Loader : Module
         }
 
         _resources.Add(key, resource);
+        if (InjectedDependencies is not null)
+            Logger.Log($"Loaded resource '{identifier}' as {typeof(TResource).Name}.");
 
         return resource;
     }

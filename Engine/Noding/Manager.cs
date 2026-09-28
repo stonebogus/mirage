@@ -21,6 +21,7 @@ internal sealed class NodeContext(ModuleContainer modules)
 public class NodeManager : Module
 {
     private readonly Store<Node> _activeRoot;
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configurationStarted;
@@ -59,8 +60,6 @@ public class NodeManager : Module
             Roots.Add(root.Name.Get(), root);
     }
 
-    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
-
     /// <summary>
     /// Gets the currently selected root.
     /// </summary>
@@ -87,12 +86,14 @@ public class NodeManager : Module
         if (_compositionStarted)
             throw new InvalidOperationException("Composition has already started or failed.");
 
+        Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
         foreach (var root in Compose())
             Roots.Add(root.Name.Get(), root);
 
         _composed = true;
+        Logger.Log("Composition completed.", LogMessageKind.Debug);
     }
 
     private void EnsureConfigured()
@@ -103,9 +104,11 @@ public class NodeManager : Module
         if (_configurationStarted)
             throw new InvalidOperationException("Configuration has already started or failed.");
 
+        Logger.Log("Configuring module.", LogMessageKind.Debug);
         _configurationStarted = true;
         Configure();
         _configured = true;
+        Logger.Log("Configuration completed.", LogMessageKind.Debug);
     }
 
     private void OnRootAdded(KeyValuePair<string, Node> entry)
@@ -118,7 +121,10 @@ public class NodeManager : Module
             ValidateRoot(entry.Key, entry.Value);
 
             if (_nodeContext is not null)
+            {
                 entry.Value.Inject(_nodeContext);
+                Logger.Log($"Registered root '{entry.Key}'.", LogMessageKind.Debug);
+            }
         }
         catch
         {
@@ -182,7 +188,10 @@ public class NodeManager : Module
             ValidateRoot(change.Current.Key, change.Current.Value);
 
             if (_nodeContext is not null)
+            {
                 change.Current.Value.Inject(_nodeContext);
+                Logger.Log($"Replaced root '{change.Current.Key}'.", LogMessageKind.Debug);
+            }
         }
         catch
         {
@@ -226,8 +235,12 @@ public class NodeManager : Module
                 $"NodeManager switched active root from '{current.Name.Get()}' to '{next.Name.Get()}'."
             );
         }
-        catch
+        catch (Exception exception)
         {
+            Logger.Log(
+                $"Failed to load root '{next.Name.Get()}'; restoring '{current.Name.Get()}': {exception.Message}",
+                LogMessageKind.Warn
+            );
             if (!current.Loaded)
                 current.Load();
 
@@ -315,7 +328,11 @@ public class NodeManager : Module
             active.Unload();
 
         foreach (var root in Roots)
+        {
             root.Value.Destroy();
+            if (InjectedDependencies is not null)
+                Logger.Log($"Destroyed root '{root.Key}'.", LogMessageKind.Debug);
+        }
 
         _restoringRoots = true;
 
@@ -331,11 +348,14 @@ public class NodeManager : Module
         _activeRoot.Destroy();
 
         base.OnDestroy();
+        if (InjectedDependencies is not null)
+            Logger.Log("Module resources destroyed.");
     }
 
     /// <inheritdoc />
     protected override void OnStart()
     {
+        Logger.Log("Starting module.");
         EnsureComposed();
         EnsureConfigured();
 
@@ -350,6 +370,7 @@ public class NodeManager : Module
         active.Load();
 
         Logger.Log($"NodeManager loaded active root '{active.Name.Get()}'.");
+        Logger.Log("Module started.");
     }
 
     /// <inheritdoc />
@@ -361,6 +382,7 @@ public class NodeManager : Module
             active.Unload();
 
         Logger.Log($"NodeManager unloaded active root '{active.Name.Get()}'.");
+        Logger.Log("Module stopped.");
     }
 
     /// <summary>
@@ -408,6 +430,8 @@ public class NodeManager : Module
             case ModuleState.Idle:
                 ValidateLoadableRoot(next);
                 _activeRoot.Set(next);
+                if (InjectedDependencies is not null)
+                    Logger.Log($"Selected inactive root '{identifier}'.", LogMessageKind.Debug);
                 break;
 
             case ModuleState.Running:

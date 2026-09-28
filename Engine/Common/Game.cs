@@ -232,7 +232,7 @@ public abstract class Game : Destroyable
                 $"Game cannot be destroyed while in state '{currentState}'"
             );
 
-        foreach (var module in _modules.Values)
+        foreach (var module in (_moduleOrder ?? _modules.Values.ToArray()).Reverse())
             module.Destroy();
 
         _modules.Clear();

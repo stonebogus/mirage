@@ -1,5 +1,6 @@
 using Mirage.Common;
 using Mirage.Common.Collections;
+using Mirage.Logging;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Simulating.Bindings;
@@ -14,6 +15,7 @@ public class Simulator : Module, IUpdatable
 
     private readonly List<(SimulationSpace Space, bool Add)> _pendingChanges = [];
 
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configured;
@@ -39,7 +41,7 @@ public class Simulator : Module, IUpdatable
     /// Thrown when the initial spaces contain duplicate identifiers.
     /// </exception>
     public Simulator(IEnumerable<SimulationSpace>? spaces = null, int substepCount = 4)
-        : base("Simulator")
+        : base("Simulator", ["Logger"])
     {
         if (substepCount <= 0)
             throw new ArgumentOutOfRangeException(nameof(substepCount));
@@ -92,9 +94,16 @@ public class Simulator : Module, IUpdatable
             catch (Exception exception)
             {
                 firstException ??= exception;
+                if (InjectedDependencies is not null)
+                    Logger.Log(
+                        $"Failed to destroy simulation binding: {exception.Message}",
+                        LogMessageKind.Warn
+                    );
             }
         }
 
+        if (InjectedDependencies is not null)
+            Logger.Log($"Released {_bindings.Count} simulation bindings.", LogMessageKind.Debug);
         _bindings.Clear();
         _pendingChanges.Clear();
 
@@ -110,11 +119,13 @@ public class Simulator : Module, IUpdatable
         if (_compositionStarted)
             throw new InvalidOperationException("Composition has already started or failed.");
 
+        Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
         Spaces.Add(Compose().ToArray());
 
         _composed = true;
+        Logger.Log("Composition completed.", LogMessageKind.Debug);
     }
 
     private void EnsureConfigured()
@@ -125,9 +136,11 @@ public class Simulator : Module, IUpdatable
         if (_configurationStarted)
             throw new InvalidOperationException("Configuration has already started or failed.");
 
+        Logger.Log("Configuring module.", LogMessageKind.Debug);
         _configurationStarted = true;
         Configure();
         _configured = true;
+        Logger.Log("Configuration completed.", LogMessageKind.Debug);
     }
 
     private void QueueOrRegister(SimulationSpace space, bool add)
@@ -135,6 +148,10 @@ public class Simulator : Module, IUpdatable
         if (_updating)
         {
             _pendingChanges.Add((space, add));
+            Logger.Log(
+                $"Queued {(add ? "registration" : "removal")} of simulation space '{space.Identifier}'.",
+                LogMessageKind.Debug
+            );
             return;
         }
 
@@ -162,6 +179,8 @@ public class Simulator : Module, IUpdatable
             binding.Destroy();
             throw;
         }
+
+        Logger.Log($"Registered simulation space '{space.Identifier}'.", LogMessageKind.Debug);
     }
 
     private void Unregister(SimulationSpace space)
@@ -170,6 +189,7 @@ public class Simulator : Module, IUpdatable
             return;
 
         binding.Destroy();
+        Logger.Log($"Unregistered simulation space '{space.Identifier}'.", LogMessageKind.Debug);
     }
 
     /// <summary>
@@ -205,10 +225,13 @@ public class Simulator : Module, IUpdatable
 
         DestroyBindings();
         Spaces.Destroy();
+        if (InjectedDependencies is not null)
+            Logger.Log("Module resources destroyed.");
     }
 
     protected override void OnStart()
     {
+        Logger.Log("Starting module.");
         EnsureComposed();
         EnsureConfigured();
 
@@ -223,7 +246,11 @@ public class Simulator : Module, IUpdatable
             throw;
         }
 
+        Logger.Log(
+            $"Simulation started with {_bindings.Count} spaces and {SubstepCount} substeps."
+        );
         base.OnStart();
+        Logger.Log("Module started.");
     }
 
     protected override void OnStop()
@@ -231,6 +258,7 @@ public class Simulator : Module, IUpdatable
         DestroyBindings();
 
         base.OnStop();
+        Logger.Log("Module stopped.");
     }
 
     /// <inheritdoc />
@@ -252,6 +280,11 @@ public class Simulator : Module, IUpdatable
         {
             foreach (var binding in _bindings.Values)
                 binding.Step(deltaTime, SubstepCount);
+        }
+        catch (Exception exception)
+        {
+            Logger.Log($"Simulation update failed: {exception.Message}", LogMessageKind.Warn);
+            throw;
         }
         finally
         {

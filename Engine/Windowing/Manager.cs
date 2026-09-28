@@ -1,4 +1,5 @@
 using Mirage.Common;
+using Mirage.Logging;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Windowing;
@@ -16,6 +17,7 @@ namespace Mirage.Windowing;
 public class WindowManager : Module, IUpdatable
 {
     private readonly Dictionary<string, Window> _windows = [];
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configured;
@@ -34,7 +36,7 @@ public class WindowManager : Module, IUpdatable
     /// Thrown when multiple windows have the same identifier.
     /// </exception>
     public WindowManager(IEnumerable<Window>? windows = null)
-        : base("WindowManager", dependencies: ["Scheduler"])
+        : base("WindowManager", dependencies: ["Logger", "Scheduler"])
     {
         foreach (var window in windows ?? [])
         {
@@ -72,6 +74,7 @@ public class WindowManager : Module, IUpdatable
         if (_compositionStarted)
             throw new InvalidOperationException("Composition has already started or failed.");
 
+        Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
         var composedObjects = Compose().ToArray();
@@ -89,6 +92,7 @@ public class WindowManager : Module, IUpdatable
             _windows.Add(window.Identifier, window);
 
         _composed = true;
+        Logger.Log("Composition completed.", LogMessageKind.Debug);
     }
 
     private void EnsureConfigured()
@@ -99,9 +103,11 @@ public class WindowManager : Module, IUpdatable
         if (_configurationStarted)
             throw new InvalidOperationException("Configuration has already started or failed.");
 
+        Logger.Log("Configuring module.", LogMessageKind.Debug);
         _configurationStarted = true;
         Configure();
         _configured = true;
+        Logger.Log("Configuration completed.", LogMessageKind.Debug);
     }
 
     /// <summary>
@@ -137,9 +143,15 @@ public class WindowManager : Module, IUpdatable
         base.OnDestroy();
 
         foreach (var window in _windows.Values)
+        {
             window.Destroy();
+            if (InjectedDependencies is not null)
+                Logger.Log($"Destroyed window '{window.Identifier}'.", LogMessageKind.Debug);
+        }
 
         _windows.Clear();
+        if (InjectedDependencies is not null)
+            Logger.Log("Module resources destroyed.");
     }
 
     /// <inheritdoc />
@@ -149,6 +161,7 @@ public class WindowManager : Module, IUpdatable
     /// </remarks>
     protected override void OnStart()
     {
+        Logger.Log("Starting module.");
         EnsureComposed();
         EnsureConfigured();
 
@@ -160,15 +173,21 @@ public class WindowManager : Module, IUpdatable
             {
                 window.Open();
                 openedWindows.Add(window);
+                Logger.Log($"Opened window '{window.Identifier}'.");
             }
         }
-        catch
+        catch (Exception exception)
         {
+            Logger.Log(
+                $"Window startup failed; closing {openedWindows.Count} opened windows: {exception.Message}",
+                LogMessageKind.Warn
+            );
             for (var index = openedWindows.Count - 1; index >= 0; index--)
                 openedWindows[index].Close();
 
             throw;
         }
+        Logger.Log("Module started.");
     }
 
     /// <inheritdoc />
@@ -180,7 +199,11 @@ public class WindowManager : Module, IUpdatable
         foreach (var window in _windows.Values.Reverse())
         {
             if (window.Opened.Get())
+            {
                 window.Close();
+                Logger.Log($"Closed window '{window.Identifier}'.");
+            }
         }
+        Logger.Log("Module stopped.");
     }
 }

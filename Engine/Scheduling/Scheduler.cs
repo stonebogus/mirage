@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Mirage.Common;
 using Mirage.Common.Collections;
+using Mirage.Logging;
 using Mirage.Scheduling.Channels;
 
 namespace Mirage.Scheduling;
@@ -15,6 +16,7 @@ namespace Mirage.Scheduling;
 /// </remarks>
 public class Scheduler : Module
 {
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configurationStarted;
@@ -51,7 +53,7 @@ public class Scheduler : Module
     /// Thrown when two initial channels have the same identifier.
     /// </exception>
     public Scheduler(int targetUpdateRate = 60, IEnumerable<UpdateChannel>? channels = null)
-        : base("Scheduler")
+        : base("Scheduler", ["Logger"])
     {
         TargetUpdateRate = targetUpdateRate;
 
@@ -63,7 +65,10 @@ public class Scheduler : Module
         Channels.OnAdd.Connect(channel =>
         {
             if (State.Get() == ModuleState.Running)
+            {
                 channel.Prepare();
+                Logger.Log($"Prepared added channel '{channel.Identifier}'.", LogMessageKind.Debug);
+            }
         });
     }
 
@@ -81,11 +86,13 @@ public class Scheduler : Module
         if (_compositionStarted)
             throw new InvalidOperationException("Composition has already started or failed.");
 
+        Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
         Channels.Add([.. Compose()]);
 
         _composed = true;
+        Logger.Log("Composition completed.", LogMessageKind.Debug);
     }
 
     private void EnsureConfigured()
@@ -96,9 +103,11 @@ public class Scheduler : Module
         if (_configurationStarted)
             throw new InvalidOperationException("Configuration has already started or failed.");
 
+        Logger.Log("Configuring module.", LogMessageKind.Debug);
         _configurationStarted = true;
         Configure();
         _configured = true;
+        Logger.Log("Configuration completed.", LogMessageKind.Debug);
     }
 
     /// <summary>
@@ -133,18 +142,30 @@ public class Scheduler : Module
     {
         base.OnDestroy();
         Channels.Destroy();
+        if (InjectedDependencies is not null)
+            Logger.Log("Module resources destroyed.");
+    }
+
+    /// <inheritdoc />
+    protected override void OnStop()
+    {
+        Logger.Log("Module stopped.");
+        base.OnStop();
     }
 
     /// <inheritdoc />
     protected override void OnStart()
     {
+        Logger.Log("Starting module.");
         EnsureComposed();
         EnsureConfigured();
         foreach (var channel in Channels)
         {
             channel.Prepare();
+            Logger.Log($"Prepared channel '{channel.Identifier}'.", LogMessageKind.Debug);
         }
         base.OnStart();
+        Logger.Log("Module started.");
     }
 
     /// <summary>
@@ -169,6 +190,10 @@ public class Scheduler : Module
     /// </remarks>
     public void Run()
     {
+        if (InjectedDependencies is not null)
+            Logger.Log(
+                $"Starting update loop with target rate {TargetUpdateRate} Hz and {Channels.Count} channels."
+            );
         var stopwatch = Stopwatch.StartNew();
         var previousIterationTime = stopwatch.Elapsed.TotalSeconds;
 
@@ -181,7 +206,19 @@ public class Scheduler : Module
 
             foreach (var channel in Channels.OrderByDescending(channel => channel.Priority))
             {
-                channel.Update(DeltaTime, TargetUpdateRate);
+                try
+                {
+                    channel.Update(DeltaTime, TargetUpdateRate);
+                }
+                catch (Exception exception)
+                {
+                    if (InjectedDependencies is not null)
+                        Logger.Log(
+                            $"Update channel '{channel.Identifier}' failed: {exception.Message}",
+                            LogMessageKind.Warn
+                        );
+                    throw;
+                }
             }
 
             if (TargetUpdateRate <= 0)
@@ -205,5 +242,8 @@ public class Scheduler : Module
                 remainingIterationTime = targetIterationDuration - elapsedIterationTime;
             }
         }
+
+        if (InjectedDependencies is not null)
+            Logger.Log("Update loop ended.");
     }
 }

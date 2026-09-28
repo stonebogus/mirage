@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Mirage.Common.csproj" />
+    <ProjectReference Include="..\Logging\Mirage.Logging.csproj" />
     <ProjectReference Include="..\Noding\Mirage.Noding.csproj" />
     <ProjectReference Include="..\Scheduling\Mirage.Scheduling.csproj" />
     <ProjectReference Include="..\Windowing\Mirage.Windowing.csproj" />

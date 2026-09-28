@@ -4,6 +4,7 @@ using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Graphics.Interfaces;
 using Mirage.Graphics.Primitives;
+using Mirage.Logging;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Windowing;
@@ -20,6 +21,7 @@ public class Renderer : Module, IUpdatable
 {
     private readonly RenderSurface _surface;
     private readonly Window _window;
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configurationStarted;
@@ -57,7 +59,7 @@ public class Renderer : Module, IUpdatable
         IEnumerable<DrawLayer>? layers = null,
         ICamera? camera = null
     )
-        : base("Renderer")
+        : base("Renderer", ["Logger"])
     {
         _window = window;
         _window.DeferVisibilityUntilFirstFrame();
@@ -82,11 +84,13 @@ public class Renderer : Module, IUpdatable
         if (_compositionStarted)
             throw new InvalidOperationException("Composition has already started or failed.");
 
+        Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
         Layers.Add(Compose().ToArray());
 
         _composed = true;
+        Logger.Log("Composition completed.", LogMessageKind.Debug);
     }
 
     private void EnsureConfigured()
@@ -97,9 +101,11 @@ public class Renderer : Module, IUpdatable
         if (_configurationStarted)
             throw new InvalidOperationException("Configuration has already started or failed.");
 
+        Logger.Log("Configuring module.", LogMessageKind.Debug);
         _configurationStarted = true;
         Configure();
         _configured = true;
+        Logger.Log("Configuration completed.", LogMessageKind.Debug);
     }
 
     /// <summary>
@@ -135,24 +141,39 @@ public class Renderer : Module, IUpdatable
         base.OnDestroy();
 
         foreach (var layer in Layers.ToArray())
+        {
             layer.Destroy();
+            if (InjectedDependencies is not null)
+                Logger.Log($"Destroyed render layer '{layer.Identifier}'.", LogMessageKind.Debug);
+        }
 
         Layers.Destroy();
         ClearColor.Destroy();
         _surface.Stop();
         Camera.Destroy();
+        if (InjectedDependencies is not null)
+            Logger.Log("Module resources destroyed.");
     }
 
     /// <inheritdoc />
     protected override void OnStart()
     {
+        Logger.Log("Starting module.");
         EnsureComposed();
         EnsureConfigured();
         _surface.Start();
+        Logger.Log(
+            $"Render surface started for window '{_window.Identifier}' with {Layers.Count} layers."
+        );
+        Logger.Log("Module started.");
     }
 
     /// <inheritdoc />
-    protected override void OnStop() => _surface.Stop();
+    protected override void OnStop()
+    {
+        _surface.Stop();
+        Logger.Log($"Render surface stopped for window '{_window.Identifier}'.");
+    }
 
     /// <summary>
     /// Draws and presents one frame.
@@ -173,9 +194,13 @@ public class Renderer : Module, IUpdatable
             foreach (var layer in Layers.OrderBy(layer => layer.Priority))
                 layer.Draw(context);
         }
-        catch
+        catch (Exception exception)
         {
             _surface.AbortFrame();
+            Logger.Log(
+                $"Frame aborted for window '{_window.Identifier}': {exception.Message}",
+                LogMessageKind.Warn
+            );
             throw;
         }
 

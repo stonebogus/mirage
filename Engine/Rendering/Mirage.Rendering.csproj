@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Mirage.Common.csproj" />
+    <ProjectReference Include="..\Logging\Mirage.Logging.csproj" />
     <ProjectReference Include="..\Graphics\Mirage.Graphics.csproj" />
     <ProjectReference Include="..\Noding\Mirage.Noding.csproj" />
     <ProjectReference Include="..\Scheduling\Mirage.Scheduling.csproj" />

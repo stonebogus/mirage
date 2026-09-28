@@ -1,6 +1,7 @@
 using Mirage.Common;
 using Mirage.Common.Collections;
 using Mirage.Handling.Devices;
+using Mirage.Logging;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Windowing;
@@ -13,6 +14,7 @@ namespace Mirage.Handling;
 public class InputHandler : Module, IUpdatable
 {
     private readonly IdentifiableSet<string, InputDevice> _devices = [];
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configured;
@@ -38,7 +40,7 @@ public class InputHandler : Module, IUpdatable
     /// Thrown when the initial devices contain duplicate identifiers.
     /// </exception>
     public InputHandler(int index, Window window, IEnumerable<InputDevice>? devices = null)
-        : base($"InputHandler-{index}")
+        : base($"InputHandler-{index}", ["Logger"])
     {
         Window = window;
         foreach (var device in devices ?? [])
@@ -64,7 +66,18 @@ public class InputHandler : Module, IUpdatable
         var context = new InputContext(Window, Window.FrameEvents);
         foreach (var device in _devices)
         {
-            device.Process(context);
+            try
+            {
+                device.Process(context);
+            }
+            catch (Exception exception)
+            {
+                Logger.Log(
+                    $"Input device '{device.Identifier}' failed: {exception.Message}",
+                    LogMessageKind.Warn
+                );
+                throw;
+            }
         }
     }
 
@@ -76,11 +89,13 @@ public class InputHandler : Module, IUpdatable
         if (_compositionStarted)
             throw new InvalidOperationException("Composition has already started or failed.");
 
+        Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
         _devices.Add(Compose().ToArray());
 
         _composed = true;
+        Logger.Log("Composition completed.", LogMessageKind.Debug);
     }
 
     private void EnsureConfigured()
@@ -91,9 +106,11 @@ public class InputHandler : Module, IUpdatable
         if (_configurationStarted)
             throw new InvalidOperationException("Configuration has already started or failed.");
 
+        Logger.Log("Configuring module.", LogMessageKind.Debug);
         _configurationStarted = true;
         Configure();
         _configured = true;
+        Logger.Log("Configuration completed.", LogMessageKind.Debug);
     }
 
     /// <summary>
@@ -130,15 +147,35 @@ public class InputHandler : Module, IUpdatable
         base.OnDestroy();
 
         foreach (var device in _devices)
+        {
             device.Destroy();
+            if (InjectedDependencies is not null)
+                Logger.Log($"Destroyed input device '{device.Identifier}'.", LogMessageKind.Debug);
+        }
 
         _devices.Destroy();
+        if (InjectedDependencies is not null)
+            Logger.Log("Module resources destroyed.");
+    }
+
+    /// <inheritdoc />
+    protected override void OnStop()
+    {
+        Logger.Log("Module stopped.");
+        base.OnStop();
     }
 
     /// <inheritdoc />
     protected override void OnStart()
     {
+        Logger.Log("Starting module.");
         EnsureComposed();
         EnsureConfigured();
+        foreach (var device in _devices)
+            Logger.Log(
+                $"Input device '{device.Identifier}' ready for window '{Window.Identifier}'.",
+                LogMessageKind.Debug
+            );
+        Logger.Log("Module started.");
     }
 }
