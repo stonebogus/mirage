@@ -1,7 +1,6 @@
 using Mirage.Common.Events;
 using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
-using Mirage.Common.Telemetry;
 
 namespace Mirage.Common;
 
@@ -12,18 +11,10 @@ namespace Mirage.Common;
 /// A module container does not own the modules it contains and does not manage
 /// their lifecycle.
 /// </remarks>
-public sealed class ModuleContainer
+/// <param name="modules">The modules exposed by the container.</param>
+public sealed class ModuleContainer(IEnumerable<Module> modules)
 {
-    private readonly IReadOnlyList<Module> _modules;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ModuleContainer"/> class.
-    /// </summary>
-    /// <param name="modules">The modules exposed by the container.</param>
-    public ModuleContainer(IEnumerable<Module> modules)
-    {
-        _modules = [.. modules];
-    }
+    private readonly IReadOnlyList<Module> _modules = [.. modules];
 
     /// <summary>
     /// Gets the single module matching the specified type.
@@ -78,8 +69,6 @@ public sealed class ModuleContainer
 internal sealed class ModuleContext
 {
     public required ModuleContainer Modules { get; init; }
-
-    public required Telemetry.Telemetry Telemetry { get; init; }
 }
 
 /// <summary>
@@ -147,11 +136,6 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
     protected ModuleContainer InjectedDependencies { get; private set; } = null!;
 
     /// <summary>
-    /// Gets the telemetry manager available to the module after injection.
-    /// </summary>
-    protected Telemetry.Telemetry Telemetry { get; private set; } = null!;
-
-    /// <summary>
     /// Gets a read-only store for the current lifecycle state of the module.
     /// </summary>
     public IReadOnlyStore<ModuleState> State => _state;
@@ -168,13 +152,6 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
             );
 
         _state.Destroy();
-
-        if (_injected)
-            Telemetry.Send(
-                $"Module '{Identifier}' has been destroyed.",
-                Identifier,
-                MessageKind.Debug
-            );
     }
 
     /// <summary>
@@ -241,18 +218,14 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
                 $"Module '{Identifier}' has already been injected."
             );
 
-        Telemetry = context.Telemetry;
-
-        List<Module> injectedDependencies = [];
-
-        foreach (var dependency in Dependencies)
-            injectedDependencies.Add(context.Modules.Get(dependency));
+        List<Module> injectedDependencies =
+        [
+            .. Dependencies.Select(dependency => context.Modules.Get(dependency)),
+        ];
 
         InjectedDependencies = new ModuleContainer(injectedDependencies);
 
         _injected = true;
-
-        Telemetry.Send($"Module '{Identifier}' has been injected.", Identifier, MessageKind.Debug);
     }
 
     internal void Start()
@@ -273,15 +246,11 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
 
         _state.Set(ModuleState.Starting);
 
-        Telemetry.Send($"Starting module '{Identifier}'.", Identifier);
-
         try
         {
             OnStart();
 
             _state.Set(ModuleState.Running);
-
-            Telemetry.Send($"Module '{Identifier}' started successfully.", Identifier);
         }
         catch (Exception)
         {
@@ -309,15 +278,11 @@ public abstract class Module(string identifier, IEnumerable<string>? dependencie
 
         _state.Set(ModuleState.Stopping);
 
-        Telemetry.Send($"Stopping module '{Identifier}'.", Identifier);
-
         try
         {
             OnStop();
 
             _state.Set(ModuleState.Idle);
-
-            Telemetry.Send($"Module '{Identifier}' stopped successfully.", Identifier);
         }
         catch (Exception)
         {

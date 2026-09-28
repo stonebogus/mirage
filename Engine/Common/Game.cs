@@ -1,6 +1,5 @@
 using Mirage.Common.Events;
 using Mirage.Common.Lifecycle;
-using Mirage.Common.Telemetry;
 
 namespace Mirage.Common;
 
@@ -31,12 +30,12 @@ public enum GameState
 }
 
 /// <summary>
-/// Coordinates the lifecycle, dependency resolution, telemetry and its registered modules.
+/// Coordinates the lifecycle, dependency resolution and its registered modules.
 /// </summary>
 /// <remarks>
 /// A game manages its modules by resolving their dependencies, injecting their
 /// shared context, and starting and stopping them in dependency order.
-/// It owns and destroys its registered modules and telemetry manager.
+/// It owns and destroys its registered modules.
 /// </remarks>
 public abstract class Game : Destroyable
 {
@@ -44,15 +43,10 @@ public abstract class Game : Destroyable
     private readonly Store<GameState> _state = new(GameState.Idle);
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
     private bool _injected;
     private IReadOnlyList<Module>? _moduleOrder;
-
-    /// <summary>
-    /// Gets the telemetry manager used by the game and its modules.
-    /// </summary>
-    protected readonly Telemetry.Telemetry Telemetry;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Game"/> class.
@@ -60,18 +54,12 @@ public abstract class Game : Destroyable
     /// <param name="modules">
     /// The initial modules to register.
     /// </param>
-    /// <param name="telemetry">
-    /// The telemetry manager to use, or <see langword="null"/> to create a new
-    /// instance.
-    /// </param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when multiple modules have the same identifier.
     /// </exception>
-    protected Game(IEnumerable<Module>? modules = null, Telemetry.Telemetry? telemetry = null)
+    protected Game(params IEnumerable<Module> modules)
     {
-        Telemetry = telemetry ?? new Telemetry.Telemetry();
-
-        foreach (var module in modules ?? [])
+        foreach (var module in modules)
         {
             if (!_modules.TryAdd(module.Identifier, module))
             {
@@ -250,10 +238,6 @@ public abstract class Game : Destroyable
         _modules.Clear();
 
         _state.Destroy();
-
-        Telemetry.Send("Game has been destroyed", "Game", MessageKind.Debug);
-
-        Telemetry.Destroy();
     }
 
     /// <summary>
@@ -323,8 +307,6 @@ public abstract class Game : Destroyable
 
         _state.Set(GameState.Starting);
 
-        Telemetry.Send("Game is starting", "Game");
-
         List<Module> startedModules = [];
 
         try
@@ -336,11 +318,7 @@ public abstract class Game : Destroyable
 
             if (!_injected)
             {
-                ModuleContext context = new()
-                {
-                    Telemetry = Telemetry,
-                    Modules = new ModuleContainer(sortedModules),
-                };
+                ModuleContext context = new() { Modules = new ModuleContainer(sortedModules) };
 
                 foreach (var module in sortedModules)
                     module.Inject(context);
@@ -358,8 +336,6 @@ public abstract class Game : Destroyable
             _state.Set(GameState.Running);
 
             OnStart();
-
-            Telemetry.Send("Game is now running", "Game");
         }
         catch
         {
@@ -407,8 +383,6 @@ public abstract class Game : Destroyable
 
         _state.Set(GameState.Stopping);
 
-        Telemetry.Send("Game is stopping", "Game");
-
         try
         {
             var sortedModules = _moduleOrder ?? ResolveModuleOrder();
@@ -424,8 +398,6 @@ public abstract class Game : Destroyable
             OnStop();
 
             _state.Set(GameState.Idle);
-
-            Telemetry.Send("Game is now idle", "Game");
         }
         catch (Exception)
         {

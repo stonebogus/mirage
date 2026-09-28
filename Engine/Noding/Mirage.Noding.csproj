@@ -7,5 +7,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Mirage.Common.csproj" />
+    <ProjectReference Include="..\Logging\Mirage.Logging.csproj" />
   </ItemGroup>
 </Project>

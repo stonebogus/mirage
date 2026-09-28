@@ -1,9 +1,9 @@
-namespace Mirage.Common.Telemetry;
+namespace Mirage.Logging;
 
 /// <summary>
 /// Represents the severity level or classification of a telemetry message.
 /// </summary>
-public enum MessageKind
+public enum LogMessageKind
 {
     /// <summary>
     /// Indicates a debug message intended for development and diagnostics.
@@ -22,7 +22,7 @@ public enum MessageKind
 }
 
 /// <summary>
-/// Initializes a new instance of the <see cref="Message"/> struct.
+/// Initializes a new instance of the <see cref="LogMessage"/> struct.
 /// </summary>
 /// <remarks>
 /// Defines an immutable telemetry message containing the log content,
@@ -36,9 +36,9 @@ public enum MessageKind
 /// <param name="Metadata">
 /// Optional contextual key-value metadata associated with the message.
 /// </param>
-public readonly record struct Message(
+public readonly record struct LogMessage(
     string Content,
     string Source,
-    MessageKind Kind,
+    LogMessageKind Kind,
     IReadOnlyDictionary<string, object?>? Metadata = null
 );

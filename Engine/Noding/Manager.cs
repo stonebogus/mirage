@@ -2,6 +2,7 @@ using Mirage.Common;
 using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Common.Primitives;
+using Mirage.Logging;
 
 namespace Mirage.Noding;
 
@@ -22,10 +23,43 @@ public class NodeManager : Module
     private readonly Store<Node> _activeRoot;
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
-    private bool _restoringRoots;
+    private bool _configured;
     private NodeContext? _nodeContext;
+    private bool _restoringRoots;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NodeManager"/> class.
+    /// </summary>
+    /// <param name="initial">The initially selected root.</param>
+    /// <param name="roots">
+    /// Additional roots to register; <see langword="null"/> means no additional roots.
+    /// </param>
+    /// <param name="dependencies">
+    /// The identifiers of the modules that managed nodes may access.
+    /// </param>
+    public NodeManager(
+        Node initial,
+        IEnumerable<Node>? roots = null,
+        IEnumerable<string>? dependencies = null
+    )
+        : base("NodeManager", ["Logger", .. dependencies ?? []])
+    {
+        _activeRoot = new Store<Node>(initial);
+        ActiveRoot = _activeRoot;
+
+        Roots.OnAdd.Connect(OnRootAdded);
+        Roots.OnRemove.Connect(OnRootRemoved);
+        Roots.OnUpdate.Connect(OnRootUpdated);
+        Roots.OnClear.Connect(OnRootsClearing);
+
+        Roots.Add(initial.Name.Get(), initial);
+
+        foreach (var root in roots ?? [])
+            Roots.Add(root.Name.Get(), root);
+    }
+
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
 
     /// <summary>
     /// Gets the currently selected root.
@@ -44,37 +78,6 @@ public class NodeManager : Module
     /// automatically change if the node is renamed.
     /// </remarks>
     public ReactiveDictionary<string, Node> Roots { get; } = [];
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="NodeManager"/> class.
-    /// </summary>
-    /// <param name="initial">The initially selected root.</param>
-    /// <param name="roots">
-    /// Additional roots to register; <see langword="null"/> means no additional roots.
-    /// </param>
-    /// <param name="dependencies">
-    /// The identifiers of the modules that managed nodes may access.
-    /// </param>
-    public NodeManager(
-        Node initial,
-        IEnumerable<Node>? roots = null,
-        IEnumerable<string>? dependencies = null
-    )
-        : base("NodeManager", dependencies)
-    {
-        _activeRoot = new Store<Node>(initial);
-        ActiveRoot = _activeRoot;
-
-        Roots.OnAdd.Connect(OnRootAdded);
-        Roots.OnRemove.Connect(OnRootRemoved);
-        Roots.OnUpdate.Connect(OnRootUpdated);
-        Roots.OnClear.Connect(OnRootsClearing);
-
-        Roots.Add(initial.Name.Get(), initial);
-
-        foreach (var root in roots ?? [])
-            Roots.Add(root.Name.Get(), root);
-    }
 
     private void EnsureComposed()
     {
@@ -219,9 +222,8 @@ public class NodeManager : Module
             next.Load();
             _activeRoot.Set(next);
 
-            Telemetry.Send(
-                $"NodeManager switched active root from '{current.Name.Get()}' to '{next.Name.Get()}'.",
-                Identifier
+            Logger.Log(
+                $"NodeManager switched active root from '{current.Name.Get()}' to '{next.Name.Get()}'."
             );
         }
         catch
@@ -347,7 +349,7 @@ public class NodeManager : Module
         ValidateLoadableRoot(active);
         active.Load();
 
-        Telemetry.Send($"NodeManager loaded active root '{active.Name.Get()}'.", Identifier);
+        Logger.Log($"NodeManager loaded active root '{active.Name.Get()}'.");
     }
 
     /// <inheritdoc />
@@ -358,7 +360,7 @@ public class NodeManager : Module
         if (active.Loaded)
             active.Unload();
 
-        Telemetry.Send($"NodeManager unloaded active root '{active.Name.Get()}'.", Identifier);
+        Logger.Log($"NodeManager unloaded active root '{active.Name.Get()}'.");
     }
 
     /// <summary>
