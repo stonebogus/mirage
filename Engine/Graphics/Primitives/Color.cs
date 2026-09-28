@@ -332,6 +332,19 @@ public readonly record struct Color
     }
 
     /// <summary>
+    /// Creates a random opaque color with normalized red, green, and blue components.
+    /// </summary>
+    /// <returns>A random color with an alpha component of 1.</returns>
+    public static Color Random()
+    {
+        return new Color(
+            System.Random.Shared.NextSingle(),
+            System.Random.Shared.NextSingle(),
+            System.Random.Shared.NextSingle()
+        );
+    }
+
+    /// <summary>
     /// Converts this color to an 8-bit hexadecimal representation.
     /// </summary>
     /// <param name="includeAlpha">
