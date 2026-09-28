@@ -205,6 +205,16 @@ It prefers small systems, explicit ownership, composition, and existing .NET typ
 
 The engine does not try to abstract every implementation detail or support every kind of game. Its architecture grows alongside the games being built with it.
 
+## AI Usage
+
+AI-assisted tools are used throughout Mirage's development for exploring ideas, reviewing and implementing code, finding inconsistencies, and maintaining documentation.
+
+Architecture and design decisions remain with the maintainers. AI output is reviewed and may be modified or discarded.
+
+Much of Mirage's API documentation is written or refined with AI assistance to maintain consistency across the codebase. This README and other project documentation may also use AI assistance.
+
+Mirage is not generated as a whole by AI; AI is one of the tools used in its iterative development.
+
 ## Development
 
 Active development takes place on the `develop` branch.

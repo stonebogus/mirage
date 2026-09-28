@@ -1,43 +1,108 @@
 # Documenting the API
 
-## Language and Style
+Mirage's documentation describes contracts: what an object represents, when an operation is valid, and what callers or subclasses are responsible for. Keep it close to the public API and consistent with the implementation. See [Ownership and destruction](Ownership.md) for lifetime conventions.
 
-- Write API documentation in English.
-- Keep sentences brief, precise, and consistent across projects.
-- Explain a symbol's responsibility in `<summary>`; do not restate its name just to create a link.
-- Use `<remarks>` only for additional contracts that are not already clear from the summary.
-- Use `<inheritdoc />` for overrides and interface implementations when the inherited contract applies. Add implementation-specific remarks only for meaningful differences.
-- Avoid repeating the type's general behavior in every member comment.
+## Language and style
 
-## Coverage
+- Write API documentation in English, using brief, concrete sentences.
+- Use `<summary>` for the symbol's responsibility. Prefer “Gets the registered outputs” or “Loads a resource” over descriptions of implementation steps.
+- Use `<remarks>` for lifecycle rules, ownership, ordering, or other behavior that needs explanation beyond the summary.
+- Avoid repeating a type's full contract on every member. Put details where callers will look for them.
+- Use `<inheritdoc />` for overrides and interface implementations when the inherited contract applies. Add remarks only for meaningful differences.
 
-- Document every public type and member, including enum values, interfaces, records, constructors, and protected members that define extension contracts.
-- Add `<typeparam>` for every type parameter and `<param>` for every method, constructor, primary-constructor, and positional-record parameter.
-- Add `<returns>` when the result needs clarification, such as nullability, lookup failure, or returned ownership.
-- Add `<exception>` only for exceptions the implementation can actually throw and callers need to understand.
-- Document constructors by stating what they initialize and describing their parameters. Do not repeat every initialized property's full description.
-- Do not add XML documentation to private implementation details.
+Document stable behavior rather than current implementation details. “Dependencies are available before startup” is an API contract; the name of the private dictionary storing them is not.
 
-## XML References
+## Coverage and XML
 
-- Use `<see cref="..."/>` when a link to another API symbol clarifies the contract. Verify that each reference resolves.
-- Use `<see langword="null"/>`, `<see langword="true"/>`, and `<see langword="false"/>` for language keywords in prose.
-- Use `<c>...</c>` for code identifiers, expressions, literals, and values that should not be linked.
-- Avoid decorative links and self-references used only to repeat the symbol's own name.
-- Keep XML tags correctly nested and closed. Use consistent `<inheritdoc />` formatting.
+Document public types and members, enum values, interfaces, records, constructors, and protected extension points. Do not add XML comments to private or internal implementation details merely to increase coverage.
 
-## Contracts and Concepts
+Use the tags that explain the contract:
 
-- For options types, document each setting's purpose, default value, unit, and the meaning of `null` where applicable.
-- Describe what a `Store`, `Signal`, or reactive collection represents. State notification timing and ordering when they are not obvious from the API.
-- Use consistent terms for local and world positions, window and screen coordinates, radians, pixels, and application-defined coordinate units.
-- State resource ownership explicitly: identify who creates, owns, borrows, and destroys each resource, and when native handles are valid.
-- Keep ownership claims grounded in the implementation. Do not imply that a referenced object is owned or destroyed when the code only stores a reference.
+- `<param>` and `<typeparam>` describe each parameter, including primary-constructor and positional-record parameters.
+- `<returns>` clarifies results, especially ownership, nullability, and lookup failure.
+- `<exception>` describes exceptions the implementation actually throws and that callers need to understand. Do not copy exception lists from unrelated APIs.
+- `<see cref="..."/>` links to symbols when the reference helps explain behavior. Verify that it resolves.
+- `<see langword="null"/>`, `<see langword="true"/>`, and `<see langword="false"/>` identify language keywords in prose.
+- `<c>...</c>` marks literals, expressions, and identifiers that do not need links.
 
-## Comments and Verification
+Keep tags correctly nested and closed. Use `<inheritdoc />` consistently, and `<para>` when a longer remarks block needs distinct paragraphs.
 
-- Remove comments that merely narrate the next line of code.
-- Keep ordinary comments for non-obvious implementation decisions; convert a comment to XML only when it describes a public contract.
-- Do not change signatures, visibility, architecture, or behavior as part of a documentation-only change.
-- Build the solution with XML documentation enabled and resolve all documentation warnings, including `CS1591`. Do not suppress them with `NoWarn` or disable `GenerateDocumentationFile`.
-- Run the existing tests after editing documentation. Check the final diff to confirm that executable code was not changed.
+For ordinary constructors, state what they initialize and describe the arguments without repeating every property's documentation. For primary constructors, follow the surrounding Mirage style: document initialization in the summary, explain the type's role in remarks, and place parameter tags on the type declaration.
+
+## Describe lifetime explicitly
+
+Distinguish owning an object from owning a collection or store that references it. State whether registration or a returned value transfers ownership. Describe removal and replacement when callers can mutate an owning collection.
+
+```csharp
+/// <summary>
+/// Gets the registered logging outputs.
+/// </summary>
+/// <remarks>
+/// The logger owns and destroys its registered outputs.
+/// Removing an output returns ownership to the caller without destroying it.
+/// </remarks>
+public readonly ReactiveSet<LogOutput> Outputs = [];
+```
+
+For a borrowed relationship, use direct wording such as “The renderer references the window without owning or destroying it.” Injected dependencies are always borrowed. Native handles should document their owner and validity period.
+
+Keep these claims grounded in the code. A readonly field, a constructor argument, or a `Store<T>` does not by itself establish ownership.
+
+## Describe lifecycle and extension points
+
+Mirage commonly separates composition, configuration, startup, updates, shutdown, and destruction. Document the phases that matter to a particular API:
+
+- When `Compose()` runs, who owns its results, and whether constructor-provided objects are already registered.
+- What is available in `Configure()`, whether it runs once, and what happens if initialization fails.
+- Which operations require injection, loading, or a running module.
+- Whether stopping permits a later restart, and what destruction releases permanently.
+- Whether an override must call the base implementation and any important ordering requirement.
+
+Keep composition exceptions explicit rather than copying the default ownership sentence into every class. A processing view borrowing existing scene objects has a different contract from a manager adopting newly composed contents.
+
+```csharp
+/// <summary>
+/// Composes the outputs managed by this logger.
+/// </summary>
+/// <returns>The outputs to register, in enumeration order.</returns>
+/// <remarks>
+/// Composition occurs once before configuration.
+/// The logger owns and destroys the returned outputs.
+/// </remarks>
+protected virtual IEnumerable<LogOutput> Compose()
+{
+    yield break;
+}
+```
+
+Examples should illustrate a contract with a small, coherent fragment. Avoid entire application setups or lists of private implementation details.
+
+## Describe reactive state and units
+
+Explain what a `Store`, `Signal`, or reactive collection represents. State notification timing when it matters: before removal, after insertion, only when a value changes, or during an explicit lifecycle transition. Do not promise that destruction emits ordinary change events unless the implementation does so.
+
+For options and numeric values, document defaults, units, valid ranges, and the meaning of `null` or sentinel values. Use consistent terms for local and world coordinates, window and screen coordinates, radians, pixels, seconds, and update rates. Distinguish a configured target rate from a measured rate.
+
+Read-only views restrict access; they do not imply ownership or guarantee that the underlying value never changes.
+
+## AI-assisted documentation
+
+Much of Mirage's API documentation is written or refined with AI assistance. This is intentional and part of the project's documentation workflow.
+
+Mirage has many related APIs that share concepts such as ownership, lifecycle, composition, and reactive state. AI makes it practical to document these consistently across the codebase and is particularly useful for repository-wide documentation work.
+
+AI-generated documentation must still be grounded in the implementation. It should inspect the relevant code and surrounding APIs, follow the conventions in this document, and never invent behavior, ownership, exceptions, guarantees, or lifecycle rules.
+
+The implementation is always the source of truth.
+
+AI-assisted documentation should preserve established terminology, distinguish ownership from borrowing, use `<inheritdoc />` where appropriate, avoid unnecessary documentation of internal implementation details, and keep related APIs documented at a similar level of detail.
+
+Human review is especially important for architectural and behavioral contracts. The goal is not for documentation to appear human-written or AI-written, but to be accurate, consistent, useful, and maintainable.
+
+## Comments and verification
+
+Keep ordinary comments for non-obvious decisions or constraints. Remove comments that merely narrate the next line of code. Move a comment into XML only when it describes a caller-visible or subclass-visible contract.
+
+For a documentation-only change, preserve signatures, visibility, architecture, and executable behavior. Check examples, relative Markdown links, XML references, and the final diff.
+
+When changing C# XML comments, build with documentation enabled and fix warnings introduced by the change. Do not suppress warnings with `NoWarn` or disable `GenerateDocumentationFile`. Keep C# examples and edited source compatible with CSharpier. Markdown-only edits generally need a content and link review rather than a build or test run.
