@@ -17,13 +17,13 @@ public abstract class InputEvent<TPayload, TSource>(string identifier, TSource s
     : Signal<TPayload>,
         IIdentifiable<string>
 {
-    /// <inheritdoc />
-    public string Identifier { get; } = identifier;
-
     /// <summary>
     /// Gets the reactive source associated with this action.
     /// </summary>
     public readonly Store<TSource> Source = new(source);
+
+    /// <inheritdoc />
+    public string Identifier { get; } = identifier;
 
     /// <inheritdoc />
     protected override void OnDestroy()

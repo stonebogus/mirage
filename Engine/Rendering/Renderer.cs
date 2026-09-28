@@ -22,7 +22,6 @@ public class Renderer : Module, IUpdatable
 {
     private readonly RenderSurface _surface;
     private readonly Window _window;
-    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configurationStarted;
@@ -78,6 +77,8 @@ public class Renderer : Module, IUpdatable
             Layers.Add(layer);
         }
     }
+
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
 
     /// <inheritdoc />
     public virtual void Update(UpdateContext context) => Render(context);

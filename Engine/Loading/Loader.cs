@@ -33,11 +33,10 @@ public record LoadContext(string Identifier, string Path) : IIdentifiable<string
 public class Loader : Module
 {
     private readonly Dictionary<ResourceKey, Resource> _resources = [];
-    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the registered resource decoders.
@@ -77,6 +76,8 @@ public class Loader : Module
             Decoders.Add(decoder);
         }
     }
+
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
 
     private void EnsureComposed()
     {
@@ -209,19 +210,19 @@ public class Loader : Module
     }
 
     /// <inheritdoc />
-    protected override void OnStop()
-    {
-        Logger.Log("Module stopped.");
-        base.OnStop();
-    }
-
-    /// <inheritdoc />
     protected override void OnStart()
     {
         Logger.Log("Starting module.");
         EnsureComposed();
         EnsureConfigured();
         Logger.Log("Module started.");
+    }
+
+    /// <inheritdoc />
+    protected override void OnStop()
+    {
+        Logger.Log("Module stopped.");
+        base.OnStop();
     }
 
     /// <summary>

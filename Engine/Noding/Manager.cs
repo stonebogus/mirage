@@ -21,7 +21,6 @@ internal sealed class NodeContext(ModuleContainer modules)
 public class NodeManager : Module
 {
     private readonly Store<Node> _activeRoot;
-    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configurationStarted;
@@ -71,6 +70,8 @@ public class NodeManager : Module
             throw;
         }
     }
+
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
 
     /// <summary>
     /// Gets the currently selected root.

@@ -135,9 +135,6 @@ public class Cursor : Destroyable, IIdentifiable<string>
         });
     }
 
-    /// <inheritdoc />
-    public string Identifier { get; }
-
     /// <summary>
     /// Gets the native SDL cursor handle.
     /// </summary>
@@ -153,6 +150,9 @@ public class Cursor : Destroyable, IIdentifiable<string>
             return _native;
         }
     }
+
+    /// <inheritdoc />
+    public string Identifier { get; }
 
     private void ApplyVisibility()
     {

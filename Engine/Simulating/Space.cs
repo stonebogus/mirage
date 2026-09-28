@@ -16,16 +16,13 @@ public class SimulationSpace : Destroyable, IIdentifiable<string>
 {
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the gravity applied within the simulation space.
     /// </summary>
     public readonly Store<Vector2> Gravity;
-
-    /// <inheritdoc />
-    public string Identifier { get; }
 
     /// <summary>
     /// Gets the objects participating in the simulation space.
@@ -58,6 +55,9 @@ public class SimulationSpace : Destroyable, IIdentifiable<string>
         }
         Gravity = new Store<Vector2>(gravity ?? new Vector2(0f, 9.81f));
     }
+
+    /// <inheritdoc />
+    public string Identifier { get; }
 
     private void EnsureComposed()
     {

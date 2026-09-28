@@ -16,12 +16,10 @@ public class Simulator : Module, IUpdatable
     );
 
     private readonly List<(SimulationSpace Space, bool Add)> _pendingChanges = [];
-
-    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
     private bool _updating;
 
     /// <summary>
@@ -71,6 +69,40 @@ public class Simulator : Module, IUpdatable
             if (State.Get() == ModuleState.Running)
                 QueueOrRegister(space, add: false);
         });
+    }
+
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
+
+    /// <inheritdoc />
+    public virtual void Update(UpdateContext context)
+    {
+        ThrowIfDestroyed();
+
+        if (State.Get() != ModuleState.Running || context.DeltaTime <= 0)
+            return;
+
+        var deltaTime = (float)context.DeltaTime;
+
+        if (!float.IsFinite(deltaTime))
+            throw new ArgumentOutOfRangeException(nameof(context));
+
+        _updating = true;
+
+        try
+        {
+            foreach (var binding in _bindings.Values)
+                binding.Step(deltaTime, SubstepCount);
+        }
+        catch (Exception exception)
+        {
+            Logger.Log($"Simulation update failed: {exception.Message}", LogMessageKind.Warn);
+            throw;
+        }
+        finally
+        {
+            _updating = false;
+            ApplyPendingChanges();
+        }
     }
 
     private void ApplyPendingChanges()
@@ -282,37 +314,5 @@ public class Simulator : Module, IUpdatable
 
         base.OnStop();
         Logger.Log("Module stopped.");
-    }
-
-    /// <inheritdoc />
-    public virtual void Update(UpdateContext context)
-    {
-        ThrowIfDestroyed();
-
-        if (State.Get() != ModuleState.Running || context.DeltaTime <= 0)
-            return;
-
-        var deltaTime = (float)context.DeltaTime;
-
-        if (!float.IsFinite(deltaTime))
-            throw new ArgumentOutOfRangeException(nameof(context));
-
-        _updating = true;
-
-        try
-        {
-            foreach (var binding in _bindings.Values)
-                binding.Step(deltaTime, SubstepCount);
-        }
-        catch (Exception exception)
-        {
-            Logger.Log($"Simulation update failed: {exception.Message}", LogMessageKind.Warn);
-            throw;
-        }
-        finally
-        {
-            _updating = false;
-            ApplyPendingChanges();
-        }
     }
 }

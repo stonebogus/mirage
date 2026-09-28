@@ -327,8 +327,6 @@ public class Node : Destroyable, IIdentifiable<Guid>
     private NodeContext? _context;
     private bool _restoringParent;
 
-    internal NodeManager? RootOwner { get; set; }
-
     /// <summary>
     /// Gets the mutable name of the node.
     /// </summary>
@@ -819,6 +817,8 @@ public class Node : Destroyable, IIdentifiable<Guid>
         OnUnload();
         Loaded = false;
     }
+
+    internal NodeManager? RootOwner { get; set; }
 
     internal void Inject(NodeContext context)
     {

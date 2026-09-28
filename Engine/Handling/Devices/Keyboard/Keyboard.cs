@@ -10,8 +10,8 @@ public class Keyboard : InputDevice
 {
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the identifiable set of registered keyboard actions.

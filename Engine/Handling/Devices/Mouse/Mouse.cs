@@ -14,8 +14,8 @@ public class Mouse : InputDevice
     private readonly Store<Vector2> _position = new(Vector2.Zero);
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the identifiable set of registered button actions.
@@ -101,33 +101,6 @@ public class Mouse : InputDevice
         _configured = true;
     }
 
-    /// <summary>
-    /// Composes the events managed by this object.
-    /// </summary>
-    /// <returns>The events to register, in enumeration order.</returns>
-    /// <remarks>
-    /// Composition occurs once before the first input processing call.
-    /// Constructor-provided objects are registered before composed objects.
-    /// All composed objects are registered before configuration occurs.
-    /// The mouse owns and destroys its registered events.
-    /// If composition fails, later lifecycle calls reject further initialization.
-    /// </remarks>
-    protected virtual IEnumerable<MouseButtonEvent> Compose()
-    {
-        yield break;
-    }
-
-    /// <summary>
-    /// Configures relationships and behavior after composition, before startup or first use.
-    /// </summary>
-    /// <remarks>
-    /// All constructor-provided and composed objects are available here.
-    /// This hook is invoked at most once, including across later lifecycle cycles.
-    /// If configuration throws, later lifecycle calls reject further initialization
-    /// rather than repeating configuration side effects.
-    /// </remarks>
-    protected virtual void Configure() { }
-
     private static MouseButton? FromSdlButton(byte button)
     {
         return button switch
@@ -185,6 +158,33 @@ public class Mouse : InputDevice
         _position.Set(position);
         OnWheel.Fire(new MouseWheelEventPayload(delta, position));
     }
+
+    /// <summary>
+    /// Composes the events managed by this object.
+    /// </summary>
+    /// <returns>The events to register, in enumeration order.</returns>
+    /// <remarks>
+    /// Composition occurs once before the first input processing call.
+    /// Constructor-provided objects are registered before composed objects.
+    /// All composed objects are registered before configuration occurs.
+    /// The mouse owns and destroys its registered events.
+    /// If composition fails, later lifecycle calls reject further initialization.
+    /// </remarks>
+    protected virtual IEnumerable<MouseButtonEvent> Compose()
+    {
+        yield break;
+    }
+
+    /// <summary>
+    /// Configures relationships and behavior after composition, before startup or first use.
+    /// </summary>
+    /// <remarks>
+    /// All constructor-provided and composed objects are available here.
+    /// This hook is invoked at most once, including across later lifecycle cycles.
+    /// If configuration throws, later lifecycle calls reject further initialization
+    /// rather than repeating configuration side effects.
+    /// </remarks>
+    protected virtual void Configure() { }
 
     /// <inheritdoc />
     protected override void OnDestroy()

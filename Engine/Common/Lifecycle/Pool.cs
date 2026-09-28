@@ -36,6 +36,20 @@ public class Pool<TItem>(Func<TItem> factory) : Destroyable
 {
     private readonly Stack<TItem> _available = [];
 
+    /// <inheritdoc />
+    protected override void OnDestroy()
+    {
+        while (_available.TryPeek(out var item))
+        {
+            if (item is IDestroyable { Destroyed: false } destroyable)
+                destroyable.Destroy();
+
+            _available.Pop();
+        }
+
+        base.OnDestroy();
+    }
+
     /// <summary>
     /// Acquires an object from the pool.
     /// </summary>
@@ -82,19 +96,5 @@ public class Pool<TItem>(Func<TItem> factory) : Destroyable
         item.Restore();
 
         _available.Push(item);
-    }
-
-    /// <inheritdoc />
-    protected override void OnDestroy()
-    {
-        while (_available.TryPeek(out var item))
-        {
-            if (item is IDestroyable { Destroyed: false } destroyable)
-                destroyable.Destroy();
-
-            _available.Pop();
-        }
-
-        base.OnDestroy();
     }
 }

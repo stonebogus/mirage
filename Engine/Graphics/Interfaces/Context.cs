@@ -29,14 +29,29 @@ public interface IDrawContext
     Vector2 ViewportSize { get; }
 
     /// <summary>
-    /// Measures text before camera zoom or drawing transformations are applied.
+    /// Draws a line with a specified thickness.
     /// </summary>
-    /// <param name="font">The font used to measure the text.</param>
-    /// <param name="text">The text to measure.</param>
-    /// <param name="size">The font size in points.</param>
-    /// <param name="style">The synthetic font style.</param>
-    /// <returns>The untransformed text dimensions in coordinate units.</returns>
-    Vector2 MeasureText(Font font, string text, float size, FontStyle style = FontStyle.Normal);
+    /// <param name="start">The start point in screen or world coordinates.</param>
+    /// <param name="end">The end point in screen or world coordinates.</param>
+    /// <param name="color">The line color.</param>
+    /// <param name="thickness">The line thickness in coordinate units. Defaults to 1.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the thickness is not finite or is not positive.
+    /// </exception>
+    void DrawLine(Vector2 start, Vector2 end, Color color, float thickness = 1f);
+
+    /// <summary>
+    /// Draws a textured mesh after transforming its local vertices.
+    /// </summary>
+    /// <param name="mesh">The geometry, texture, and vertex texture coordinates.</param>
+    /// <param name="transform">
+    /// The transformation from mesh-local coordinates to world coordinates.
+    /// When no camera is active, the result uses screen coordinates.
+    /// </param>
+    /// <exception cref="ObjectDisposedException">
+    /// Thrown when the graphic mesh or one of its referenced resources has been destroyed.
+    /// </exception>
+    void DrawMesh(GraphicMesh mesh, Matrix3x2 transform);
 
     /// <summary>
     /// Draws text across four specified corners.
@@ -61,31 +76,6 @@ public interface IDrawContext
         Vector2 bottomRight,
         Vector2 bottomLeft
     );
-
-    /// <summary>
-    /// Draws a line with a specified thickness.
-    /// </summary>
-    /// <param name="start">The start point in screen or world coordinates.</param>
-    /// <param name="end">The end point in screen or world coordinates.</param>
-    /// <param name="color">The line color.</param>
-    /// <param name="thickness">The line thickness in coordinate units. Defaults to 1.</param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when the thickness is not finite or is not positive.
-    /// </exception>
-    void DrawLine(Vector2 start, Vector2 end, Color color, float thickness = 1f);
-
-    /// <summary>
-    /// Draws a textured mesh after transforming its local vertices.
-    /// </summary>
-    /// <param name="mesh">The geometry, texture, and vertex texture coordinates.</param>
-    /// <param name="transform">
-    /// The transformation from mesh-local coordinates to world coordinates.
-    /// When no camera is active, the result uses screen coordinates.
-    /// </param>
-    /// <exception cref="ObjectDisposedException">
-    /// Thrown when the graphic mesh or one of its referenced resources has been destroyed.
-    /// </exception>
-    void DrawMesh(GraphicMesh mesh, Matrix3x2 transform);
 
     /// <summary>
     /// Draws an entire texture across four specified corners.
@@ -133,4 +123,14 @@ public interface IDrawContext
     /// <param name="c">The third vertex in screen or world coordinates.</param>
     /// <param name="color">The fill color.</param>
     void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color);
+
+    /// <summary>
+    /// Measures text before camera zoom or drawing transformations are applied.
+    /// </summary>
+    /// <param name="font">The font used to measure the text.</param>
+    /// <param name="text">The text to measure.</param>
+    /// <param name="size">The font size in points.</param>
+    /// <param name="style">The synthetic font style.</param>
+    /// <returns>The untransformed text dimensions in coordinate units.</returns>
+    Vector2 MeasureText(Font font, string text, float size, FontStyle style = FontStyle.Normal);
 }

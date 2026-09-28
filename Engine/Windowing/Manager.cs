@@ -19,11 +19,10 @@ namespace Mirage.Windowing;
 public class WindowManager : Module, IUpdatable
 {
     private readonly Dictionary<string, Window> _windows = [];
-    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the managed windows, indexed by identifier.
@@ -50,6 +49,8 @@ public class WindowManager : Module, IUpdatable
 
         Windows = _windows.AsReadOnly();
     }
+
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
 
     /// <inheritdoc />
     /// <exception cref="InvalidOperationException">

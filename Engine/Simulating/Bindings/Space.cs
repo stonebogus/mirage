@@ -47,6 +47,19 @@ internal class SpaceBinding : Destroyable
 
     public B2WorldId World { get; }
 
+    protected override void OnDestroy()
+    {
+        _onAdd.Disconnect();
+        _onRemove.Disconnect();
+
+        foreach (var binding in _bodies.Values)
+            binding.Destroy();
+
+        _bodies.Clear();
+        b2DestroyWorld(World);
+        base.OnDestroy();
+    }
+
     public void Add(ISimulatable simulatable)
     {
         ThrowIfDestroyed();
@@ -63,19 +76,6 @@ internal class SpaceBinding : Destroyable
             binding.Destroy();
             throw;
         }
-    }
-
-    protected override void OnDestroy()
-    {
-        _onAdd.Disconnect();
-        _onRemove.Disconnect();
-
-        foreach (var binding in _bodies.Values)
-            binding.Destroy();
-
-        _bodies.Clear();
-        b2DestroyWorld(World);
-        base.OnDestroy();
     }
 
     public void Remove(ISimulatable simulatable)

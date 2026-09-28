@@ -29,17 +29,14 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
 {
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the renderable objects added directly to this layer.
     /// </summary>
     /// <remarks>The layer references its entries without owning or destroying them.</remarks>
     public readonly List<IDrawable> Entries = [];
-
-    /// <inheritdoc />
-    public string Identifier { get; }
 
     /// <summary>
     /// Gets the priority that determines when this layer is drawn.
@@ -72,6 +69,9 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
             Entries.Add(entry);
         }
     }
+
+    /// <inheritdoc />
+    public string Identifier { get; }
 
     private void EnsureComposed()
     {

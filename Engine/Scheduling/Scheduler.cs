@@ -17,7 +17,6 @@ namespace Mirage.Scheduling;
 /// </remarks>
 public class Scheduler : Module
 {
-    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
     private bool _configurationStarted;
@@ -77,6 +76,8 @@ public class Scheduler : Module
             }
         });
     }
+
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
 
     /// <summary>
     /// Gets the amount of real time elapsed since the previous scheduler
@@ -169,13 +170,6 @@ public class Scheduler : Module
     }
 
     /// <inheritdoc />
-    protected override void OnStop()
-    {
-        Logger.Log("Module stopped.");
-        base.OnStop();
-    }
-
-    /// <inheritdoc />
     protected override void OnStart()
     {
         Logger.Log("Starting module.");
@@ -188,6 +182,13 @@ public class Scheduler : Module
         }
         base.OnStart();
         Logger.Log("Module started.");
+    }
+
+    /// <inheritdoc />
+    protected override void OnStop()
+    {
+        Logger.Log("Module stopped.");
+        base.OnStop();
     }
 
     /// <summary>

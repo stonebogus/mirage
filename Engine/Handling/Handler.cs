@@ -16,11 +16,10 @@ namespace Mirage.Handling;
 public class InputHandler : Module, IUpdatable
 {
     private readonly IdentifiableSet<string, InputDevice> _devices = [];
-    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
     private bool _composed;
     private bool _compositionStarted;
-    private bool _configured;
     private bool _configurationStarted;
+    private bool _configured;
 
     /// <summary>
     /// Gets the read-only identifiable set of devices owned by this handler.
@@ -51,6 +50,8 @@ public class InputHandler : Module, IUpdatable
         }
         Devices = _devices;
     }
+
+    private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
 
     /// <inheritdoc />
     /// <exception cref="InvalidOperationException">
@@ -174,13 +175,6 @@ public class InputHandler : Module, IUpdatable
     }
 
     /// <inheritdoc />
-    protected override void OnStop()
-    {
-        Logger.Log("Module stopped.");
-        base.OnStop();
-    }
-
-    /// <inheritdoc />
     protected override void OnStart()
     {
         Logger.Log("Starting module.");
@@ -192,5 +186,12 @@ public class InputHandler : Module, IUpdatable
                 LogMessageKind.Debug
             );
         Logger.Log("Module started.");
+    }
+
+    /// <inheritdoc />
+    protected override void OnStop()
+    {
+        Logger.Log("Module stopped.");
+        base.OnStop();
     }
 }

@@ -16,8 +16,6 @@ internal sealed class RenderSurface(Window window) : Destroyable
     private const int RenderScale = 2;
 
     private readonly Dictionary<Texture, nint> _textures = [];
-
-    private EventConnection<Unit>? _windowClosing;
     private bool _frameActive;
 
     private nint _frameTexture;
@@ -25,6 +23,8 @@ internal sealed class RenderSurface(Window window) : Destroyable
     private int _frameTextureWidth;
     private nint _native;
     private bool _textInitialized;
+
+    private EventConnection<Unit>? _windowClosing;
 
     private static SDL.Vertex CreateVertex(Vector2 position, SDL.FColor color)
     {
@@ -277,6 +277,12 @@ internal sealed class RenderSurface(Window window) : Destroyable
             throw new ArgumentOutOfRangeException(nameof(style));
     }
 
+    protected override void OnDestroy()
+    {
+        Stop();
+        base.OnDestroy();
+    }
+
     public void AbortFrame()
     {
         if (!_frameActive)
@@ -391,12 +397,6 @@ internal sealed class RenderSurface(Window window) : Destroyable
             _native = nint.Zero;
             throw;
         }
-    }
-
-    protected override void OnDestroy()
-    {
-        Stop();
-        base.OnDestroy();
     }
 
     public void Stop()
