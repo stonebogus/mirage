@@ -3,17 +3,18 @@ using System.Numerics;
 namespace Mirage.Graphics.Interfaces;
 
 /// <summary>
-/// Provides the view used to convert world coordinates into screen coordinates.
+/// Provides the transformations used to convert world coordinates
+/// into view and projection space.
 /// </summary>
 public interface ICamera
 {
     /// <summary>
-    /// Gets the camera's position in world coordinates.
+    /// Gets the transformation from world space into camera view space.
     /// </summary>
-    Vector2 Position { get; }
+    Matrix4x4 View { get; }
 
     /// <summary>
-    /// Gets the camera's zoom factor. A value of 1 means no zoom.
+    /// Gets the transformation from view space into projection space.
     /// </summary>
-    float Zoom { get; }
+    Matrix4x4 Projection { get; }
 }
