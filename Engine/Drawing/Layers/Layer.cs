@@ -2,7 +2,7 @@ using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Graphics.Interfaces;
 
-namespace Mirage.Rendering;
+namespace Mirage.Drawing.Layers;
 
 /// <summary>
 /// Represents the rendering priority of a layer.
@@ -146,7 +146,7 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
     /// Draws additional content after this layer's entries.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
-    protected virtual void OnDraw(RenderContext context) { }
+    protected virtual void OnDraw(IDrawContext context) { }
 
     /// <summary>
     /// Draws this layer's entries and any additional content.
@@ -155,7 +155,7 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when this layer has been destroyed.
     /// </exception>
-    public void Draw(RenderContext context)
+    public void Draw(IDrawContext context)
     {
         ThrowIfDestroyed();
 

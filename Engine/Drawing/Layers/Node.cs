@@ -1,7 +1,7 @@
 using Mirage.Graphics.Interfaces;
 using Mirage.Noding;
 
-namespace Mirage.Rendering.Layers;
+namespace Mirage.Drawing.Layers;
 
 /// <summary>
 /// Initializes a new instance of the <see cref="NodeDrawLayer"/> class.
@@ -19,7 +19,7 @@ public class NodeDrawLayer(
     DrawLayerPriority priority = DrawLayerPriority.Normal
 ) : DrawLayer(identifier, priority)
 {
-    private static void RenderNode(Node node, RenderContext context)
+    private static void RenderNode(Node node, IDrawContext context)
     {
         if (node.Destroyed)
             return;
@@ -35,7 +35,7 @@ public class NodeDrawLayer(
     /// Draws the renderable nodes under the active root.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
-    protected override void OnDraw(RenderContext context)
+    protected override void OnDraw(IDrawContext context)
     {
         RenderNode(manager.ActiveRoot.Get(), context);
     }
