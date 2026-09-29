@@ -1,74 +1,158 @@
 using System.Numerics;
-using System.Runtime.InteropServices;
 using Mirage.Common.Events;
 using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Graphics.Resources;
-using SDL3;
 using Image = Mirage.Graphics.Resources.Image;
 
 namespace Mirage.Windowing;
 
 /// <summary>
-/// Provides the initial values for a cursor.
+/// Provides the initial configuration of a <see cref="Cursor"/>.
 /// </summary>
 public class CursorOptions
 {
     /// <summary>
-    /// Gets the custom-image hotspot in pixels. The default is <c>(0, 0)</c>.
+    /// Gets the custom-image hotspot in pixels.
     /// </summary>
-    /// <remarks>The hotspot is used only when <see cref="Icon"/> is not <see langword="null"/>.</remarks>
+    /// <remarks>
+    /// The default is <c>(0, 0)</c>.
+    /// The hotspot is used only when <see cref="Icon"/> is not
+    /// <see langword="null"/>.
+    /// </remarks>
     public Vector2 Hotspot { get; init; } = Vector2.Zero;
 
     /// <summary>
-    /// Gets the custom image, or <see langword="null"/> to use a system cursor.
-    /// The default is <see langword="null"/>.
+    /// Gets the custom cursor image, or <see langword="null"/> to use
+    /// a system cursor.
     /// </summary>
-    /// <remarks>The cursor does not own this image.</remarks>
+    /// <remarks>
+    /// The default is <see langword="null"/>.
+    /// The cursor borrows this image and does not destroy it.
+    /// </remarks>
     public Image? Icon { get; init; }
 
     /// <summary>
-    /// Gets the system style used when <see cref="Icon"/> is <see langword="null"/>.
-    /// The default is <see cref="SDL.SystemCursor.Default"/>.
+    /// Gets the system cursor style used when <see cref="Icon"/> is
+    /// <see langword="null"/>.
     /// </summary>
-    public SDL.SystemCursor SystemIcon { get; init; } = SDL.SystemCursor.Default;
+    /// <remarks>
+    /// The default is <see cref="SystemCursor.Default"/>.
+    /// </remarks>
+    public SystemCursor SystemIcon { get; init; } = SystemCursor.Default;
 
     /// <summary>
-    /// Gets whether the cursor is visible when active. The default is <see langword="true"/>.
+    /// Gets whether the cursor is initially visible while active.
     /// </summary>
+    /// <remarks>
+    /// The default is <see langword="true"/>.
+    /// </remarks>
     public bool Visible { get; init; } = true;
 }
 
 /// <summary>
-/// Owns a native SDL cursor backed by either a system style or an image.
+/// Specifies a platform-provided cursor style.
 /// </summary>
-/// <remarks>
-/// SDL cursor selection and visibility are global. Create, apply, change, and
-/// destroy cursors on the main thread while SDL's video subsystem is initialized.
-/// The cursor owns its native SDL handle and an SDL video subsystem lease, but does not
-/// own its <see cref="Image"/>. It can be shared between windows and outlive their native handles.
-/// </remarks>
-public class Cursor : Destroyable, IIdentifiable<string>
+public enum SystemCursor
 {
-    private IntPtr _native;
+    /// <summary>
+    /// The platform's default cursor.
+    /// </summary>
+    Default,
 
     /// <summary>
-    /// Gets the click position within a custom image, measured in pixels.
-    /// Changing it recreates the native cursor when a custom image is set.
+    /// A text-selection cursor.
     /// </summary>
+    Text,
+
+    /// <summary>
+    /// A cursor indicating that an operation is waiting to complete.
+    /// </summary>
+    Wait,
+
+    /// <summary>
+    /// A crosshair cursor.
+    /// </summary>
+    Crosshair,
+
+    /// <summary>
+    /// A cursor indicating that work is occurring while interaction remains possible.
+    /// </summary>
+    Progress,
+
+    /// <summary>
+    /// A diagonal resize cursor running from northwest to southeast.
+    /// </summary>
+    ResizeNorthWestSouthEast,
+
+    /// <summary>
+    /// A diagonal resize cursor running from northeast to southwest.
+    /// </summary>
+    ResizeNorthEastSouthWest,
+
+    /// <summary>
+    /// A horizontal resize cursor.
+    /// </summary>
+    ResizeEastWest,
+
+    /// <summary>
+    /// A vertical resize cursor.
+    /// </summary>
+    ResizeNorthSouth,
+
+    /// <summary>
+    /// A cursor indicating that an object can be moved.
+    /// </summary>
+    Move,
+
+    /// <summary>
+    /// A cursor indicating that the current operation is not allowed.
+    /// </summary>
+    NotAllowed,
+
+    /// <summary>
+    /// A pointing cursor commonly used for links and other interactive elements.
+    /// </summary>
+    Pointer,
+}
+
+/// <summary>
+/// Represents a platform-independent cursor backed by either a system style
+/// or a custom image.
+/// </summary>
+/// <remarks>
+/// A cursor manages its configuration and lifecycle independently of the
+/// platform used to create it.
+///
+/// Derived implementations provide platform-specific behavior through the
+/// protected cursor hooks.
+///
+/// The cursor borrows its custom <see cref="Image"/> and does not destroy it.
+/// </remarks>
+public abstract class Cursor : Destroyable, IIdentifiable<string>
+{
+    /// <summary>
+    /// Gets the click position within a custom cursor image, measured in pixels.
+    /// </summary>
+    /// <remarks>
+    /// This value is relevant only while <see cref="Icon"/> contains a custom image.
+    /// </remarks>
     public readonly Store<Vector2> Hotspot;
 
     /// <summary>
-    /// Gets the custom cursor image. Set this to <see langword="null"/> to use <see cref="SystemIcon"/>.
-    /// Changing it recreates the native cursor. The image is not owned by this cursor.
+    /// Gets the custom cursor image.
     /// </summary>
+    /// <remarks>
+    /// Set this to <see langword="null"/> to use <see cref="SystemIcon"/>.
+    /// The image is borrowed and is not destroyed by this cursor.
+    /// </remarks>
     public readonly Store<Image?> Icon;
 
     /// <summary>
-    /// Gets the system cursor style used when <see cref="Icon"/> is <see langword="null"/>.
-    /// Changing it recreates the native cursor when no custom image is set.
+    /// Gets the system cursor style used when <see cref="Icon"/> is
+    /// <see langword="null"/>.
     /// </summary>
-    public readonly Store<SDL.SystemCursor> SystemIcon;
+    public readonly Store<SystemCursor> SystemIcon;
 
     /// <summary>
     /// Gets whether this cursor should be visible while active.
@@ -78,237 +162,96 @@ public class Cursor : Destroyable, IIdentifiable<string>
     /// <summary>
     /// Initializes a new instance of the <see cref="Cursor"/> class.
     /// </summary>
-    /// <param name="identifier">The cursor identifier.</param>
-    /// <param name="options">The initial cursor settings.</param>
+    /// <param name="identifier">
+    /// The unique cursor identifier.
+    /// </param>
+    /// <param name="options">
+    /// The initial cursor configuration, or <see langword="null"/> to use
+    /// the defaults.
+    /// </param>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="identifier"/> is empty or whitespace.
+    /// Thrown when <paramref name="identifier"/> is empty or consists only
+    /// of whitespace.
     /// </exception>
-    /// <exception cref="ObjectDisposedException">
-    /// Thrown when the custom image has been destroyed.
-    /// </exception>
-    /// <exception cref="NotSupportedException">
-    /// Thrown when the custom image format is unsupported.
-    /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when the custom image dimensions or hotspot are invalid.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when SDL cannot create the native cursor.
-    /// </exception>
-    public Cursor(string identifier, CursorOptions? options = null)
+    protected Cursor(string identifier, CursorOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
+
         options ??= new CursorOptions();
 
-        VideoRuntime.Acquire();
-        try
-        {
-            _native = CreateNative(options.Icon, options.SystemIcon, options.Hotspot);
-        }
-        catch
-        {
-            VideoRuntime.Release();
-            throw;
-        }
-
         Identifier = identifier;
-        Icon = new Store<Image?>(options.Icon);
-        SystemIcon = new Store<SDL.SystemCursor>(options.SystemIcon);
+
         Hotspot = new Store<Vector2>(options.Hotspot);
+        Icon = new Store<Image?>(options.Icon);
+        SystemIcon = new Store<SystemCursor>(options.SystemIcon);
         Visible = new Store<bool>(options.Visible);
 
-        Icon.Connect(_ => Recreate());
-        SystemIcon.Connect(_ =>
-        {
-            if (Icon.Get() is null)
-                Recreate();
-        });
-        Hotspot.Connect(_ =>
-        {
-            if (Icon.Get() is not null)
-                Recreate();
-        });
-        Visible.Connect(_ =>
-        {
-            if (SDL.GetCursor() == _native)
-                ApplyVisibility();
-        });
-    }
-
-    /// <summary>
-    /// Gets the native SDL cursor handle.
-    /// </summary>
-    /// <remarks>The handle is owned by this cursor and is valid only until it is destroyed.</remarks>
-    /// <exception cref="DestroyedObjectException">
-    /// Thrown when this cursor has been destroyed.
-    /// </exception>
-    public IntPtr Native
-    {
-        get
-        {
-            ThrowIfDestroyed();
-            return _native;
-        }
+        Hotspot.Connect(OnHotspotChanged);
+        Icon.Connect(OnIconChanged);
+        SystemIcon.Connect(OnSystemIconChanged);
+        Visible.Connect(OnVisibilityChanged);
     }
 
     /// <inheritdoc />
     public string Identifier { get; }
 
-    private void ApplyVisibility()
-    {
-        var success = Visible.Get() ? SDL.ShowCursor() : SDL.HideCursor();
-
-        if (!success)
-            throw new InvalidOperationException(
-                $"Changing SDL cursor visibility failed: {SDL.GetError()}"
-            );
-    }
-
-    private static IntPtr CreateNative(Image? icon, SDL.SystemCursor systemIcon, Vector2 hotspot)
-    {
-        if (icon is null)
-        {
-            var systemCursor = SDL.CreateSystemCursor(systemIcon);
-
-            if (systemCursor == IntPtr.Zero)
-                throw new InvalidOperationException(
-                    $"Creating SDL system cursor failed: {SDL.GetError()}"
-                );
-
-            return systemCursor;
-        }
-
-        if (icon.Destroyed)
-            throw new ObjectDisposedException(nameof(icon));
-
-        if (icon.Format != RasterImageFormat.Rgba8)
-            throw new NotSupportedException($"Unsupported cursor image format: {icon.Format}.");
-
-        if (icon.Width > int.MaxValue || icon.Height > int.MaxValue)
-            throw new ArgumentOutOfRangeException(
-                nameof(icon),
-                "Cursor image dimensions exceed SDL's limits."
-            );
-
-        ValidateHotspot(hotspot, icon);
-
-        var width = checked((int)icon.Width);
-        var height = checked((int)icon.Height);
-        var pitch = checked(width * 4);
-
-        // SDL_CreateSurfaceFrom borrows these pixels. Keep the array pinned
-        // until both the SDL surface and cursor creation are finished.
-        var pixels = icon.Data.ToArray();
-        var pinnedPixels = GCHandle.Alloc(pixels, GCHandleType.Pinned);
-        IntPtr surface = IntPtr.Zero;
-
-        try
-        {
-            surface = SDL.CreateSurfaceFrom(
-                width,
-                height,
-                BitConverter.IsLittleEndian ? SDL.PixelFormat.ABGR8888 : SDL.PixelFormat.RGBA8888,
-                pinnedPixels.AddrOfPinnedObject(),
-                pitch
-            );
-
-            if (surface == IntPtr.Zero)
-                throw new InvalidOperationException(
-                    $"Creating SDL cursor surface failed: {SDL.GetError()}"
-                );
-
-            var cursor = SDL.CreateColorCursor(surface, (int)hotspot.X, (int)hotspot.Y);
-
-            if (cursor == IntPtr.Zero)
-                throw new InvalidOperationException(
-                    $"Creating SDL color cursor failed: {SDL.GetError()}"
-                );
-
-            return cursor;
-        }
-        finally
-        {
-            if (surface != IntPtr.Zero)
-                SDL.DestroySurface(surface);
-
-            pinnedPixels.Free();
-        }
-    }
-
-    private void Recreate()
-    {
-        var replacement = CreateNative(Icon.Get(), SystemIcon.Get(), Hotspot.Get());
-
-        var previous = _native;
-        var wasActive = SDL.GetCursor() == previous;
-
-        if (wasActive && !SDL.SetCursor(replacement))
-        {
-            SDL.DestroyCursor(replacement);
-            throw new InvalidOperationException($"Setting SDL cursor failed: {SDL.GetError()}");
-        }
-
-        _native = replacement;
-        SDL.DestroyCursor(previous);
-
-        if (wasActive)
-            ApplyVisibility();
-    }
-
-    private static void ValidateHotspot(Vector2 hotspot, Image icon)
-    {
-        if (
-            !float.IsFinite(hotspot.X)
-            || !float.IsFinite(hotspot.Y)
-            || hotspot.X < 0
-            || hotspot.Y < 0
-            || hotspot.X >= icon.Width
-            || hotspot.Y >= icon.Height
-            || hotspot.X != MathF.Truncate(hotspot.X)
-            || hotspot.Y != MathF.Truncate(hotspot.Y)
-        )
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(hotspot),
-                "Hotspot must be a whole pixel coordinate inside the image."
-            );
-        }
-    }
+    /// <summary>
+    /// Applies this cursor using the underlying platform implementation.
+    /// </summary>
+    protected abstract void OnApply();
 
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        if (SDL.GetCursor() == _native)
-            SDL.SetCursor(SDL.GetDefaultCursor());
-
-        SDL.DestroyCursor(_native);
-        _native = IntPtr.Zero;
-
+        Hotspot.Destroy();
         Icon.Destroy();
         SystemIcon.Destroy();
-        Hotspot.Destroy();
         Visible.Destroy();
-        VideoRuntime.Release();
 
         base.OnDestroy();
     }
 
     /// <summary>
-    /// Makes this cursor active in SDL and applies its visibility.
+    /// Responds to a change in the custom-image hotspot.
+    /// </summary>
+    /// <param name="hotspot">
+    /// The new hotspot, measured in pixels.
+    /// </param>
+    protected abstract void OnHotspotChanged(Vector2 hotspot);
+
+    /// <summary>
+    /// Responds to a change in the custom cursor image.
+    /// </summary>
+    /// <param name="icon">
+    /// The new custom image, or <see langword="null"/> to use the system cursor.
+    /// </param>
+    protected abstract void OnIconChanged(Image? icon);
+
+    /// <summary>
+    /// Responds to a change in the system cursor style.
+    /// </summary>
+    /// <param name="systemIcon">
+    /// The new system cursor style.
+    /// </param>
+    protected abstract void OnSystemIconChanged(SystemCursor systemIcon);
+
+    /// <summary>
+    /// Responds to a change in cursor visibility.
+    /// </summary>
+    /// <param name="visible">
+    /// Whether the cursor should be visible while active.
+    /// </param>
+    protected abstract void OnVisibilityChanged(bool visible);
+
+    /// <summary>
+    /// Makes this cursor active using its platform-specific implementation.
     /// </summary>
     /// <exception cref="DestroyedObjectException">
-    /// Thrown when this cursor has been destroyed.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when SDL cannot select the cursor or change cursor visibility.
+    /// Thrown when the cursor has already been destroyed.
     /// </exception>
     public void Apply()
     {
         ThrowIfDestroyed();
-
-        if (!SDL.SetCursor(_native))
-            throw new InvalidOperationException($"Setting SDL cursor failed: {SDL.GetError()}");
-
-        ApplyVisibility();
+        OnApply();
     }
 }

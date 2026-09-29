@@ -3,6 +3,7 @@ using Mirage.Logging;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 using Mirage.Windowing;
+using Mirage.Windowing.Windows;
 
 namespace Mirage.Windowing;
 
