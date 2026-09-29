@@ -8,7 +8,7 @@ namespace Mirage.Handling.Devices.Keyboard;
 /// </remarks>
 /// <param name="Key">The physical key that changed state.</param>
 /// <param name="Down"><see langword="true"/> when the key was pressed.</param>
-/// <param name="Repeat"><see langword="true"/> when SDL marked this as a repeated key press.</param>
+/// <param name="Repeat"><see langword="true"/> when this is a repeated key press.</param>
 public record KeyboardEventPayload(KeyboardKey Key, bool Down, bool Repeat);
 
 /// <summary>

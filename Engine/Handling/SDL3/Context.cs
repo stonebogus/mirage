@@ -1,0 +1,16 @@
+using Mirage.Windowing;
+using SDL3;
+
+namespace Mirage.Handling.SDL3;
+
+/// <summary>
+/// Provides SDL3 input events for one input update.
+/// </summary>
+public sealed class SDL3InputContext(Window window, IEnumerable<SDL.Event> events)
+    : InputContext(window)
+{
+    /// <summary>
+    /// Gets the SDL events captured for this update.
+    /// </summary>
+    public readonly IReadOnlyList<SDL.Event> Events = [.. events];
+}

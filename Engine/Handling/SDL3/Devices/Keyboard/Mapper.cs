@@ -1,11 +1,12 @@
+using Mirage.Handling.Devices.Keyboard;
 using SDL3;
 
-namespace Mirage.Handling.Devices.Keyboard;
+namespace Mirage.Handling.SDL3.Devices.Keyboard;
 
 /// <summary>
 /// Converts SDL physical scancodes to Mirage keyboard keys.
 /// </summary>
-public static class KeyboardKeyMapper
+public static class SDL3KeyboardKeyMapper
 {
     /// <summary>
     /// Maps an SDL physical scancode to the corresponding Mirage key.

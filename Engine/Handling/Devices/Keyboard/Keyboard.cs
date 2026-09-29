@@ -1,12 +1,15 @@
 using Mirage.Common.Collections;
-using SDL3;
 
 namespace Mirage.Handling.Devices.Keyboard;
 
 /// <summary>
-/// Processes SDL keyboard events for a window.
+/// Represents a keyboard input device that manages and publishes keyboard events.
 /// </summary>
-public class Keyboard : InputDevice
+/// <remarks>
+/// Platform-specific implementations are responsible for receiving native keyboard input
+/// and publishing it through this device.
+/// </remarks>
+public abstract class Keyboard : InputDevice
 {
     private bool _composed;
     private bool _compositionStarted;
@@ -14,7 +17,7 @@ public class Keyboard : InputDevice
     private bool _configured;
 
     /// <summary>
-    /// Gets the identifiable set of registered keyboard actions.
+    /// Gets the identifiable set of registered keyboard events.
     /// </summary>
     /// <remarks>
     /// The keyboard owns and destroys its registered events.
@@ -27,17 +30,15 @@ public class Keyboard : InputDevice
     /// <summary>
     /// Initializes a new instance of the <see cref="Keyboard"/> class.
     /// </summary>
-    /// <param name="events">The actions to register initially.</param>
+    /// <param name="events">The events to register initially.</param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the initial events contain duplicate identifiers.
     /// </exception>
-    public Keyboard(params InputEvent<KeyboardEventPayload, KeyboardKey>[] events)
+    protected Keyboard(params InputEvent<KeyboardEventPayload, KeyboardKey>[] events)
         : base("Keyboard")
     {
         foreach (var @event in events)
-        {
             Events.Add(@event);
-        }
     }
 
     private void EnsureComposed()
@@ -50,16 +51,16 @@ public class Keyboard : InputDevice
 
         _compositionStarted = true;
 
-        foreach (var action in Compose())
+        foreach (var @event in Compose())
         {
             try
             {
-                Events.Add(action);
+                Events.Add(@event);
             }
             catch
             {
-                if (!Events.Contains(action) && !action.Destroyed)
-                    action.Destroy();
+                if (!Events.Contains(@event) && !@event.Destroyed)
+                    @event.Destroy();
 
                 throw;
             }
@@ -82,7 +83,7 @@ public class Keyboard : InputDevice
     }
 
     /// <summary>
-    /// Composes the events managed by this object.
+    /// Composes the events managed by this keyboard.
     /// </summary>
     /// <returns>The events to register, in enumeration order.</returns>
     /// <remarks>
@@ -98,69 +99,46 @@ public class Keyboard : InputDevice
     }
 
     /// <summary>
-    /// Configures relationships and behavior after composition, before startup or first use.
+    /// Configures relationships and behavior after composition, before first use.
     /// </summary>
     /// <remarks>
     /// All constructor-provided and composed objects are available here.
-    /// This hook is invoked at most once, including across later lifecycle cycles.
-    /// If configuration throws, later lifecycle calls reject further initialization
+    /// This hook is invoked at most once.
+    /// If configuration throws, later processing rejects further initialization
     /// rather than repeating configuration side effects.
     /// </remarks>
     protected virtual void Configure() { }
 
+    /// <summary>
+    /// Ensures that composition and configuration have completed before input is processed.
+    /// </summary>
+    protected void EnsureInitialized()
+    {
+        EnsureComposed();
+        EnsureConfigured();
+    }
+
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        foreach (var action in Events.ToArray())
-            action.Destroy();
+        foreach (var @event in Events.ToArray())
+            @event.Destroy();
 
         Events.Destroy();
 
         base.OnDestroy();
     }
 
-    /// <inheritdoc />
-    protected override void OnProcess(InputContext context)
+    /// <summary>
+    /// Publishes a keyboard event to registered events matching its key.
+    /// </summary>
+    /// <param name="payload">The keyboard event payload to publish.</param>
+    protected void Publish(KeyboardEventPayload payload)
     {
-        EnsureComposed();
-        EnsureConfigured();
-
-        if (!context.Window.Opened.Get())
-            return;
-
-        var windowId = SDL.GetWindowID(context.Window.Native);
-
-        if (windowId == 0)
-            throw new InvalidOperationException(
-                $"Getting SDL window identifier failed: {SDL.GetError()}"
-            );
-
-        foreach (var sdlEvent in context.FrameEvents)
+        foreach (var @event in Events)
         {
-            var type = (SDL.EventType)sdlEvent.Type;
-
-            if (type is not (SDL.EventType.KeyDown or SDL.EventType.KeyUp))
-                continue;
-
-            if (sdlEvent.Key.WindowID != windowId)
-                continue;
-
-            var key = KeyboardKeyMapper.FromScancode(sdlEvent.Key.Scancode);
-
-            if (key == KeyboardKey.Unknown)
-                continue;
-
-            var payload = new KeyboardEventPayload(
-                key,
-                type == SDL.EventType.KeyDown,
-                sdlEvent.Key.Repeat
-            );
-
-            foreach (var action in Events)
-            {
-                if (action.Source.Get() == key)
-                    action.Fire(payload);
-            }
+            if (@event.Source.Get() == payload.Key)
+                @event.Fire(payload);
         }
     }
 }

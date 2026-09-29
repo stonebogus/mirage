@@ -2,14 +2,17 @@ using System.Numerics;
 using Mirage.Common.Collections;
 using Mirage.Common.Events;
 using Mirage.Handling.Devices.Mouse.Events;
-using SDL3;
 
 namespace Mirage.Handling.Devices.Mouse;
 
 /// <summary>
-/// Processes mouse input for a window.
+/// Represents a mouse input device that manages and publishes mouse events.
 /// </summary>
-public class Mouse : InputDevice
+/// <remarks>
+/// Platform-specific implementations are responsible for receiving native mouse input
+/// and publishing it through this device.
+/// </remarks>
+public abstract class Mouse : InputDevice
 {
     private readonly Store<Vector2> _position = new(Vector2.Zero);
     private bool _composed;
@@ -18,7 +21,7 @@ public class Mouse : InputDevice
     private bool _configured;
 
     /// <summary>
-    /// Gets the identifiable set of registered button actions.
+    /// Gets the identifiable set of registered mouse button events.
     /// </summary>
     /// <remarks>
     /// The mouse owns and destroys its registered events.
@@ -45,17 +48,15 @@ public class Mouse : InputDevice
     /// <summary>
     /// Initializes a new instance of the <see cref="Mouse"/> class.
     /// </summary>
-    /// <param name="events">The button actions to register.</param>
+    /// <param name="events">The button events to register initially.</param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the initial events contain duplicate identifiers.
     /// </exception>
-    public Mouse(params MouseButtonEvent[] events)
+    protected Mouse(params MouseButtonEvent[] events)
         : base("Mouse")
     {
         foreach (var @event in events)
-        {
             Events.Add(@event);
-        }
 
         Position = _position;
     }
@@ -70,16 +71,16 @@ public class Mouse : InputDevice
 
         _compositionStarted = true;
 
-        foreach (var action in Compose())
+        foreach (var @event in Compose())
         {
             try
             {
-                Events.Add(action);
+                Events.Add(@event);
             }
             catch
             {
-                if (!Events.Contains(action) && !action.Destroyed)
-                    action.Destroy();
+                if (!Events.Contains(@event) && !@event.Destroyed)
+                    @event.Destroy();
 
                 throw;
             }
@@ -101,66 +102,8 @@ public class Mouse : InputDevice
         _configured = true;
     }
 
-    private static MouseButton? FromSdlButton(byte button)
-    {
-        return button switch
-        {
-            1 => MouseButton.Left,
-            2 => MouseButton.Middle,
-            3 => MouseButton.Right,
-            4 => MouseButton.X1,
-            5 => MouseButton.X2,
-            _ => null,
-        };
-    }
-
-    private void ProcessButton(SDL.Event sdlEvent, SDL.EventType type)
-    {
-        var button = FromSdlButton(sdlEvent.Button.Button);
-
-        if (button is null)
-            return;
-
-        var position = new Vector2(sdlEvent.Button.X, sdlEvent.Button.Y);
-
-        _position.Set(position);
-
-        var payload = new MouseButtonEventPayload(
-            button.Value,
-            type == SDL.EventType.MouseButtonDown,
-            sdlEvent.Button.Clicks,
-            position
-        );
-
-        foreach (var action in Events)
-        {
-            if (action.Source.Get() == button.Value)
-                action.Fire(payload);
-        }
-    }
-
-    private void ProcessMotion(SDL.Event sdlEvent)
-    {
-        var position = new Vector2(sdlEvent.Motion.X, sdlEvent.Motion.Y);
-
-        var delta = new Vector2(sdlEvent.Motion.XRel, sdlEvent.Motion.YRel);
-
-        _position.Set(position);
-        OnMove.Set(new MouseMoveEventPayload(position, delta));
-    }
-
-    private void ProcessWheel(SDL.Event sdlEvent)
-    {
-        var position = new Vector2(sdlEvent.Wheel.MouseX, sdlEvent.Wheel.MouseY);
-
-        var delta = new Vector2(sdlEvent.Wheel.X, sdlEvent.Wheel.Y);
-
-        _position.Set(position);
-        OnWheel.Fire(new MouseWheelEventPayload(delta, position));
-    }
-
     /// <summary>
-    /// Composes the events managed by this object.
+    /// Composes the button events managed by this mouse.
     /// </summary>
     /// <returns>The events to register, in enumeration order.</returns>
     /// <remarks>
@@ -176,21 +119,30 @@ public class Mouse : InputDevice
     }
 
     /// <summary>
-    /// Configures relationships and behavior after composition, before startup or first use.
+    /// Configures relationships and behavior after composition, before first use.
     /// </summary>
     /// <remarks>
     /// All constructor-provided and composed objects are available here.
-    /// This hook is invoked at most once, including across later lifecycle cycles.
-    /// If configuration throws, later lifecycle calls reject further initialization
+    /// This hook is invoked at most once.
+    /// If configuration throws, later processing rejects further initialization
     /// rather than repeating configuration side effects.
     /// </remarks>
     protected virtual void Configure() { }
 
+    /// <summary>
+    /// Ensures that composition and configuration have completed before input is processed.
+    /// </summary>
+    protected void EnsureInitialized()
+    {
+        EnsureComposed();
+        EnsureConfigured();
+    }
+
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        foreach (var action in Events.ToArray())
-            action.Destroy();
+        foreach (var @event in Events.ToArray())
+            @event.Destroy();
 
         Events.Destroy();
         OnMove.Destroy();
@@ -200,49 +152,38 @@ public class Mouse : InputDevice
         base.OnDestroy();
     }
 
-    /// <inheritdoc />
-    protected override void OnProcess(InputContext context)
+    /// <summary>
+    /// Publishes a mouse button event to matching registered events.
+    /// </summary>
+    /// <param name="payload">The mouse button event payload to publish.</param>
+    protected void PublishButton(MouseButtonEventPayload payload)
     {
-        EnsureComposed();
-        EnsureConfigured();
+        _position.Set(payload.Position);
 
-        if (!context.Window.Opened.Get())
-            return;
-
-        var windowId = SDL.GetWindowID(context.Window.Native);
-
-        if (windowId == 0)
+        foreach (var @event in Events)
         {
-            throw new InvalidOperationException(
-                $"Getting SDL window identifier failed: {SDL.GetError()}"
-            );
+            if (@event.Source.Get() == payload.Button)
+                @event.Fire(payload);
         }
+    }
 
-        foreach (var sdlEvent in context.FrameEvents)
-        {
-            var type = (SDL.EventType)sdlEvent.Type;
+    /// <summary>
+    /// Publishes a mouse movement event and updates the current cursor position.
+    /// </summary>
+    /// <param name="payload">The mouse movement payload to publish.</param>
+    protected void PublishMove(MouseMoveEventPayload payload)
+    {
+        _position.Set(payload.Position);
+        OnMove.Set(payload);
+    }
 
-            switch (type)
-            {
-                case SDL.EventType.MouseButtonDown:
-                case SDL.EventType.MouseButtonUp:
-                    if (sdlEvent.Button.WindowID == windowId)
-                        ProcessButton(sdlEvent, type);
-
-                    break;
-
-                case SDL.EventType.MouseMotion:
-                    if (sdlEvent.Motion.WindowID == windowId)
-                        ProcessMotion(sdlEvent);
-
-                    break;
-
-                case SDL.EventType.MouseWheel:
-                    if (sdlEvent.Wheel.WindowID == windowId)
-                        ProcessWheel(sdlEvent);
-
-                    break;
-            }
-        }
+    /// <summary>
+    /// Publishes a mouse wheel event and updates the current cursor position.
+    /// </summary>
+    /// <param name="payload">The mouse wheel payload to publish.</param>
+    protected void PublishWheel(MouseWheelEventPayload payload)
+    {
+        _position.Set(payload.Position);
+        OnWheel.Fire(payload);
     }
 }

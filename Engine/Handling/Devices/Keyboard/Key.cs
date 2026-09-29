@@ -1,7 +1,7 @@
 namespace Mirage.Handling.Devices.Keyboard;
 
 /// <summary>
-/// Identifies a physical keyboard key independently of SDL3.
+/// Identifies a physical keyboard key.
 /// </summary>
 public enum KeyboardKey
 {

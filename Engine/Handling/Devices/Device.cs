@@ -1,15 +1,11 @@
-using Mirage.Common.Collections;
 using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 
 namespace Mirage.Handling.Devices;
 
 /// <summary>
-/// Initializes a new instance of the <see cref="InputDevice"/> class.
+/// Represents an input device processed by an input handler.
 /// </summary>
-/// <remarks>
-/// Provides a lifecycle and processing hook for a window input source.
-/// </remarks>
 /// <param name="identifier">The stable identifier of this device.</param>
 public abstract class InputDevice(string identifier) : Destroyable, IIdentifiable<string>
 {
@@ -17,15 +13,15 @@ public abstract class InputDevice(string identifier) : Destroyable, IIdentifiabl
     public string Identifier { get; } = identifier;
 
     /// <summary>
-    /// Processes input from the supplied frame context.
+    /// Processes input using the supplied context.
     /// </summary>
-    /// <param name="context">The window and events available for this update.</param>
+    /// <param name="context">The input context available for this update.</param>
     protected virtual void OnProcess(InputContext context) { }
 
     /// <summary>
-    /// Processes this device once and dispatches its input events.
+    /// Processes this device once.
     /// </summary>
-    /// <param name="context">The window and events available for this update.</param>
+    /// <param name="context">The input context available for this update.</param>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when this device has been destroyed.
     /// </exception>

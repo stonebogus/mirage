@@ -10,7 +10,7 @@ namespace Mirage.Handling.Devices.Mouse.Events;
 /// Describes a mouse wheel movement.
 /// </remarks>
 /// <param name="Delta">
-/// The horizontal and vertical scroll amounts reported by SDL3.
+/// The horizontal and vertical scroll amounts.
 /// </param>
 /// <param name="Position">
 /// The cursor position within the window when scrolling occurred.

@@ -1,7 +1,7 @@
 namespace Mirage.Handling.Devices.Mouse;
 
 /// <summary>
-/// Identifies a mouse button independently of SDL3.
+/// Identifies a physical mouse button.
 /// </summary>
 public enum MouseButton
 {
