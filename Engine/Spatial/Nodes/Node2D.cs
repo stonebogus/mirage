@@ -5,9 +5,9 @@ using Mirage.Noding;
 namespace Mirage.Spatial.Nodes;
 
 /// <summary>
-/// Provides optional values used to initialize a <see cref="SpatialNode"/>.
+/// Provides optional values used to initialize a <see cref="Node2D"/>.
 /// </summary>
-public class SpatialNodeOptions : NodeOptions
+public class Node2DOptions : NodeOptions
 {
     /// <summary>
     /// Gets the initial local origin used as the center of scale and rotation.
@@ -19,18 +19,21 @@ public class SpatialNodeOptions : NodeOptions
     public Vector2 Origin { get; init; } = Vector2.Zero;
 
     /// <summary>
-    /// Gets the initial local origin position relative to the nearest spatial ancestor.
+    /// Gets the initial local position of the origin relative to the nearest
+    /// <see cref="Node2D"/> ancestor.
     /// The default is <see cref="Vector2.Zero"/>.
     /// </summary>
     public Vector2 Position { get; init; } = Vector2.Zero;
 
     /// <summary>
-    /// Gets the initial local rotation in radians. The default is <c>0</c>.
+    /// Gets the initial local rotation in radians.
+    /// The default is <c>0</c>.
     /// </summary>
     public float Rotation { get; init; } = 0f;
 
     /// <summary>
-    /// Gets the initial local scale factor. The default is <see cref="Vector2.One"/>.
+    /// Gets the initial local scale factor.
+    /// The default is <see cref="Vector2.One"/>.
     /// </summary>
     public Vector2 Scale { get; init; } = Vector2.One;
 }
@@ -40,10 +43,11 @@ public class SpatialNodeOptions : NodeOptions
 /// </summary>
 /// <remarks>
 /// Origin, position, rotation, and scale determine the transformation of this
-/// node and its spatial descendants. Ordinary nodes between spatial nodes
-/// organize the tree without adding a transformation.
+/// node and its <see cref="Node2D"/> descendants. Ordinary nodes between
+/// <see cref="Node2D"/> instances organize the tree without contributing a
+/// transformation.
 /// </remarks>
-public class SpatialNode : Node
+public class Node2D : Node
 {
     private Vector2 _cachedOrigin;
     private Vector2 _cachedPosition;
@@ -58,7 +62,8 @@ public class SpatialNode : Node
     public readonly Store<Vector2> Origin;
 
     /// <summary>
-    /// Gets the position of the origin relative to the node's spatial parent.
+    /// Gets the position of the origin relative to the nearest
+    /// <see cref="Node2D"/> ancestor.
     /// </summary>
     public readonly Store<Vector2> Position;
 
@@ -73,16 +78,17 @@ public class SpatialNode : Node
     public readonly Store<Vector2> Scale;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SpatialNode"/> class.
+    /// Initializes a new instance of the <see cref="Node2D"/> class.
     /// </summary>
     /// <param name="name">The initial name of the node.</param>
     /// <param name="options">
-    /// The initial spatial and node values, or <see langword="null"/> for defaults.
+    /// The initial two-dimensional transformation and node values,
+    /// or <see langword="null"/> for defaults.
     /// </param>
-    public SpatialNode(string name = "SpatialNode", SpatialNodeOptions? options = null)
+    public Node2D(string name = "Node2D", Node2DOptions? options = null)
         : base(name, options)
     {
-        options ??= new SpatialNodeOptions();
+        options ??= new Node2DOptions();
 
         Origin = new Store<Vector2>(options.Origin);
         Position = new Store<Vector2>(options.Position);
@@ -97,12 +103,12 @@ public class SpatialNode : Node
     /// Getting the position derives it from <see cref="GlobalTransform"/>.
     ///
     /// Setting the position converts the supplied world-space position into
-    /// the local coordinate space defined by this node's spatial ancestors
-    /// and updates <see cref="Position"/>.
+    /// the local coordinate space defined by this node's <see cref="Node2D"/>
+    /// ancestors and updates <see cref="Position"/>.
     /// </remarks>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the transformation of the spatial ancestors cannot be
-    /// inverted.
+    /// Thrown when the transformation of the <see cref="Node2D"/> ancestors
+    /// cannot be inverted.
     /// </exception>
     public Vector2 GlobalPosition
     {
@@ -114,7 +120,7 @@ public class SpatialNode : Node
             if (!Matrix3x2.Invert(parentTransform, out var inverse))
             {
                 throw new InvalidOperationException(
-                    "The spatial parent transformation cannot be inverted."
+                    "The Node2D parent transformation cannot be inverted."
                 );
             }
 
@@ -129,8 +135,8 @@ public class SpatialNode : Node
     /// Getting the rotation extracts it from <see cref="GlobalTransform"/>.
     ///
     /// Setting the rotation converts the supplied world-space rotation into
-    /// the local rotation required relative to this node's spatial ancestors
-    /// and updates <see cref="Rotation"/>.
+    /// the local rotation required relative to this node's
+    /// <see cref="Node2D"/> ancestors and updates <see cref="Rotation"/>.
     /// </remarks>
     public float GlobalRotation
     {
@@ -151,11 +157,13 @@ public class SpatialNode : Node
     }
 
     /// <summary>
-    /// Gets this node's transformation after applying its spatial ancestors.
+    /// Gets this node's transformation after applying its
+    /// <see cref="Node2D"/> ancestors.
     /// </summary>
     /// <remarks>
-    /// Non-spatial ancestors are skipped. If there is no spatial ancestor,
-    /// this node's local transformation is also its global transformation.
+    /// Ancestors that are not <see cref="Node2D"/> instances are skipped.
+    /// If there is no <see cref="Node2D"/> ancestor, this node's local
+    /// transformation is also its global transformation.
     /// </remarks>
     public Matrix3x2 GlobalTransform
     {
@@ -166,8 +174,8 @@ public class SpatialNode : Node
 
             while (ancestor is not null)
             {
-                if (ancestor is SpatialNode spatial)
-                    transform *= spatial.LocalTransform;
+                if (ancestor is Node2D node)
+                    transform *= node.LocalTransform;
 
                 ancestor = ancestor.Parent.Get();
             }
@@ -180,8 +188,8 @@ public class SpatialNode : Node
     /// Gets the transformation defined by this node's local values.
     /// </summary>
     /// <remarks>
-    /// The matrix is recalculated only when origin, position, rotation, or scale
-    /// has changed since the previous read.
+    /// The matrix is recalculated only when origin, position, rotation,
+    /// or scale has changed since the previous read.
     /// </remarks>
     public Matrix3x2 LocalTransform
     {
@@ -224,8 +232,8 @@ public class SpatialNode : Node
 
         while (ancestor is not null)
         {
-            if (ancestor is SpatialNode spatial)
-                transform *= spatial.LocalTransform;
+            if (ancestor is Node2D node)
+                transform *= node.LocalTransform;
 
             ancestor = ancestor.Parent.Get();
         }
