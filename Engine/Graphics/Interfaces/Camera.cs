@@ -3,8 +3,7 @@ using System.Numerics;
 namespace Mirage.Graphics.Interfaces;
 
 /// <summary>
-/// Provides the transformations used to convert world coordinates
-/// into view and projection space.
+/// Provides the transformations required to render a scene from a camera view.
 /// </summary>
 public interface ICamera
 {
@@ -14,7 +13,9 @@ public interface ICamera
     Matrix4x4 View { get; }
 
     /// <summary>
-    /// Gets the transformation from view space into projection space.
+    /// Creates the projection transformation for the specified viewport size.
     /// </summary>
-    Matrix4x4 Projection { get; }
+    /// <param name="viewportSize">The size of the rendering viewport.</param>
+    /// <returns>The projection transformation.</returns>
+    Matrix4x4 GetProjection(Vector2 viewportSize);
 }
