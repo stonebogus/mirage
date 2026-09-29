@@ -1,4 +1,5 @@
 using System.Numerics;
+using Mirage.Graphics.Primitives;
 
 namespace Mirage.Graphics.Interfaces;
 
@@ -13,9 +14,11 @@ public interface ICamera
     Matrix4x4 View { get; }
 
     /// <summary>
-    /// Creates the projection transformation for the specified viewport size.
+    /// Creates the projection transformation for the specified viewport.
     /// </summary>
-    /// <param name="viewportSize">The size of the rendering viewport.</param>
+    /// <param name="viewport">
+    /// The viewport for which to create the projection transformation.
+    /// </param>
     /// <returns>The projection transformation.</returns>
-    Matrix4x4 GetProjection(Vector2 viewportSize);
+    Matrix4x4 GetProjection(Viewport viewport);
 }

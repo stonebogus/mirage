@@ -1,6 +1,7 @@
 using System.Numerics;
 using Mirage.Common.Events;
 using Mirage.Graphics.Interfaces;
+using Mirage.Graphics.Primitives;
 using Mirage.Spatial.Nodes;
 
 namespace Mirage.Graphics.Nodes;
@@ -58,12 +59,12 @@ public class Camera2D : Node2D, ICamera
     }
 
     /// <inheritdoc />
-    public Matrix4x4 GetProjection(Vector2 viewportSize)
+    public Matrix4x4 GetProjection(Viewport viewport)
     {
         var zoom = Zoom.Get();
 
-        var width = viewportSize.X / zoom;
-        var height = viewportSize.Y / zoom;
+        var width = viewport.Size.X / zoom;
+        var height = viewport.Size.Y / zoom;
 
         return Matrix4x4.CreateOrthographicOffCenter(
             -width / 2f,
