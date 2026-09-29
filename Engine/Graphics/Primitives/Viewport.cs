@@ -3,13 +3,13 @@ using System.Numerics;
 namespace Mirage.Graphics.Primitives;
 
 /// <summary>
-/// Describes a rectangular region within a render target.
+/// Describes a rectangular region within a drawing target.
 /// </summary>
 /// <param name="Position">
-/// The position of the viewport within its render target.
+/// The position of the viewport within its drawing target.
 /// </param>
 /// <param name="Size">
-/// The size of the viewport in render-target units.
+/// The size of the viewport in drawing-target units.
 /// </param>
 public readonly record struct Viewport(Vector2 Position, Vector2 Size)
 {
