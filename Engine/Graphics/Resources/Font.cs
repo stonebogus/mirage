@@ -3,7 +3,7 @@ using Mirage.Common;
 namespace Mirage.Graphics.Resources;
 
 /// <summary>
-/// Specifies synthetic styling applied when drawing text.
+/// Specifies synthetic styling applied when rendering text.
 /// </summary>
 /// <remarks>
 /// Use a separate font file for a designed bold or italic variant when available.
@@ -12,27 +12,27 @@ namespace Mirage.Graphics.Resources;
 public enum FontStyle
 {
     /// <summary>
-    /// Draws text without synthetic styling.
+    /// Renders text without synthetic styling.
     /// </summary>
     Normal = 0,
 
     /// <summary>
-    /// Draws text with synthetic bold styling.
+    /// Renders text with synthetic bold styling.
     /// </summary>
     Bold = 1 << 0,
 
     /// <summary>
-    /// Draws text with synthetic italic styling.
+    /// Renders text with synthetic italic styling.
     /// </summary>
     Italic = 1 << 1,
 
     /// <summary>
-    /// Draws a line beneath the text.
+    /// Renders a line beneath the text.
     /// </summary>
     Underline = 1 << 2,
 
     /// <summary>
-    /// Draws a line through the text.
+    /// Renders a line through the text.
     /// </summary>
     Strikethrough = 1 << 3,
 }
@@ -42,7 +42,7 @@ public enum FontStyle
 /// </summary>
 /// <remarks>
 /// The resource owns a copy of the file bytes. The renderer uses these bytes
-/// to open native font instances at the sizes needed for drawing.
+/// to open native font instances at the sizes needed for rendering.
 /// </remarks>
 public class Font : Resource
 {

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\Engine\Common\Mirage.Common.csproj" />
-    <ProjectReference Include="..\Engine\Drawing\Mirage.Drawing.csproj" />
+    <ProjectReference Include="..\Engine\Rendering\Mirage.Rendering.csproj" />
     <ProjectReference Include="..\Engine\Graphics\Mirage.Graphics.csproj" />
     <ProjectReference Include="..\Engine\Handling\Mirage.Handling.csproj" />
     <ProjectReference Include="..\Engine\Noding\Mirage.Noding.csproj" />

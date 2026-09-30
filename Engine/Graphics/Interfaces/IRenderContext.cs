@@ -3,12 +3,12 @@ using System.Numerics;
 namespace Mirage.Graphics.Interfaces;
 
 /// <summary>
-/// Provides the state and drawing surface available during a drawing frame.
+/// Provides the state and rendering surface available during a rendering frame.
 /// </summary>
-public interface IDrawContext
+public interface IRenderContext
 {
     /// <summary>
-    /// Gets the elapsed time since the previous drawing frame, in seconds.
+    /// Gets the elapsed time since the previous rendering frame, in seconds.
     /// </summary>
     double DeltaTime { get; }
 
@@ -20,7 +20,7 @@ public interface IDrawContext
     /// <summary>
     /// Gets the surface to which graphical operations are submitted.
     /// </summary>
-    ISurface Surface { get; }
+    IRenderSurface Surface { get; }
 
     /// <summary>
     /// Gets the transformation from world space into view space.

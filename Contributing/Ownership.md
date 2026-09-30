@@ -12,7 +12,7 @@ When deciding whether a relationship implies ownership, ask:
 
 If not, B probably belongs to A. If B is shared or has a separate lifetime, A probably borrows it. Also consider who creates, registers, and manages B. A shared object still needs an owner; “borrowed” must not mean “nobody destroys it.”
 
-For example, a logger owns its registered outputs. A renderer borrows the window it draws into. Destroying the renderer releases its rendering resources, but does not destroy the window.
+For example, a logger owns its registered outputs. A renderer borrows the window it renders into. Destroying the renderer releases its rendering resources, but does not destroy the window.
 
 Public access to an owned object is borrowed access. Callers must not independently destroy an object while it still belongs to another owner.
 

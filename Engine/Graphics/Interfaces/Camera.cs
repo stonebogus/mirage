@@ -4,7 +4,7 @@ using Mirage.Graphics.Primitives;
 namespace Mirage.Graphics.Interfaces;
 
 /// <summary>
-/// Provides the transformations required to draw a scene from a camera view.
+/// Provides the transformations required to render a scene from a camera view.
 /// </summary>
 public interface ICamera
 {

@@ -2,30 +2,30 @@ using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Graphics.Interfaces;
 
-namespace Mirage.Drawing.Layers;
+namespace Mirage.Rendering.Layers;
 
 /// <summary>
 /// Represents the rendering priority of a layer.
 /// </summary>
-public enum DrawLayerPriority
+public enum RenderLayerPriority
 {
-    /// <summary>Drawn before normal-priority layers.</summary>
+    /// <summary>Rendered before normal-priority layers.</summary>
     Low,
 
     /// <summary>The default rendering priority.</summary>
     Normal,
 
-    /// <summary>Drawn after normal-priority layers.</summary>
+    /// <summary>Rendered after normal-priority layers.</summary>
     High,
 
-    /// <summary>Drawn after all other priorities.</summary>
+    /// <summary>Rendered after all other priorities.</summary>
     Critical,
 }
 
 /// <summary>
-/// Groups drawable objects and draws them in a single layer.
+/// Groups renderable objects and renders them in a single layer.
 /// </summary>
-public class DrawLayer : Destroyable, IIdentifiable<string>
+public class RenderLayer : Destroyable, IIdentifiable<string>
 {
     private bool _composed;
     private bool _compositionStarted;
@@ -36,26 +36,26 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
     /// Gets the renderable objects added directly to this layer.
     /// </summary>
     /// <remarks>The layer references its entries without owning or destroying them.</remarks>
-    public readonly List<IDrawable> Entries = [];
+    public readonly List<IRenderable> Entries = [];
 
     /// <summary>
-    /// Gets the priority that determines when this layer is drawn.
+    /// Gets the priority that determines when this layer is rendered.
     /// </summary>
-    public readonly DrawLayerPriority Priority;
+    public readonly RenderLayerPriority Priority;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DrawLayer"/> class.
+    /// Initializes a new instance of the <see cref="RenderLayer"/> class.
     /// </summary>
     /// <param name="identifier">The layer's unique identifier.</param>
-    /// <param name="priority">The rendering priority. The default is <see cref="DrawLayerPriority.Normal"/>.</param>
-    /// <param name="entries">The initial drawable references, or <see langword="null"/> for none.</param>
+    /// <param name="priority">The rendering priority. The default is <see cref="RenderLayerPriority.Normal"/>.</param>
+    /// <param name="entries">The initial renderable references, or <see langword="null"/> for none.</param>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="identifier"/> is empty or whitespace.
     /// </exception>
-    public DrawLayer(
+    public RenderLayer(
         string identifier,
-        DrawLayerPriority priority = DrawLayerPriority.Normal,
-        IEnumerable<IDrawable>? entries = null
+        RenderLayerPriority priority = RenderLayerPriority.Normal,
+        IEnumerable<IRenderable>? entries = null
     )
     {
         if (string.IsNullOrWhiteSpace(identifier))
@@ -109,15 +109,15 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
     /// </summary>
     /// <returns>The entries to register, in enumeration order.</returns>
     /// <remarks>
-    /// Composition occurs once before the first draw.
+    /// Composition occurs once before the first rendering call.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
-    /// The layer borrows entries, including those returned here, because drawable scene objects
-    /// have independent owners and may be drawn by multiple layers. Return objects owned elsewhere;
+    /// The layer borrows entries, including those returned here, because renderable scene objects
+    /// have independent owners and may be rendered by multiple layers. Return objects owned elsewhere;
     /// composition does not transfer their lifetime to this processing collection.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
-    protected virtual IEnumerable<IDrawable> Compose()
+    protected virtual IEnumerable<IRenderable> Compose()
     {
         yield break;
     }
@@ -134,7 +134,7 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
     protected virtual void Configure() { }
 
     /// <inheritdoc />
-    /// <remarks>Clears the entry list without destroying its drawable objects.</remarks>
+    /// <remarks>Clears the entry list without destroying its renderable objects.</remarks>
     protected override void OnDestroy()
     {
         Entries.Clear();
@@ -143,19 +143,19 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
     }
 
     /// <summary>
-    /// Draws additional content after this layer's entries.
+    /// Renders additional content after this layer's entries.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
-    protected virtual void OnDraw(IDrawContext context) { }
+    protected virtual void OnRender(IRenderContext context) { }
 
     /// <summary>
-    /// Draws this layer's entries and any additional content.
+    /// Renders this layer's entries and any additional content.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when this layer has been destroyed.
     /// </exception>
-    public void Draw(IDrawContext context)
+    public void Render(IRenderContext context)
     {
         ThrowIfDestroyed();
 
@@ -163,8 +163,8 @@ public class DrawLayer : Destroyable, IIdentifiable<string>
         EnsureConfigured();
 
         foreach (var entry in Entries)
-            entry.Draw(context);
+            entry.Render(context);
 
-        OnDraw(context);
+        OnRender(context);
     }
 }

@@ -6,10 +6,10 @@ namespace Mirage.Graphics.Interfaces;
 /// Represents a surface to which graphical operations can be submitted.
 /// </summary>
 /// <remarks>
-/// A surface provides a backend-independent destination for draw commands and
-/// describes the viewport used for drawing.
+/// A surface provides a backend-independent destination for render commands and
+/// describes the viewport used for rendering.
 /// </remarks>
-public interface ISurface
+public interface IRenderSurface
 {
     /// <summary>
     /// Gets the viewport associated with this surface.
@@ -20,11 +20,11 @@ public interface ISurface
     /// Submits a graphical operation to the surface.
     /// </summary>
     /// <typeparam name="TCommand">
-    /// The type of draw command to submit.
+    /// The type of render command to submit.
     /// </typeparam>
     /// <param name="command">
-    /// The draw command containing the data required for the graphical operation.
+    /// The render command containing the data required for the graphical operation.
     /// </param>
-    void Draw<TCommand>(TCommand command)
-        where TCommand : IDrawCommand;
+    void Render<TCommand>(TCommand command)
+        where TCommand : IRenderCommand;
 }

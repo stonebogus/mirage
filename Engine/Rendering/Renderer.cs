@@ -1,18 +1,18 @@
 using Mirage.Common;
 using Mirage.Common.Collections;
-using Mirage.Drawing.Layers;
 using Mirage.Logging;
+using Mirage.Rendering.Layers;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 
-namespace Mirage.Drawing;
+namespace Mirage.Rendering;
 
 /// <summary>
-/// Manages the drawing layers used to produce frames.
+/// Manages the rendering layers used to produce frames.
 /// </summary>
 /// <remarks>
 /// The renderer owns and destroys its registered layers.
-/// Drawing infrastructure is provided separately by the active rendering implementation.
+/// Rendering infrastructure is provided separately by the active rendering implementation.
 /// </remarks>
 public class Renderer : Module, IUpdatable
 {
@@ -22,7 +22,7 @@ public class Renderer : Module, IUpdatable
     private bool _configured;
 
     /// <summary>
-    /// Gets the identifiable set of drawing layers managed by the renderer.
+    /// Gets the identifiable set of rendering layers managed by the renderer.
     /// </summary>
     /// <remarks>
     /// The renderer owns and destroys its registered layers.
@@ -30,18 +30,18 @@ public class Renderer : Module, IUpdatable
     /// entries returns ownership to the caller without destroying them.
     /// Do not register an object owned elsewhere.
     /// </remarks>
-    public readonly IdentifiableSet<string, DrawLayer> Layers = [];
+    public readonly IdentifiableSet<string, RenderLayer> Layers = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Renderer"/> class.
     /// </summary>
     /// <param name="layers">
-    /// The initial drawing layers, or <see langword="null"/> for no layers.
+    /// The initial rendering layers, or <see langword="null"/> for no layers.
     /// </param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the initial layers contain duplicate identifiers.
     /// </exception>
-    public Renderer(IEnumerable<DrawLayer>? layers = null)
+    public Renderer(IEnumerable<RenderLayer>? layers = null)
         : base("Renderer", ["Logger"])
     {
         foreach (var layer in layers ?? [])
@@ -103,7 +103,7 @@ public class Renderer : Module, IUpdatable
     }
 
     /// <summary>
-    /// Composes the drawing layers managed by this renderer.
+    /// Composes the rendering layers managed by this renderer.
     /// </summary>
     /// <returns>
     /// The layers to register, in enumeration order.
@@ -117,7 +117,7 @@ public class Renderer : Module, IUpdatable
     ///
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
-    protected virtual IEnumerable<DrawLayer> Compose()
+    protected virtual IEnumerable<RenderLayer> Compose()
     {
         yield break;
     }
@@ -144,7 +144,10 @@ public class Renderer : Module, IUpdatable
 
             if (InjectedDependencies is not null)
             {
-                Logger.Log($"Destroyed drawing layer '{layer.Identifier}'.", LogMessageKind.Debug);
+                Logger.Log(
+                    $"Destroyed rendering layer '{layer.Identifier}'.",
+                    LogMessageKind.Debug
+                );
             }
         }
 
@@ -164,7 +167,7 @@ public class Renderer : Module, IUpdatable
         EnsureComposed();
         EnsureConfigured();
 
-        Logger.Log($"Module started with {Layers.Count} drawing layers.");
+        Logger.Log($"Module started with {Layers.Count} rendering layers.");
     }
 
     /// <inheritdoc />
