@@ -2,20 +2,20 @@ using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
 using Mirage.Graphics.Interfaces;
 
-namespace Mirage.Rendering.Layers;
+namespace Mirage.Rendering.Spaces;
 
 /// <summary>
-/// Represents the rendering priority of a layer.
+/// Represents the rendering priority of a space.
 /// </summary>
-public enum RenderLayerPriority
+public enum RenderSpacePriority
 {
-    /// <summary>Rendered before normal-priority layers.</summary>
+    /// <summary>Rendered before normal-priority spaces.</summary>
     Low,
 
     /// <summary>The default rendering priority.</summary>
     Normal,
 
-    /// <summary>Rendered after normal-priority layers.</summary>
+    /// <summary>Rendered after normal-priority spaces.</summary>
     High,
 
     /// <summary>Rendered after all other priorities.</summary>
@@ -23,9 +23,9 @@ public enum RenderLayerPriority
 }
 
 /// <summary>
-/// Groups renderable objects and renders them in a single layer.
+/// Groups renderable objects and renders them in a single space.
 /// </summary>
-public class RenderLayer : Destroyable, IIdentifiable<string>
+public class RenderSpace : Destroyable, IIdentifiable<string>
 {
     private bool _composed;
     private bool _compositionStarted;
@@ -33,33 +33,33 @@ public class RenderLayer : Destroyable, IIdentifiable<string>
     private bool _configured;
 
     /// <summary>
-    /// Gets the renderable objects added directly to this layer.
+    /// Gets the renderable objects added directly to this space.
     /// </summary>
-    /// <remarks>The layer references its entries without owning or destroying them.</remarks>
+    /// <remarks>The space references its entries without owning or destroying them.</remarks>
     public readonly List<IRenderable> Entries = [];
 
     /// <summary>
-    /// Gets the priority that determines when this layer is rendered.
+    /// Gets the priority that determines when this space is rendered.
     /// </summary>
-    public readonly RenderLayerPriority Priority;
+    public readonly RenderSpacePriority Priority;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RenderLayer"/> class.
+    /// Initializes a new instance of the <see cref="RenderSpace"/> class.
     /// </summary>
-    /// <param name="identifier">The layer's unique identifier.</param>
-    /// <param name="priority">The rendering priority. The default is <see cref="RenderLayerPriority.Normal"/>.</param>
+    /// <param name="identifier">The space's unique identifier.</param>
+    /// <param name="priority">The rendering priority. The default is <see cref="RenderSpacePriority.Normal"/>.</param>
     /// <param name="entries">The initial renderable references, or <see langword="null"/> for none.</param>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="identifier"/> is empty or whitespace.
     /// </exception>
-    public RenderLayer(
+    public RenderSpace(
         string identifier,
-        RenderLayerPriority priority = RenderLayerPriority.Normal,
+        RenderSpacePriority priority = RenderSpacePriority.Normal,
         IEnumerable<IRenderable>? entries = null
     )
     {
         if (string.IsNullOrWhiteSpace(identifier))
-            throw new ArgumentException("Layer identifier cannot be empty.", nameof(identifier));
+            throw new ArgumentException("Space identifier cannot be empty.", nameof(identifier));
 
         Identifier = identifier;
         Priority = priority;
@@ -112,8 +112,8 @@ public class RenderLayer : Destroyable, IIdentifiable<string>
     /// Composition occurs once before the first rendering call.
     /// Constructor-provided objects are registered before composed objects.
     /// All composed objects are registered before configuration occurs.
-    /// The layer borrows entries, including those returned here, because renderable scene objects
-    /// have independent owners and may be rendered by multiple layers. Return objects owned elsewhere;
+    /// The space borrows entries, including those returned here, because renderable scene objects
+    /// have independent owners and may be rendered by multiple spaces. Return objects owned elsewhere;
     /// composition does not transfer their lifetime to this processing collection.
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
@@ -143,17 +143,17 @@ public class RenderLayer : Destroyable, IIdentifiable<string>
     }
 
     /// <summary>
-    /// Renders additional content after this layer's entries.
+    /// Renders additional content after this space's entries.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
     protected virtual void OnRender(IRenderContext context) { }
 
     /// <summary>
-    /// Renders this layer's entries and any additional content.
+    /// Renders this space's entries and any additional content.
     /// </summary>
     /// <param name="context">The active rendering context.</param>
     /// <exception cref="DestroyedObjectException">
-    /// Thrown when this layer has been destroyed.
+    /// Thrown when this space has been destroyed.
     /// </exception>
     public void Render(IRenderContext context)
     {

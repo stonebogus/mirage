@@ -21,7 +21,7 @@ It is built around small systems that can be composed together while keeping the
 
 - Hierarchical node system
 - 2D spatial nodes and cameras
-- Layer-based rendering
+- Space-based rendering
 - Shapes, textures, text, and meshes
 - Keyboard and mouse input
 - 2D physics and simulation spaces
@@ -162,7 +162,7 @@ Together, they follow a simple lifecycle:
 Construct → Compose → Configure → Start / Use
 ```
 
-This pattern is used throughout Mirage where it makes sense, including games, nodes, input devices, rendering layers, scheduling channels, windows, and simulation spaces.
+This pattern is used throughout Mirage where it makes sense, including games, nodes, input devices, rendering spaces, scheduling channels, windows, and simulation spaces.
 
 `Configure()` can then connect behavior after composition has taken place.
 
@@ -172,7 +172,7 @@ The general lifecycle is:
 Construct → Compose → Configure → Start / Use
 ```
 
-The same pattern is used across the engine where it makes sense, including games, nodes, input devices, rendering layers, scheduling channels, windows, and simulation spaces.
+The same pattern is used across the engine where it makes sense, including games, nodes, input devices, rendering spaces, scheduling channels, windows, and simulation spaces.
 
 ## Architecture
 

@@ -1,17 +1,17 @@
 using Mirage.Common;
 using Mirage.Common.Collections;
 using Mirage.Logging;
-using Mirage.Rendering.Layers;
+using Mirage.Rendering.Spaces;
 using Mirage.Scheduling;
 using Mirage.Scheduling.Interfaces;
 
 namespace Mirage.Rendering;
 
 /// <summary>
-/// Manages the rendering layers used to produce frames.
+/// Manages the rendering spaces used to produce frames.
 /// </summary>
 /// <remarks>
-/// The renderer owns and destroys its registered layers.
+/// The renderer owns and destroys its registered spaces.
 /// Rendering infrastructure is provided separately by the active rendering implementation.
 /// </remarks>
 public class Renderer : Module, IUpdatable
@@ -22,30 +22,30 @@ public class Renderer : Module, IUpdatable
     private bool _configured;
 
     /// <summary>
-    /// Gets the identifiable set of rendering layers managed by the renderer.
+    /// Gets the identifiable set of rendering spaces managed by the renderer.
     /// </summary>
     /// <remarks>
-    /// The renderer owns and destroys its registered layers.
+    /// The renderer owns and destroys its registered spaces.
     /// Registration transfers ownership to the renderer. Removing or clearing
     /// entries returns ownership to the caller without destroying them.
     /// Do not register an object owned elsewhere.
     /// </remarks>
-    public readonly IdentifiableSet<string, RenderLayer> Layers = [];
+    public readonly IdentifiableSet<string, RenderSpace> Spaces = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Renderer"/> class.
     /// </summary>
-    /// <param name="layers">
-    /// The initial rendering layers, or <see langword="null"/> for no layers.
+    /// <param name="spaces">
+    /// The initial rendering spaces, or <see langword="null"/> for no spaces.
     /// </param>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the initial layers contain duplicate identifiers.
+    /// Thrown when the initial spaces contain duplicate identifiers.
     /// </exception>
-    public Renderer(IEnumerable<RenderLayer>? layers = null)
+    public Renderer(IEnumerable<RenderSpace>? spaces = null)
         : base("Renderer", ["Logger"])
     {
-        foreach (var layer in layers ?? [])
-            Layers.Add(layer);
+        foreach (var space in spaces ?? [])
+            Spaces.Add(space);
     }
 
     private SourcedLogger Logger => Require<Logger>("Logger").From(Identifier);
@@ -64,16 +64,16 @@ public class Renderer : Module, IUpdatable
         Logger.Log("Composing module contents.", LogMessageKind.Debug);
         _compositionStarted = true;
 
-        foreach (var layer in Compose())
+        foreach (var space in Compose())
         {
             try
             {
-                Layers.Add(layer);
+                Spaces.Add(space);
             }
             catch
             {
-                if (!Layers.Contains(layer) && !layer.Destroyed)
-                    layer.Destroy();
+                if (!Spaces.Contains(space) && !space.Destroyed)
+                    space.Destroy();
 
                 throw;
             }
@@ -103,21 +103,21 @@ public class Renderer : Module, IUpdatable
     }
 
     /// <summary>
-    /// Composes the rendering layers managed by this renderer.
+    /// Composes the rendering spaces managed by this renderer.
     /// </summary>
     /// <returns>
-    /// The layers to register, in enumeration order.
+    /// The spaces to register, in enumeration order.
     /// </returns>
     /// <remarks>
     /// Composition occurs once when the renderer first starts.
-    /// Constructor-provided layers are registered before composed layers.
-    /// All composed layers are registered before configuration occurs.
+    /// Constructor-provided spaces are registered before composed spaces.
+    /// All composed spaces are registered before configuration occurs.
     ///
-    /// The renderer owns and destroys its layers.
+    /// The renderer owns and destroys its spaces.
     ///
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
-    protected virtual IEnumerable<RenderLayer> Compose()
+    protected virtual IEnumerable<RenderSpace> Compose()
     {
         yield break;
     }
@@ -126,7 +126,7 @@ public class Renderer : Module, IUpdatable
     /// Configures relationships and behavior after composition.
     /// </summary>
     /// <remarks>
-    /// All constructor-provided and composed layers are available when this
+    /// All constructor-provided and composed spaces are available when this
     /// hook is invoked.
     ///
     /// This hook is invoked at most once, including across later lifecycle cycles.
@@ -138,20 +138,20 @@ public class Renderer : Module, IUpdatable
     /// <inheritdoc />
     protected override void OnDestroy()
     {
-        foreach (var layer in Layers.ToArray())
+        foreach (var space in Spaces.ToArray())
         {
-            layer.Destroy();
+            space.Destroy();
 
             if (InjectedDependencies is not null)
             {
                 Logger.Log(
-                    $"Destroyed rendering layer '{layer.Identifier}'.",
+                    $"Destroyed rendering space '{space.Identifier}'.",
                     LogMessageKind.Debug
                 );
             }
         }
 
-        Layers.Destroy();
+        Spaces.Destroy();
 
         if (InjectedDependencies is not null)
             Logger.Log("Module resources destroyed.");
@@ -167,7 +167,7 @@ public class Renderer : Module, IUpdatable
         EnsureComposed();
         EnsureConfigured();
 
-        Logger.Log($"Module started with {Layers.Count} rendering layers.");
+        Logger.Log($"Module started with {Spaces.Count} rendering spaces.");
     }
 
     /// <inheritdoc />
