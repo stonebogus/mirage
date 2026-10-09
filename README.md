@@ -25,7 +25,7 @@ It is built around small systems that can be composed together while keeping the
 - Shapes, textures, text, and meshes
 - Keyboard and mouse input
 - 2D physics and simulation spaces
-- Resource loading and decoding
+- Resource importing and decoding
 - Update scheduling
 - Window management
 - Reactive events and state
@@ -182,7 +182,7 @@ Mirage is split into focused projects:
 Common
 Graphics
 Handling
-Loading
+Importing
 Math
 Noding
 Physics

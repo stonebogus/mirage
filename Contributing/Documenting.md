@@ -5,7 +5,7 @@ Mirage's documentation describes contracts: what an object represents, when an o
 ## Language and style
 
 - Write API documentation in English, using brief, concrete sentences.
-- Use `<summary>` for the symbol's responsibility. Prefer “Gets the registered outputs” or “Loads a resource” over descriptions of implementation steps.
+- Use `<summary>` for the symbol's responsibility. Prefer “Gets the registered outputs” or “Imports a resource” over descriptions of implementation steps.
 - Use `<remarks>` for lifecycle rules, ownership, ordering, or other behavior that needs explanation beyond the summary.
 - Avoid repeating a type's full contract on every member. Put details where callers will look for them.
 - Use `<inheritdoc />` for overrides and interface implementations when the inherited contract applies. Add remarks only for meaningful differences.

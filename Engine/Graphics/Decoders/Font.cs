@@ -1,10 +1,10 @@
 using Mirage.Graphics.Resources;
-using Mirage.Loading;
+using Mirage.Importing;
 
 namespace Mirage.Graphics.Decoders;
 
 /// <summary>
-/// Loads supported font files as reusable font data.
+/// Decodes supported font files into reusable font data.
 /// </summary>
 public class FontDecoder : Decoder<Font>
 {
@@ -15,7 +15,7 @@ public class FontDecoder : Decoder<Font>
     };
 
     /// <inheritdoc />
-    protected override Font OnDecode(LoadContext context, Stream stream)
+    protected override Font OnDecode(ImportContext context, Stream stream)
     {
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);

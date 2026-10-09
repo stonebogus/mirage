@@ -1,5 +1,5 @@
 using Mirage.Graphics.Resources;
-using Mirage.Loading;
+using Mirage.Importing;
 using StbImageSharp;
 
 namespace Mirage.Graphics.Decoders;
@@ -25,7 +25,7 @@ public class ImageDecoder : Decoder<Image>
     };
 
     /// <inheritdoc />
-    protected override Image OnDecode(LoadContext context, Stream stream)
+    protected override Image OnDecode(ImportContext context, Stream stream)
     {
         var result = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
 

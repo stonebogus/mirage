@@ -1,6 +1,6 @@
 using System.Text;
 using Mirage.Graphics.Resources;
-using Mirage.Loading;
+using Mirage.Importing;
 using Vortice.Dxc;
 
 namespace Mirage.Graphics.Decoders;
@@ -84,7 +84,7 @@ public class ShaderDecoder : Decoder<Shader>
     }
 
     /// <inheritdoc />
-    protected override Shader OnDecode(LoadContext context, Stream stream)
+    protected override Shader OnDecode(ImportContext context, Stream stream)
     {
         using var reader = new StreamReader(
             stream,
