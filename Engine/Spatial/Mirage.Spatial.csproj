@@ -8,6 +8,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Common\Mirage.Common.csproj" />
     <ProjectReference Include="..\Noding\Mirage.Noding.csproj" />
-    <ProjectReference Include="..\Math\Mirage.Math.csproj" />
+    <ProjectReference Include="..\Math\Mirage.Numerics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\" />
   </ItemGroup>
 </Project>
