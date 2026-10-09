@@ -1,0 +1,131 @@
+using System.Runtime.InteropServices;
+using SDL3;
+
+namespace Mirage.Rendering.SDL3.Resources;
+
+/// <summary>Owns an immutable SDL GPU vertex or index buffer.</summary>
+/// <remarks>The device is borrowed and must outlive this object.</remarks>
+internal sealed class SDL3Buffer : IDisposable
+{
+    private readonly IntPtr _device;
+
+    /// <summary>Creates a buffer and records its initial upload outside a render pass.</summary>
+    public SDL3Buffer(
+        IntPtr device,
+        IntPtr commandBuffer,
+        SDL.GPUBufferUsageFlags usage,
+        ReadOnlySpan<byte> data
+    )
+    {
+        if (data.IsEmpty)
+            throw new ArgumentException("A GPU buffer cannot be empty.", nameof(data));
+
+        _device = device;
+        Size = checked((uint)data.Length);
+        Native = SDL.CreateGPUBuffer(
+            device,
+            new SDL.GPUBufferCreateInfo { Usage = usage, Size = Size }
+        );
+        if (Native == IntPtr.Zero)
+            throw SDL3Gpu.Error("Creating a GPU buffer");
+
+        try
+        {
+            using var transfer = new SDL3TransferBuffer(device, data);
+            var pass = SDL.BeginGPUCopyPass(commandBuffer);
+            if (pass == IntPtr.Zero)
+                throw SDL3Gpu.Error("Beginning a buffer upload");
+            try
+            {
+                SDL.UploadToGPUBuffer(
+                    pass,
+                    new SDL.GPUTransferBufferLocation { TransferBuffer = transfer.Native },
+                    new SDL.GPUBufferRegion { Buffer = Native, Size = Size },
+                    false
+                );
+            }
+            finally
+            {
+                SDL.EndGPUCopyPass(pass);
+            }
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>Gets the native handle, or zero after disposal.</summary>
+    public IntPtr Native { get; private set; }
+
+    /// <summary>Gets the buffer size in bytes.</summary>
+    public uint Size { get; }
+
+    /// <summary>Schedules release once pending GPU work no longer uses the buffer.</summary>
+    public void Dispose()
+    {
+        if (Native == IntPtr.Zero)
+            return;
+        SDL.ReleaseGPUBuffer(_device, Native);
+        Native = IntPtr.Zero;
+    }
+}
+
+/// <summary>Owns a temporary, initialized CPU-to-GPU transfer buffer.</summary>
+internal sealed class SDL3TransferBuffer : IDisposable
+{
+    private readonly IntPtr _device;
+
+    public unsafe SDL3TransferBuffer(IntPtr device, ReadOnlySpan<byte> data)
+    {
+        _device = device;
+        Native = SDL.CreateGPUTransferBuffer(
+            device,
+            new SDL.GPUTransferBufferCreateInfo
+            {
+                Usage = SDL.GPUTransferBufferUsage.Upload,
+                Size = checked((uint)data.Length),
+            }
+        );
+        if (Native == IntPtr.Zero)
+            throw SDL3Gpu.Error("Creating a transfer buffer");
+
+        try
+        {
+            var mapped = SDL.MapGPUTransferBuffer(device, Native, false);
+            if (mapped == IntPtr.Zero)
+                throw SDL3Gpu.Error("Mapping a transfer buffer");
+            try
+            {
+                data.CopyTo(new Span<byte>((void*)mapped, data.Length));
+            }
+            finally
+            {
+                SDL.UnmapGPUTransferBuffer(device, Native);
+            }
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
+    }
+
+    public IntPtr Native { get; private set; }
+
+    public void Dispose()
+    {
+        if (Native == IntPtr.Zero)
+            return;
+        SDL.ReleaseGPUTransferBuffer(_device, Native);
+        Native = IntPtr.Zero;
+    }
+}
+
+/// <summary>Shares error reporting between the native resource wrappers.</summary>
+internal static class SDL3Gpu
+{
+    public static InvalidOperationException Error(string operation) =>
+        new($"{operation} failed: {SDL.GetError()}");
+}

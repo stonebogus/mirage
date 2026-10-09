@@ -1,29 +1,31 @@
-using System.Numerics;
+using Mirage.Graphics.Primitives;
 
 namespace Mirage.Graphics.Interfaces;
 
 /// <summary>
-/// Provides the state and rendering surface available during a rendering frame.
+/// Provides the state available while producing rendering data for a frame.
 /// </summary>
+/// <remarks>
+/// A rendering context contains frame-specific state used by renderable objects
+/// to produce <see cref="RenderData"/>.
+///
+/// The context does not execute rendering operations or depend on a specific
+/// rendering backend.
+/// </remarks>
 public interface IRenderContext
 {
+    /// <summary>
+    /// Gets the camera used to render the current view.
+    /// </summary>
+    ICamera Camera { get; }
+
     /// <summary>
     /// Gets the elapsed time since the previous rendering frame, in seconds.
     /// </summary>
     double DeltaTime { get; }
 
     /// <summary>
-    /// Gets the transformation from view space into projection space.
+    /// Gets the viewport in which the current view is rendered.
     /// </summary>
-    Matrix4x4 Projection { get; }
-
-    /// <summary>
-    /// Gets the surface to which graphical operations are submitted.
-    /// </summary>
-    IRenderSurface Surface { get; }
-
-    /// <summary>
-    /// Gets the transformation from world space into view space.
-    /// </summary>
-    Matrix4x4 View { get; }
+    Viewport Viewport { get; }
 }

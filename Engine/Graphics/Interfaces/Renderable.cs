@@ -1,19 +1,25 @@
 namespace Mirage.Graphics.Interfaces;
 
 /// <summary>
-/// Defines an object that can render itself during a rendering frame.
+/// Defines an object that can produce rendering data during a rendering frame.
 /// </summary>
 /// <remarks>
-/// The rendering system calls <see cref="Render"/> when the object should appear
-/// in the current frame.
+/// The rendering system calls <see cref="Render"/> to obtain the ordered
+/// rendering commands required to represent the object in the current frame.
+///
+/// Renderable objects describe their graphical representation without executing
+/// rendering operations or depending on a specific rendering backend.
 /// </remarks>
 public interface IRenderable
 {
     /// <summary>
-    /// Renders this object using the active rendering context.
+    /// Produces the rendering data for this object using the specified rendering context.
     /// </summary>
     /// <param name="context">
-    /// The context that provides rendering state and a surface for the current frame.
+    /// The context that provides the rendering state available for the current frame.
     /// </param>
-    void Render(IRenderContext context);
+    /// <returns>
+    /// The rendering data containing the commands required to represent this object.
+    /// </returns>
+    RenderData Render(IRenderContext context);
 }

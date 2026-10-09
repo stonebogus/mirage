@@ -1,5 +1,8 @@
+using Mirage.Common.Events;
 using Mirage.Common.Interfaces;
 using Mirage.Common.Lifecycle;
+using Mirage.Graphics;
+using Mirage.Graphics.Commands;
 using Mirage.Graphics.Interfaces;
 
 namespace Mirage.Rendering.Spaces;
@@ -9,22 +12,29 @@ namespace Mirage.Rendering.Spaces;
 /// </summary>
 public enum RenderSpacePriority
 {
-    /// <summary>Rendered before normal-priority spaces.</summary>
+    /// <summary>Collected before normal-priority spaces.</summary>
     Low,
 
     /// <summary>The default rendering priority.</summary>
     Normal,
 
-    /// <summary>Rendered after normal-priority spaces.</summary>
+    /// <summary>Collected after normal-priority spaces.</summary>
     High,
 
-    /// <summary>Rendered after all other priorities.</summary>
+    /// <summary>Collected after all other priorities.</summary>
     Critical,
 }
 
 /// <summary>
-/// Groups renderable objects and renders them in a single space.
+/// Groups renderable objects and collects their rendering commands into a single space.
 /// </summary>
+/// <remarks>
+/// A rendering space organizes renderable objects and produces their commands in
+/// entry order. The space does not execute rendering commands or depend on a
+/// specific rendering backend.
+///
+/// Renderable entries are borrowed by the space and are not destroyed with it.
+/// </remarks>
 public class RenderSpace : Destroyable, IIdentifiable<string>
 {
     private bool _composed;
@@ -33,27 +43,48 @@ public class RenderSpace : Destroyable, IIdentifiable<string>
     private bool _configured;
 
     /// <summary>
-    /// Gets the renderable objects added directly to this space.
+    /// Gets the camera used to render this space.
     /// </summary>
-    /// <remarks>The space references its entries without owning or destroying them.</remarks>
+    /// <remarks>
+    /// A <see langword="null"/> camera represents screen-space rendering.
+    /// </remarks>
+    public readonly Store<ICamera> Camera;
+
+    /// <summary>
+    /// Gets the renderable objects contained in this space.
+    /// </summary>
+    /// <remarks>
+    /// The space references its entries without owning or destroying them.
+    /// </remarks>
     public readonly List<IRenderable> Entries = [];
 
     /// <summary>
-    /// Gets the priority that determines when this space is rendered.
+    /// Gets the priority that determines when this space is collected.
     /// </summary>
     public readonly RenderSpacePriority Priority;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RenderSpace"/> class.
     /// </summary>
-    /// <param name="identifier">The space's unique identifier.</param>
-    /// <param name="priority">The rendering priority. The default is <see cref="RenderSpacePriority.Normal"/>.</param>
-    /// <param name="entries">The initial renderable references, or <see langword="null"/> for none.</param>
+    /// <param name="identifier">
+    /// The space's unique identifier.
+    /// </param>
+    /// <param name="camera">
+    /// The initial camera used to render this space.
+    /// </param>
+    /// <param name="priority">
+    /// The rendering priority. The default is
+    /// <see cref="RenderSpacePriority.Normal"/>.
+    /// </param>
+    /// <param name="entries">
+    /// The initial renderable references, or <see langword="null"/> for none.
+    /// </param>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="identifier"/> is empty or whitespace.
     /// </exception>
     public RenderSpace(
         string identifier,
+        ICamera camera,
         RenderSpacePriority priority = RenderSpacePriority.Normal,
         IEnumerable<IRenderable>? entries = null
     )
@@ -62,12 +93,11 @@ public class RenderSpace : Destroyable, IIdentifiable<string>
             throw new ArgumentException("Space identifier cannot be empty.", nameof(identifier));
 
         Identifier = identifier;
+        Camera = new Store<ICamera>(camera);
         Priority = priority;
 
         foreach (var entry in entries ?? [])
-        {
             Entries.Add(entry);
-        }
     }
 
     /// <inheritdoc />
@@ -100,21 +130,28 @@ public class RenderSpace : Destroyable, IIdentifiable<string>
             throw new InvalidOperationException("Configuration has already started or failed.");
 
         _configurationStarted = true;
+
         Configure();
+
         _configured = true;
     }
 
     /// <summary>
-    /// Composes the entries managed by this object.
+    /// Composes the renderable entries contained in this space.
     /// </summary>
-    /// <returns>The entries to register, in enumeration order.</returns>
+    /// <returns>
+    /// The renderable entries to register, in enumeration order.
+    /// </returns>
     /// <remarks>
-    /// Composition occurs once before the first rendering call.
-    /// Constructor-provided objects are registered before composed objects.
-    /// All composed objects are registered before configuration occurs.
-    /// The space borrows entries, including those returned here, because renderable scene objects
-    /// have independent owners and may be rendered by multiple spaces. Return objects owned elsewhere;
-    /// composition does not transfer their lifetime to this processing collection.
+    /// Composition occurs once before the first collection.
+    /// Constructor-provided entries are registered before composed entries.
+    /// All composed entries are registered before configuration occurs.
+    ///
+    /// The space borrows entries, including those returned here, because
+    /// renderable objects have independent owners and may participate in
+    /// multiple rendering spaces. Composition does not transfer ownership
+    /// of those objects to the space.
+    ///
     /// If composition fails, later lifecycle calls reject further initialization.
     /// </remarks>
     protected virtual IEnumerable<IRenderable> Compose()
@@ -123,48 +160,82 @@ public class RenderSpace : Destroyable, IIdentifiable<string>
     }
 
     /// <summary>
-    /// Configures relationships and behavior after composition, before startup or first use.
+    /// Configures relationships and behavior after composition and before
+    /// the first collection.
     /// </summary>
     /// <remarks>
-    /// All constructor-provided and composed objects are available here.
-    /// This hook is invoked at most once, including across later lifecycle cycles.
-    /// If configuration throws, later lifecycle calls reject further initialization
-    /// rather than repeating configuration side effects.
+    /// All constructor-provided and composed entries are available when this
+    /// hook is invoked.
+    ///
+    /// This hook is invoked at most once. If configuration throws, later
+    /// lifecycle calls reject further initialization rather than repeating
+    /// configuration side effects.
     /// </remarks>
     protected virtual void Configure() { }
 
+    /// <summary>
+    /// Collects additional rendering commands after the space's entries.
+    /// </summary>
+    /// <param name="context">
+    /// The rendering context used to produce rendering data.
+    /// </param>
+    /// <returns>
+    /// Additional rendering commands to append to the space, in execution order.
+    /// </returns>
+    protected virtual IEnumerable<IRenderCommand> OnCollect(IRenderContext context)
+    {
+        yield break;
+    }
+
     /// <inheritdoc />
-    /// <remarks>Clears the entry list without destroying its renderable objects.</remarks>
+    /// <remarks>
+    /// Clears the entry list without destroying its renderable objects.
+    /// </remarks>
     protected override void OnDestroy()
     {
         Entries.Clear();
+        Camera.Destroy();
 
         base.OnDestroy();
     }
 
     /// <summary>
-    /// Renders additional content after this space's entries.
+    /// Collects the rendering commands produced by this space's entries.
     /// </summary>
-    /// <param name="context">The active rendering context.</param>
-    protected virtual void OnRender(IRenderContext context) { }
-
-    /// <summary>
-    /// Renders this space's entries and any additional content.
-    /// </summary>
-    /// <param name="context">The active rendering context.</param>
+    /// <param name="context">
+    /// The rendering context used by entries to produce their rendering data.
+    /// </param>
+    /// <returns>
+    /// The rendering commands produced by the space, preserving entry and
+    /// command order.
+    /// </returns>
+    /// <remarks>
+    /// Entries are evaluated in their registration order. Commands produced
+    /// by each entry are appended in the order in which they appear in its
+    /// <see cref="RenderData"/>.
+    ///
+    /// The returned commands are not executed by the space. Execution is the
+    /// responsibility of the rendering system and its active backend.
+    /// </remarks>
     /// <exception cref="DestroyedObjectException">
     /// Thrown when this space has been destroyed.
     /// </exception>
-    public void Render(IRenderContext context)
+    public IReadOnlyList<IRenderCommand> Collect(IRenderContext context)
     {
         ThrowIfDestroyed();
 
         EnsureComposed();
         EnsureConfigured();
 
-        foreach (var entry in Entries)
-            entry.Render(context);
+        var commands = new List<IRenderCommand>();
 
-        OnRender(context);
+        foreach (var data in Entries.Select(entry => entry.Render(context)))
+        {
+            commands.AddRange(data.Commands);
+        }
+
+        commands.AddRange(OnCollect(context));
+
+        return commands;
     }
 }

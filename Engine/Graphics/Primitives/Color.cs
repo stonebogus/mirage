@@ -171,7 +171,7 @@ public readonly record struct Color
             return false;
         }
 
-        byte alpha = byte.MaxValue;
+        var alpha = byte.MaxValue;
 
         if (hasAlpha && !TryParseByte(hexadecimal.Slice(6, 2), out alpha))
         {

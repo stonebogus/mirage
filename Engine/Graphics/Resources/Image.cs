@@ -88,7 +88,6 @@ public class Image : Resource
                 Height = height;
                 Format = format;
 
-                // Prevent callers from modifying the pixels through the original array.
                 _data = data.ToArray();
             }
             else
