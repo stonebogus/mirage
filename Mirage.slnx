@@ -3,7 +3,6 @@
   <Folder Name="/Engine/">
     <Project Path="Engine/Spatial/Mirage.Spatial.csproj" />
     <Project Path="Engine/Windowing/Mirage.Windowing.csproj" />
-    <Project Path="Engine/Math/Mirage.Math.csproj" />
     <File Path="Engine\Handling\Devices\Mouse\Events\Move.cs" />
     <File Path="Engine\Handling\Devices\Mouse\Events\Wheel.cs" />
     <File Path="Engine\Handling\Devices\Mouse\Mouse.cs" />
@@ -12,9 +11,8 @@
     <Project Path="Engine/Noding/Mirage.Noding.csproj" />
     <Project Path="Engine/Loading/Mirage.Loading.csproj" />
     <Project Path="Engine/Scheduling/Mirage.Scheduling.csproj" />
-    <Project Path="Engine/Physics/Mirage.Physics.csproj" />
-    <Project Path="Engine/Simulating/Mirage.Simulating.csproj" />
     <Project Path="Engine/Logging/Mirage.Logging.csproj" />
+    <Project Path="Engine\Numerics\Mirage.Numerics.csproj" />
     <Project Path="Engine\Rendering\Mirage.Rendering.csproj" />
     <Project Path="Engine\Handling\Mirage.Handling.csproj" />
   </Folder>
