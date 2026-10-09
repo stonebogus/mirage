@@ -1,6 +1,7 @@
 # Sandbox
 Sandbox/*
 !Sandbox/Sandbox.csproj
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
